@@ -106,6 +106,7 @@ import io.legado.app.ui.main.homepage.HomepageModuleManageSheet
 import io.legado.app.ui.main.homepage.HomepageUiState
 import io.legado.app.ui.main.homepage.HomepageViewModel
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.LocalBottomOverlayPadding
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
 import io.legado.app.ui.widget.components.book.SearchBookPreviewSheet
@@ -634,6 +635,15 @@ fun HomeScreen(
                                 }
                             }
                         }
+                    }
+                    // 「首页模块」关闭时下面没有模块流撑高度，必须自己补一段底部留白，
+                    // 否则最后一个组件会被悬浮胶囊底栏压住。
+                    if (!state.homepageModulesEnabled) {
+                        Spacer(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)),
+                        )
                     }
                 }
 

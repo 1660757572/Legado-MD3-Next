@@ -100,6 +100,12 @@ fun TopBottomBarSettingsSheet(
                 onCheckedChange = { onIntent(ThemeConfigIntent.SetShowBottomView(it)) },
             )
             CompactSwitchSettingItem(
+                title = stringResource(R.string.pager_swipe_enabled),
+                description = stringResource(R.string.pager_swipe_enabled_summary),
+                checked = appShell.pagerSwipeEnabled,
+                onCheckedChange = { onIntent(ThemeConfigIntent.SetPagerSwipeEnabled(it)) },
+            )
+            CompactSwitchSettingItem(
                 title = stringResource(R.string.floating_bottom_bar),
                 description = stringResource(
                     if (isCoui) R.string.coui_floating_bottom_bar_summary else R.string.floating_bottom_bar_summary,

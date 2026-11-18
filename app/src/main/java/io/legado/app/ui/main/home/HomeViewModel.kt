@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.R
 import io.legado.app.data.entities.Book
+import io.legado.app.data.repository.BookGroupRepository
 import io.legado.app.data.repository.BookRepository
 import io.legado.app.domain.gateway.BackupSettingsGateway
+import io.legado.app.domain.gateway.PrivateContentGateway
 import io.legado.app.domain.model.HomeDashboardSection
 import io.legado.app.domain.model.HomeReadingBook
 import io.legado.app.domain.model.WebDavBackup
+import io.legado.app.domain.model.isPrivateBook
 import io.legado.app.domain.usecase.BackupRestoreUseCase
 import io.legado.app.domain.usecase.HomeDashboardUseCase
 import io.legado.app.domain.usecase.WebDavBackupUseCase
@@ -32,6 +35,8 @@ import kotlinx.coroutines.sync.Mutex
 class HomeViewModel(
     private val homeDashboardUseCase: HomeDashboardUseCase,
     private val bookRepository: BookRepository,
+    private val bookGroupRepository: BookGroupRepository,
+    private val privateContentGateway: PrivateContentGateway,
     private val webDavBackupUseCase: WebDavBackupUseCase,
     private val backupRestoreUseCase: BackupRestoreUseCase,
     private val backupSettingsGateway: BackupSettingsGateway,
@@ -54,20 +59,41 @@ class HomeViewModel(
     }
 
     /**
+     * 私密判定与书架一致：单独标记的 url ∪ 所属私密分组。
+     *
+     * `Book.isPrivate` 只是内存投影，重启后书架里真正的私密标记来自数据库查询，
+     * 所以这里必须走 [PrivateContentGateway]，不能再看实体字段。
+     */
+    private val privateGroupMaskFlow = bookGroupRepository.flowAll()
+        .map { groups ->
+            groups.fold(0L) { acc, group ->
+                if (group.groupId > 0 && group.isPrivate) acc or group.groupId else acc
+            }
+        }
+
+    /**
      * 轮播推荐：从书架里随机抽几本。书架数据变化（新增/删除/换封面）才重新抽，
      * 单独的一次抽签结果在多次界面刷新间保持稳定。
      *
      * 只抽「未读」书：私密书不出现在任何列表里，读完的书（未读章节数为 0）也没有再推的必要。
      */
-    private val carouselBooks = bookRepository.getAllBooks()
-        .map { books ->
-            books.filter { book ->
-                !book.isPrivate && book.getUnreadChapterNum() > 0
-            }.shuffled()
-                .take(CAROUSEL_BOOK_LIMIT)
-                .map { it.toCarouselUi() }
-                .toImmutableList()
-        }
+    private val carouselBooks = combine(
+        bookRepository.getAllBooks(),
+        privateContentGateway.flowPrivateBookUrls(),
+        privateGroupMaskFlow,
+    ) { books, privateBookUrls, privateGroupMask ->
+        books.filter { book ->
+            !isPrivateBook(
+                bookUrl = book.bookUrl,
+                group = book.group,
+                privateBookUrls = privateBookUrls,
+                privateGroupMask = privateGroupMask,
+            ) && book.getUnreadChapterNum() > 0
+        }.shuffled()
+            .take(CAROUSEL_BOOK_LIMIT)
+            .map { it.toCarouselUi() }
+            .toImmutableList()
+    }
 
     /** 轮播数据与「首页模块」开关同属首页组件配置，一起进 UI 状态。 */
     private val carouselData = combine(

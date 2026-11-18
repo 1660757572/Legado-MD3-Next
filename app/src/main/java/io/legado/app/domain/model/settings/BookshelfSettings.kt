@@ -55,6 +55,11 @@ data class BookshelfSettings(
     val bookshelfGridFixedColumns: Boolean = true,
     /** 网格固定封面宽度；关闭后封面铺满列宽（两者至少开一个）。 */
     val bookshelfGridFixedCoverWidth: Boolean = true,
+    /** 书架封面四角圆角（dp），四个角可分别设置。 */
+    val bookshelfCoverCornerTopStart: Int = 4,
+    val bookshelfCoverCornerTopEnd: Int = 4,
+    val bookshelfCoverCornerBottomEnd: Int = 4,
+    val bookshelfCoverCornerBottomStart: Int = 4,
     val bookshelfSearchActionDirectToSearch: Boolean = true,
     val autoRefreshBook: Boolean = false,
     val saveTabPosition: Long = BookGroup.IdAll,

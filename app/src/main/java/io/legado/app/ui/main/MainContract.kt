@@ -11,6 +11,7 @@ data class MainUiState(
     val showBottomView: Boolean = true,
     val useFloatingBottomBar: Boolean = false,
     val useFloatingBottomBarLiquidGlass: Boolean = false,
+    val pagerSwipeEnabled: Boolean = true,
     val labelVisibilityMode: String = "auto",
     val navExtended: Boolean = false,
     val navIconHome: String = "",

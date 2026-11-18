@@ -444,11 +444,28 @@ private fun BookInfoScreenContent(
                                     )
                                 }
                                 item {
+                                    // 内容区顶部用「背景图取色 → 页面底色」的渐变铺开，
+                                    // 否则封面区域一结束就是一块硬边白块。
+                                    val contentFadePx = with(LocalDensity.current) { 180.dp.toPx() }
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
-                                                color = LegadoTheme.colorScheme.surface
+                                                Brush.verticalGradient(
+                                                    0f to lerp(
+                                                        LegadoTheme.colorScheme.surface,
+                                                        LegadoTheme.colorScheme.secondaryContainer,
+                                                        0.16f,
+                                                    ),
+                                                    0.45f to lerp(
+                                                        LegadoTheme.colorScheme.surface,
+                                                        LegadoTheme.colorScheme.secondaryContainer,
+                                                        0.07f,
+                                                    ),
+                                                    1f to LegadoTheme.colorScheme.surface,
+                                                    startY = 0f,
+                                                    endY = contentFadePx,
+                                                )
                                             )
                                             .padding(bottom = 24.dp)
                                     ) {
@@ -463,7 +480,7 @@ private fun BookInfoScreenContent(
                                         CardTabRow(
                                             tabTitles = listOf(
                                                 stringResource(R.string.book_info_tab_intro),
-                                                stringResource(R.string.view_toc),
+                                                stringResource(R.string.book_info_tab_toc),
                                                 stringResource(R.string.read_record),
                                             ),
                                             selectedTabIndex = infoContentTab,
@@ -1222,7 +1239,8 @@ private fun BookInfoBackdrop(
                     showLoadingPlaceholder = false,
                     onError = { onNetworkCoverLoadError(currentBook.coverPath) },
                     requestBuilder = {
-                        size(Size(384, 384))
+                        // 背景铺满 480dp，按 384px 缩略图放大就会糊；按屏幕常见宽度取原尺寸。
+                        size(Size(1080, 1620))
                     }
                 )
             }
@@ -1337,6 +1355,13 @@ private fun BookInfoHeader(
     val coverWidthDp = BOOK_INFO_COVER_WIDTH_DP * coverScale
     val coverHeightScaledDp = coverHeightDp * coverScale
     val hideCover = headerTheme.bookInfoHideCover
+    // 四角圆角：四个角各自可调，默认沿用原来的小圆角。
+    val coverCornerShape = RoundedCornerShape(
+        topStart = headerTheme.bookInfoCoverCornerTopStart.dp,
+        topEnd = headerTheme.bookInfoCoverCornerTopEnd.dp,
+        bottomEnd = headerTheme.bookInfoCoverCornerBottomEnd.dp,
+        bottomStart = headerTheme.bookInfoCoverCornerBottomStart.dp,
+    )
     // 比例合法性已在 BookCoverImage 上报前校验，这里直接写入
     val onCoverImageAspectRatio: ((Float) -> Unit)? = if (allowCoverRatioAdapt) {
         { aspectRatio -> coverAspectRatioState.floatValue = aspectRatio }
@@ -1354,7 +1379,11 @@ private fun BookInfoHeader(
                         } else {
                             LegadoTheme.colorScheme.surface.copy(alpha = 0.5f)
                         },
-                        LegadoTheme.colorScheme.surface,
+                        lerp(
+                            LegadoTheme.colorScheme.surface,
+                            LegadoTheme.colorScheme.secondaryContainer,
+                            0.16f,
+                        ),
                     )
                 )
             )
@@ -1373,6 +1402,7 @@ private fun BookInfoHeader(
                     modifier = Modifier
                         .width(coverWidthDp.dp)
                         .height(coverHeightScaledDp.dp)
+                        .clip(coverCornerShape)
                         .then(
                             // 隐藏或脱敏时封面不可点：点开大图等于直接泄漏
                             if (hideCover || locked) {
@@ -1784,46 +1814,76 @@ private fun BookInfoTocSection(
             state = listState,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 360.dp),
+                // 至少露出约 15 章，避免只露 9 行；再高就由内部滚动接管。
+                .heightIn(max = 600.dp),
         ) {
             itemsIndexed(
                 items = chapters,
                 key = { index, _ -> index },
             ) { index, chapter ->
                 val selected = index == currentIndex
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(role = Role.Button) { onChapterClick(index) }
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppText(
-                        text = (index + 1).toString(),
-                        style = LegadoTheme.typography.labelMedium,
-                        color = if (selected) {
-                            LegadoTheme.colorScheme.primary
-                        } else {
-                            LegadoTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.width(44.dp),
-                    )
-                    AppText(
-                        text = chapter.title,
-                        style = if (selected) {
-                            LegadoTheme.typography.bodyMediumEmphasized
-                        } else {
-                            LegadoTheme.typography.bodyMedium
-                        },
-                        color = if (selected) {
-                            LegadoTheme.colorScheme.primary
-                        } else {
-                            LegadoTheme.colorScheme.onSurface
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                if (chapter.isVolume) {
+                    // 分卷标题：整行铺开，不带序号，和章节行用底色区分。
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                            .background(
+                                color = LegadoTheme.colorScheme.surfaceContainerLow,
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AppText(
+                            text = chapter.title,
+                            style = LegadoTheme.typography.labelLargeEmphasized,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(role = Role.Button) { onChapterClick(index) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AppText(
+                            text = (index + 1).toString(),
+                            style = LegadoTheme.typography.labelMedium,
+                            color = if (selected) {
+                                LegadoTheme.colorScheme.primary
+                            } else {
+                                LegadoTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.width(44.dp),
+                        )
+                        AppText(
+                            text = chapter.title,
+                            style = if (selected) {
+                                LegadoTheme.typography.bodyMediumEmphasized
+                            } else {
+                                LegadoTheme.typography.bodyMedium
+                            },
+                            color = if (selected) {
+                                LegadoTheme.colorScheme.primary
+                            } else {
+                                LegadoTheme.colorScheme.onSurface
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                if (index != chapters.lastIndex) {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = LegadoTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                     )
                 }
             }

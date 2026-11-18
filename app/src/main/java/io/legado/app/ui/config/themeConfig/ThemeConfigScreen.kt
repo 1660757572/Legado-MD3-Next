@@ -574,6 +574,62 @@ fun ThemeConfigScreen(
                             }
                         )
                     }
+                    SearchableSetting("theme.book_info_cover_corner_top_start") {
+                        SliderSettingItem(
+                            title = stringResource(
+                                R.string.book_info_cover_corner,
+                                stringResource(R.string.corner_top_start),
+                            ),
+                            value = theme.bookInfoCoverCornerTopStart.toFloat(),
+                            defaultValue = 4f,
+                            valueRange = 0f..48f,
+                            onValueChange = { value ->
+                                updateTheme { it.copy(bookInfoCoverCornerTopStart = value.toInt()) }
+                            },
+                        )
+                    }
+                    SearchableSetting("theme.book_info_cover_corner_top_end") {
+                        SliderSettingItem(
+                            title = stringResource(
+                                R.string.book_info_cover_corner,
+                                stringResource(R.string.corner_top_end),
+                            ),
+                            value = theme.bookInfoCoverCornerTopEnd.toFloat(),
+                            defaultValue = 4f,
+                            valueRange = 0f..48f,
+                            onValueChange = { value ->
+                                updateTheme { it.copy(bookInfoCoverCornerTopEnd = value.toInt()) }
+                            },
+                        )
+                    }
+                    SearchableSetting("theme.book_info_cover_corner_bottom_end") {
+                        SliderSettingItem(
+                            title = stringResource(
+                                R.string.book_info_cover_corner,
+                                stringResource(R.string.corner_bottom_end),
+                            ),
+                            value = theme.bookInfoCoverCornerBottomEnd.toFloat(),
+                            defaultValue = 4f,
+                            valueRange = 0f..48f,
+                            onValueChange = { value ->
+                                updateTheme { it.copy(bookInfoCoverCornerBottomEnd = value.toInt()) }
+                            },
+                        )
+                    }
+                    SearchableSetting("theme.book_info_cover_corner_bottom_start") {
+                        SliderSettingItem(
+                            title = stringResource(
+                                R.string.book_info_cover_corner,
+                                stringResource(R.string.corner_bottom_start),
+                            ),
+                            value = theme.bookInfoCoverCornerBottomStart.toFloat(),
+                            defaultValue = 4f,
+                            valueRange = 0f..48f,
+                            onValueChange = { value ->
+                                updateTheme { it.copy(bookInfoCoverCornerBottomStart = value.toInt()) }
+                            },
+                        )
+                    }
                     SearchableSetting("theme.book_info_backdrop_overlay") {
                         SwitchSettingItem(
                             title = stringResource(R.string.book_info_backdrop_overlay),

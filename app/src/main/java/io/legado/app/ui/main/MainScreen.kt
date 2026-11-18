@@ -6,10 +6,12 @@ import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
@@ -59,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -267,6 +270,9 @@ fun MainScreen(
         orientation = Orientation.Horizontal,
     )
     var bookshelfScrollToTopRequest by remember { mutableLongStateOf(0L) }
+    // 跨页跳转的渐显系数：整页位移动画会把中间几页依次组合并重采玻璃背景（Mochi 下明显掉帧），
+    // 所以远距离跳转直接落位，再用这个 alpha 让新页面渐显，避免硬切。
+    val pageFadeAlpha = remember { Animatable(1f) }
     fun requestBookshelfScrollToTop() {
         bookshelfScrollToTopRequest++
     }
@@ -281,11 +287,16 @@ fun MainScreen(
             return
         }
         coroutineScope.launch {
-            // 跨两页以上直接落位：原来的 animateScrollToPage 会把中间几个整页依次组合、并逐帧重采玻璃背景，
-            // 在 Mochi 玻璃导航下就是明显的掉帧。相邻页仍保留滑动动画。
             val distance = kotlin.math.abs(index - pagerState.currentPage)
             if (distance > 1) {
                 pagerState.scrollToPage(index)
+                pageFadeAlpha.snapTo(0f)
+                try {
+                    pageFadeAlpha.animateTo(1f, animationSpec = tween(durationMillis = 260))
+                } finally {
+                    // 动画被打断（连点导航）时也要把整页透明度还原，避免页面停在半透明状态。
+                    if (pageFadeAlpha.value < 1f) pageFadeAlpha.snapTo(1f)
+                }
             } else {
                 pagerState.animateScrollToPage(index)
             }
@@ -639,12 +650,13 @@ fun MainScreen(
                         pageNestedScrollConnection = pagerNestedScrollConnection,
                         modifier = Modifier
                             .fillMaxSize()
+                            .graphicsLayer { alpha = pageFadeAlpha.value }
                             .then(
                                 with(sharedTransitionScope) {
                                     if (this != null) Modifier.skipToLookaheadSize() else Modifier
                                 }
                             ),
-                        userScrollEnabled = true,
+                        userScrollEnabled = mainUiState.pagerSwipeEnabled,
                         beyondViewportPageCount = 4
                     ) { page ->
                         val destination = destinations.getOrNull(page) ?: return@HorizontalPager

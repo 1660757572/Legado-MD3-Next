@@ -27,18 +27,18 @@ class ThemeSettingsMappingTest {
     }
 
     @Test
-    fun `Theme gateway 持久化边界固定为 78 键`() {
+    fun `Theme gateway 持久化边界固定为 82 键`() {
         val actualKeys = ThemeSettings().toGatewayPrefMap().keys
         val expectedKeys = ThemeSettings().expectedGatewayPrefMap().keys
 
-        assertEquals(78, actualKeys.size)
+        assertEquals(82, actualKeys.size)
         assertEquals(expectedKeys, actualKeys)
         assertFalse(PreferKey.customMode in actualKeys)
         assertFalse(PreferKey.bookInfoInputColor in actualKeys)
     }
 
     @Test
-    fun `Theme gateway 78 键写读映射逐字段对应`() {
+    fun `Theme gateway 82 键写读映射逐字段对应`() {
         themeMappingSamples().forEach { expected ->
             assertEquals(expected.expectedGatewayPrefMap(), expected.toGatewayPrefMap())
             assertEquals(
@@ -200,6 +200,10 @@ private fun themeMappingSamples(): List<ThemeSettings> {
         bookInfoCoverScalePercent = 130,
         bookInfoHideCover = true,
         bookInfoBackdropOverlay = false,
+        bookInfoCoverCornerTopStart = 5,
+        bookInfoCoverCornerTopEnd = 6,
+        bookInfoCoverCornerBottomEnd = 7,
+        bookInfoCoverCornerBottomStart = 8,
         bookInfoInputColor = 0,
         backgroundImageLight = "light-background",
         backgroundImageDark = "dark-background",
@@ -307,6 +311,10 @@ private fun ThemeSettings.expectedGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookInfoCoverScalePercent to bookInfoCoverScalePercent,
     PreferKey.bookInfoHideCover to bookInfoHideCover,
     PreferKey.bookInfoBackdropOverlay to bookInfoBackdropOverlay,
+    PreferKey.bookInfoCoverCornerTopStart to bookInfoCoverCornerTopStart,
+    PreferKey.bookInfoCoverCornerTopEnd to bookInfoCoverCornerTopEnd,
+    PreferKey.bookInfoCoverCornerBottomEnd to bookInfoCoverCornerBottomEnd,
+    PreferKey.bookInfoCoverCornerBottomStart to bookInfoCoverCornerBottomStart,
     PreferKey.bgImage to backgroundImageLight,
     PreferKey.bgImageN to backgroundImageDark,
     PreferKey.bgImageBlurring to backgroundImageBlurring,

@@ -1846,6 +1846,16 @@
     <string name="book_info_cover_scale_summary">Enlarge the cover in the book details header, up to 50%% larger. Current: %1$d%%</string>
     <string name="book_info_hide_cover">Hide header cover</string>
     <string name="book_info_tab_intro">Synopsis</string>
+    <string name="book_info_tab_toc">Contents</string>
+    <string name="book_info_cover_corner">Book cover corner · %1$s</string>
+    <string name="book_info_cover_corner_title">Book cover corner radius</string>
+    <string name="bookshelf_cover_corner">Shelf cover corner · %1$s</string>
+    <string name="corner_top_start">Top left</string>
+    <string name="corner_top_end">Top right</string>
+    <string name="corner_bottom_end">Bottom right</string>
+    <string name="corner_bottom_start">Bottom left</string>
+    <string name="pager_swipe_enabled">Swipe between pages</string>
+    <string name="pager_swipe_enabled_summary">Allow swiping left and right between main pages; when off, use the bottom navigation or taps only</string>
     <string name="home_dashboard_homepage_modules">Homepage modules</string>
     <string name="book_info_hide_cover_summary">Hide the cover image in the book details header; the space is kept so the title stays in place</string>
     <string name="book_info_backdrop_overlay">Backdrop color overlay</string>

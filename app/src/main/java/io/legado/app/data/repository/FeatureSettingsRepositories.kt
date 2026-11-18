@@ -302,6 +302,7 @@ internal fun Preferences.toAppShellSettings(): AppShellSettings = AppShellSettin
     useFloatingBottomBar = compatDsBoolean(PreferKey.useFloatingBottomBar) ?: false,
     useFloatingBottomBarLiquidGlass =
         compatDsBoolean(PreferKey.useFloatingBottomBarLiquidGlass) ?: false,
+    pagerSwipeEnabled = compatDsBoolean(PreferKey.pagerSwipeEnabled) ?: true,
     tabletInterface = compatDsString(PreferKey.tabletInterface) ?: "auto",
     multiPaneMode = compatDsString(PreferKey.multiPaneMode) ?: "auto",
     labelVisibilityMode = compatDsString(PreferKey.labelVisibilityMode) ?: "auto",
@@ -338,6 +339,7 @@ internal fun AppShellSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.showBottomView to showBottomView,
     PreferKey.useFloatingBottomBar to useFloatingBottomBar,
     PreferKey.useFloatingBottomBarLiquidGlass to useFloatingBottomBarLiquidGlass,
+    PreferKey.pagerSwipeEnabled to pagerSwipeEnabled,
     PreferKey.tabletInterface to tabletInterface,
     PreferKey.multiPaneMode to multiPaneMode,
     PreferKey.labelVisibilityMode to labelVisibilityMode,
@@ -422,6 +424,14 @@ internal fun Preferences.toThemeSettings(): ThemeSettings = ThemeSettings(
         compatDsBoolean(PreferKey.bookInfoHideCover) ?: false,
     bookInfoBackdropOverlay =
         compatDsBoolean(PreferKey.bookInfoBackdropOverlay) ?: true,
+    bookInfoCoverCornerTopStart =
+        (compatDsInt(PreferKey.bookInfoCoverCornerTopStart) ?: 4).coerceIn(0, 48),
+    bookInfoCoverCornerTopEnd =
+        (compatDsInt(PreferKey.bookInfoCoverCornerTopEnd) ?: 4).coerceIn(0, 48),
+    bookInfoCoverCornerBottomEnd =
+        (compatDsInt(PreferKey.bookInfoCoverCornerBottomEnd) ?: 4).coerceIn(0, 48),
+    bookInfoCoverCornerBottomStart =
+        (compatDsInt(PreferKey.bookInfoCoverCornerBottomStart) ?: 4).coerceIn(0, 48),
     bookInfoInputColor = compatDsInt(PreferKey.bookInfoInputColor) ?: 0,
     backgroundImageLight = compatDsString(PreferKey.bgImage),
     backgroundImageDark = compatDsString(PreferKey.bgImageN),
@@ -510,6 +520,10 @@ internal fun ThemeSettings.toGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookInfoCoverScalePercent to bookInfoCoverScalePercent,
     PreferKey.bookInfoHideCover to bookInfoHideCover,
     PreferKey.bookInfoBackdropOverlay to bookInfoBackdropOverlay,
+    PreferKey.bookInfoCoverCornerTopStart to bookInfoCoverCornerTopStart,
+    PreferKey.bookInfoCoverCornerTopEnd to bookInfoCoverCornerTopEnd,
+    PreferKey.bookInfoCoverCornerBottomEnd to bookInfoCoverCornerBottomEnd,
+    PreferKey.bookInfoCoverCornerBottomStart to bookInfoCoverCornerBottomStart,
     PreferKey.bgImage to backgroundImageLight,
     PreferKey.bgImageN to backgroundImageDark,
     PreferKey.bgImageBlurring to backgroundImageBlurring,

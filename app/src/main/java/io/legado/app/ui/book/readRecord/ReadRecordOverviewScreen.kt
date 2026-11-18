@@ -68,7 +68,7 @@ import io.legado.app.ui.widget.components.image.cover.CoilBookCover
 import io.legado.app.ui.widget.components.privacy.PrivateLockedCover
 import io.legado.app.ui.widget.components.privacy.PrivateRecordKey
 import io.legado.app.ui.widget.components.privacy.rememberPrivateLockedRecords
-import io.legado.app.ui.widget.components.tabRow.AppTabRow
+import io.legado.app.ui.widget.components.tabRow.CardTabRow
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
@@ -216,11 +216,10 @@ fun PeriodSelector(
         )
     }
 
-    AppTabRow(
+    CardTabRow(
         tabTitles = periods.map { it.second },
         selectedTabIndex = periods.indexOfFirst { it.first == selectedPeriod },
         onTabSelected = { index -> onPeriodSelected(periods[index].first) },
-        isScrollable = false
     )
 }
 

@@ -205,6 +205,7 @@ private fun AppShellSettings.expectedPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.showBottomView to showBottomView,
     PreferKey.useFloatingBottomBar to useFloatingBottomBar,
     PreferKey.useFloatingBottomBarLiquidGlass to useFloatingBottomBarLiquidGlass,
+    PreferKey.pagerSwipeEnabled to pagerSwipeEnabled,
     PreferKey.tabletInterface to tabletInterface,
     PreferKey.multiPaneMode to multiPaneMode,
     PreferKey.labelVisibilityMode to labelVisibilityMode,

@@ -247,6 +247,56 @@ fun BookshelfConfigSheet(
                 }
             }
 
+            // 封面四角圆角：四个角分开设置，0 表示直角。
+            CompactSliderSettingItem(
+                title = stringResource(
+                    R.string.bookshelf_cover_corner,
+                    stringResource(R.string.corner_top_start),
+                ),
+                value = settings.bookshelfCoverCornerTopStart.toFloat(),
+                valueRange = 0f..40f,
+                steps = 39,
+                onValueChange = { value ->
+                    onUpdate { it.copy(bookshelfCoverCornerTopStart = value.toInt()) }
+                }
+            )
+            CompactSliderSettingItem(
+                title = stringResource(
+                    R.string.bookshelf_cover_corner,
+                    stringResource(R.string.corner_top_end),
+                ),
+                value = settings.bookshelfCoverCornerTopEnd.toFloat(),
+                valueRange = 0f..40f,
+                steps = 39,
+                onValueChange = { value ->
+                    onUpdate { it.copy(bookshelfCoverCornerTopEnd = value.toInt()) }
+                }
+            )
+            CompactSliderSettingItem(
+                title = stringResource(
+                    R.string.bookshelf_cover_corner,
+                    stringResource(R.string.corner_bottom_end),
+                ),
+                value = settings.bookshelfCoverCornerBottomEnd.toFloat(),
+                valueRange = 0f..40f,
+                steps = 39,
+                onValueChange = { value ->
+                    onUpdate { it.copy(bookshelfCoverCornerBottomEnd = value.toInt()) }
+                }
+            )
+            CompactSliderSettingItem(
+                title = stringResource(
+                    R.string.bookshelf_cover_corner,
+                    stringResource(R.string.corner_bottom_start),
+                ),
+                value = settings.bookshelfCoverCornerBottomStart.toFloat(),
+                valueRange = 0f..40f,
+                steps = 39,
+                onValueChange = { value ->
+                    onUpdate { it.copy(bookshelfCoverCornerBottomStart = value.toInt()) }
+                }
+            )
+
             CompactDropdownSettingItem(
                 title = stringResource(R.string.layout_mode),
                 description = stringResource(if (isLandscape) R.string.screen_landscape else R.string.screen_portrait),

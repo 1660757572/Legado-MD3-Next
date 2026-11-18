@@ -1787,6 +1787,16 @@
     <string name="book_info_cover_scale_summary">放大书籍详情页头部封面，最多放大 50%%。当前：%1$d%%</string>
     <string name="book_info_hide_cover">隐藏头部封面</string>
     <string name="book_info_tab_intro">简介</string>
+    <string name="book_info_tab_toc">目录</string>
+    <string name="book_info_cover_corner">详情页封面圆角 · %1$s</string>
+    <string name="book_info_cover_corner_title">详情页封面圆角</string>
+    <string name="bookshelf_cover_corner">书架封面圆角 · %1$s</string>
+    <string name="corner_top_start">左上</string>
+    <string name="corner_top_end">右上</string>
+    <string name="corner_bottom_end">右下</string>
+    <string name="corner_bottom_start">左下</string>
+    <string name="pager_swipe_enabled">页面间滑动切换</string>
+    <string name="pager_swipe_enabled_summary">开启后可在主页各页面之间左右滑动切换，关闭只能用底部导航或点按切换</string>
     <string name="home_dashboard_homepage_modules">首页模块</string>
     <string name="book_info_hide_cover_summary">隐藏书籍详情页头部封面，但保留占位，书名等文字位置不变</string>
     <string name="book_info_backdrop_overlay">背景颜色遮罩</string>

@@ -39,7 +39,12 @@ internal fun ProvideMochiTheme(
         systemBarAppearance = false,
         materials = iosMaterials(
             isDark = isDark,
-            glass = Build.VERSION.SDK_INT >= 33 && settings.appShell.useFloatingBottomBarLiquidGlass,
+            // Mochi 的材质决定栏、菜单、面板、弹窗的玻璃：以前只跟「悬浮底栏液态玻璃」联动，
+            // 于是用户开了顶栏液态玻璃，sheet 仍然是实色。这里把「Mochi 顶栏液态玻璃」也算进来。
+            glass = Build.VERSION.SDK_INT >= 33 && (
+                settings.appShell.useFloatingBottomBarLiquidGlass ||
+                    settings.theme.mochiTopBarLiquidGlass
+                ),
             blur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && settings.theme.mochiScrollEdgeBlurEnabled,
             themeAccent = true,
         ),

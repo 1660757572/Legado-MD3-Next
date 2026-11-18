@@ -110,6 +110,7 @@ private fun buildMainUiState(
         showBottomView = appShell.showBottomView,
         useFloatingBottomBar = appShell.useFloatingBottomBar,
         useFloatingBottomBarLiquidGlass = appShell.useFloatingBottomBarLiquidGlass,
+        pagerSwipeEnabled = appShell.pagerSwipeEnabled,
         labelVisibilityMode = appShell.labelVisibilityMode,
         navExtended = appShell.navExtended,
         navIconHome = appShell.navIconHome,

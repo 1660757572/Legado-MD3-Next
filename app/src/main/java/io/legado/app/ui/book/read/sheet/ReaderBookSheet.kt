@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadForOffline
 import androidx.compose.material.icons.filled.ExpandMore
@@ -46,6 +47,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Numbers
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
@@ -560,24 +563,41 @@ private fun ReaderBookInformation(
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item { InformationRow(stringResource(R.string.author), book?.author.orEmpty()) }
         item {
             InformationRow(
-                stringResource(R.string.book_source),
-                book?.originName?.ifBlank { book.origin }.orEmpty(),
+                label = stringResource(R.string.author),
+                value = book?.author.orEmpty(),
+                icon = Icons.Default.Person,
+            )
+        }
+        item {
+            InformationRow(
+                label = stringResource(R.string.book_source),
+                value = book?.originName?.ifBlank { book.origin }.orEmpty(),
+                icon = Icons.Default.Public,
             )
         }
         book?.remark?.takeIf { it.isNotBlank() }?.let { remark ->
             item { InformationRow(stringResource(R.string.book_remark), remark) }
         }
         if (!formattedIntro.isNullOrBlank()) {
-            item { InformationRow(stringResource(R.string.book_intro), formattedIntro) }
+            item {
+                InformationRow(
+                    label = stringResource(R.string.book_info_tab_intro),
+                    value = formattedIntro,
+                    icon = Icons.Default.Description,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun InformationRow(label: String, value: String) {
+private fun InformationRow(
+    label: String,
+    value: String,
+    icon: ImageVector? = null,
+    ) {
     NormalCard(
         cornerRadius = 14.dp,
         containerColor = LegadoTheme.colorScheme.surfaceContainerLow,
@@ -587,11 +607,24 @@ private fun InformationRow(label: String, value: String) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            AppText(
-                text = label,
-                style = LegadoTheme.typography.labelMediumEmphasized,
-                color = LegadoTheme.colorScheme.primary,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (icon != null) {
+                    AppIcon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = LegadoTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                AppText(
+                    text = label,
+                    style = LegadoTheme.typography.labelMediumEmphasized,
+                    color = LegadoTheme.colorScheme.primary,
+                )
+            }
             AppText(
                 text = value.ifBlank { "--" },
                 style = LegadoTheme.typography.bodyMedium,

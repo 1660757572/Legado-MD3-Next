@@ -14,6 +14,8 @@ data class AppShellSettings(
     val showBottomView: Boolean = true,
     val useFloatingBottomBar: Boolean = false,
     val useFloatingBottomBarLiquidGlass: Boolean = false,
+    /** 是否允许在主页各页面之间左右滑动切换 */
+    val pagerSwipeEnabled: Boolean = true,
     val tabletInterface: String = "auto",
     val multiPaneMode: String = "auto",
     val labelVisibilityMode: String = "auto",

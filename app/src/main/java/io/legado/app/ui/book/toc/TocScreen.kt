@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -80,6 +81,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -1263,13 +1265,21 @@ private fun StatusIcon(
                     containerColor = if (isDur) LegadoTheme.colorScheme.primaryContainer else LegadoTheme.colorScheme.surfaceContainer
                 ) {
                     if (wordCount != null) {
-                        AppText(
+                        // 固定高度再把文字装进去，避免 9sp 字体的行高把文字顶到标签上沿。
+                        Box(
                             modifier = Modifier
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            text = wordCount,
-                            style = LegadoTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                            color = if (isDur) LegadoTheme.colorScheme.onPrimaryContainer else LegadoTheme.colorScheme.onSurfaceVariant
-                        )
+                                .height(18.dp)
+                                .padding(horizontal = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            AppText(
+                                text = wordCount,
+                                style = LegadoTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                color = if (isDur) LegadoTheme.colorScheme.onPrimaryContainer else LegadoTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }

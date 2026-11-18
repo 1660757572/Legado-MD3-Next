@@ -61,6 +61,11 @@ data class ThemeSettings(
     val bookInfoHideCover: Boolean = false,
     /** 详情页背景大图的取色遮罩；关闭后只保留由封面到页面底色的渐变。 */
     val bookInfoBackdropOverlay: Boolean = true,
+    /** 详情页封面四角圆角（dp），四个角可分别设置。 */
+    val bookInfoCoverCornerTopStart: Int = 4,
+    val bookInfoCoverCornerTopEnd: Int = 4,
+    val bookInfoCoverCornerBottomEnd: Int = 4,
+    val bookInfoCoverCornerBottomStart: Int = 4,
     val bookInfoInputColor: Int = 0,
     val backgroundImageLight: String? = null,
     val backgroundImageDark: String? = null,

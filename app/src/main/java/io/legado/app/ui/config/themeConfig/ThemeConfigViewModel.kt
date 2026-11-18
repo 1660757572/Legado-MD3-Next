@@ -134,6 +134,10 @@ class ThemeConfigViewModel(
             is ThemeConfigIntent.SetUseFloatingBottomBarLiquidGlass -> updateAppShell {
                 it.copy(useFloatingBottomBarLiquidGlass = intent.enabled)
             }
+            is ThemeConfigIntent.SetPagerSwipeEnabled -> updateAppShell(
+                transform = { it.copy(pagerSwipeEnabled = intent.enabled) },
+                effect = ThemeConfigEffect.NotifyMain,
+            )
             is ThemeConfigIntent.SetTabletInterface -> updateAppShell {
                 it.copy(tabletInterface = intent.value)
             }

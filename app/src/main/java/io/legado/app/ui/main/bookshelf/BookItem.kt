@@ -87,6 +87,8 @@ fun BookshelfGridItem(
     titleCenter: Boolean = true,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    /** 封面四角圆角；null 时用 4dp 默认。 */
+    coverCornerShape: RoundedCornerShape? = null,
     accessibilityLabel: String? = null,
     /** null = 铺满列宽（封面尺寸随列数变化）；非 null = 固定宽度，列宽不足时被压缩。 */
     coverWidth: Int? = null,
@@ -110,7 +112,11 @@ fun BookshelfGridItem(
                     else Modifier.fillMaxWidth()
                 )
         ) {
-            BookshelfItemCover(coverShadow = coverShadow, cover = cover) {
+            BookshelfItemCover(
+                coverShadow = coverShadow,
+                cornerShape = coverCornerShape,
+                cover = cover,
+            ) {
                 if (gridStyle == 1) {
                     AppText(
                         text = title,
@@ -160,6 +166,14 @@ fun BookshelfGridItem(
  */
 private val BookshelfSettings.gridCoverWidthOrNull: Int?
     get() = bookshelfGridCoverWidth.takeIf { bookshelfGridFixedCoverWidth }
+
+/** 书架封面四角圆角，四个角各自可调（书架布局设置里配）。 */
+internal fun BookshelfSettings.coverCornerShape(): RoundedCornerShape = RoundedCornerShape(
+    topStart = bookshelfCoverCornerTopStart.dp,
+    topEnd = bookshelfCoverCornerTopEnd.dp,
+    bottomEnd = bookshelfCoverCornerBottomEnd.dp,
+    bottomStart = bookshelfCoverCornerBottomStart.dp,
+)
 
 @Composable
 fun BookshelfListItem(
@@ -212,7 +226,11 @@ fun BookshelfListItem(
                         )
                         .width(coverWidth.dp)
                 ) {
-                    BookshelfItemCover(coverShadow = coverShadow, cover = cover)
+                    BookshelfItemCover(
+                        coverShadow = coverShadow,
+                        cornerShape = settings.coverCornerShape(),
+                        cover = cover,
+                    )
                 }
                 Column(
                     modifier = Modifier
@@ -277,15 +295,17 @@ fun BookshelfListItem(
 private fun BookshelfItemCover(
     coverShadow: Boolean,
     cover: @Composable (Modifier) -> Unit,
+    cornerShape: RoundedCornerShape? = null,
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
+    val shape = cornerShape ?: RoundedCornerShape(4.dp)
     Box(
         modifier = Modifier
             .padding(4.dp)
             .fillMaxWidth()
             .aspectRatio(5f / 7f)
-            .then(if (coverShadow) Modifier.shadow(4.dp, RoundedCornerShape(4.dp)) else Modifier)
-            .clip(RoundedCornerShape(4.dp))
+            .then(if (coverShadow) Modifier.shadow(4.dp, shape) else Modifier)
+            .clip(shape)
     ) {
         cover(Modifier.fillMaxSize())
         overlay()
@@ -347,7 +367,7 @@ fun BookGroupCover(
     Box(
         modifier = modifier
             .aspectRatio(5f / 7f)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(settings.coverCornerShape())
     ) {
         if (!coverPath.isNullOrBlank()) {
             CoilBookCover(
@@ -495,6 +515,7 @@ fun BookGroupItemGrid(
         titleMaxLines = titleMaxLines,
         coverShadow = coverShadow,
         coverWidth = settings.gridCoverWidthOrNull,
+        coverCornerShape = settings.coverCornerShape(),
         onClick = onClick,
         onLongClick = onLongClick
     )
@@ -851,6 +872,7 @@ fun BookItem(
             coverShadow = coverShadow,
             accessibilityLabel = if (locked) lockedHiddenLabel else accessibilityLabel,
             coverWidth = settings.gridCoverWidthOrNull,
+            coverCornerShape = settings.coverCornerShape(),
             onClick = onClick,
             onLongClick = onLongClick,
         )
@@ -1037,6 +1059,7 @@ private fun PrivateLockedBookItem(
             coverShadow = coverShadow,
             accessibilityLabel = hiddenLabel,
             coverWidth = settings.gridCoverWidthOrNull,
+            coverCornerShape = settings.coverCornerShape(),
             onClick = onClick,
             onLongClick = onLongClick,
         )
