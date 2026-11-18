@@ -307,6 +307,7 @@ fun <T> RuleEditSheet(
                         tooltipText = stringResource(R.string.test),
                         icon = Icons.Default.RunningWithErrors,
                         containerColor = LegadoTheme.colorScheme.onSurfaceVariant,
+                        contentColor = LegadoTheme.colorScheme.primary,
                     )
                 }
                 AppFloatingActionButton(

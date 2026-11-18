@@ -3,7 +3,7 @@ package io.legado.app.data.repository
 import io.legado.app.data.dao.ReadRecordDao
 import io.legado.app.data.local.preferences.LocalPreferencesKeys
 import io.legado.app.domain.gateway.HomeDashboardGateway
-import io.legado.app.domain.model.DEFAULT_HOME_DASHBOARD_SECTIONS
+import io.legado.app.domain.model.DEFAULT_HOME_DASHBOARD_SECTION_ORDER
 import io.legado.app.domain.model.HomeDashboardSection
 import io.legado.app.domain.model.HomeReadingBook
 import kotlinx.coroutines.flow.Flow
@@ -64,10 +64,10 @@ class HomeDashboardRepository(
             "",
         ).map { it.takeIf(String::isNotBlank) }
 
-    override fun observeVisibleSections(): Flow<Set<HomeDashboardSection>> =
+    override fun observeVisibleSections(): Flow<List<HomeDashboardSection>> =
         localPreferencesRepository.getPreference(
             LocalPreferencesKeys.HOME_DASHBOARD_SECTIONS,
-            DEFAULT_HOME_DASHBOARD_SECTIONS.joinToString(",") { it.storageValue },
+            HomeDashboardSection.toStorage(DEFAULT_HOME_DASHBOARD_SECTION_ORDER),
         ).map(HomeDashboardSection::fromStorage)
 
     override suspend fun updateDailyGoal(minutes: Int) {
@@ -84,12 +84,10 @@ class HomeDashboardRepository(
         )
     }
 
-    override suspend fun updateVisibleSections(sections: Set<HomeDashboardSection>) {
+    override suspend fun updateVisibleSections(sections: List<HomeDashboardSection>) {
         localPreferencesRepository.updatePreference(
             LocalPreferencesKeys.HOME_DASHBOARD_SECTIONS,
-            HomeDashboardSection.entries
-                .filter(sections::contains)
-                .joinToString(",") { it.storageValue },
+            HomeDashboardSection.toStorage(sections.distinct()),
         )
     }
 }

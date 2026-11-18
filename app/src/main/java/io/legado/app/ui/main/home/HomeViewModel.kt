@@ -3,6 +3,7 @@ package io.legado.app.ui.main.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.R
+import io.legado.app.data.entities.Book
 import io.legado.app.data.repository.BookRepository
 import io.legado.app.domain.gateway.BackupSettingsGateway
 import io.legado.app.domain.model.HomeDashboardSection
@@ -13,7 +14,6 @@ import io.legado.app.domain.usecase.HomeDashboardUseCase
 import io.legado.app.domain.usecase.WebDavBackupUseCase
 import io.legado.app.utils.isContentScheme
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,12 +53,25 @@ class HomeViewModel(
         Triple(dashboard, selectedSourceUrl, visibleSections)
     }
 
+    /**
+     * 轮播推荐：从书架里随机抽几本。书架数据变化（新增/删除/换封面）才重新抽，
+     * 单独的一次抽签结果在多次界面刷新间保持稳定。
+     */
+    private val carouselBooks = bookRepository.getAllBooks()
+        .map { books ->
+            books.shuffled()
+                .take(CAROUSEL_BOOK_LIMIT)
+                .map { it.toCarouselUi() }
+                .toImmutableList()
+        }
+
     val uiState = combine(
         dashboardData,
         _backupState,
         _activeDialog,
         _activeSheet,
-    ) { dashboardData, backup, dialog, sheet ->
+        carouselBooks,
+    ) { dashboardData, backup, dialog, sheet, carousel ->
         val (dashboard, selectedSourceUrl, visibleSections) = dashboardData
         HomeUiState(
             totalReadBooks = dashboard.totalReadBooks,
@@ -71,8 +84,9 @@ class HomeViewModel(
                 .take(6)
                 .map { it.toUi() }
                 .toImmutableList(),
+            carouselBooks = carousel,
             selectedSourceSetUrl = selectedSourceUrl,
-            visibleSections = visibleSections.toImmutableSet(),
+            visibleSections = visibleSections.toImmutableList(),
             latestBackup = backup.latest?.toUi(),
             isBackupLoading = backup.isLoading,
             isBackupLoadError = backup.isLoadError,
@@ -106,6 +120,7 @@ class HomeViewModel(
         when (intent) {
             HomeIntent.RecentBookClick -> openRecentBook()
             is HomeIntent.RecentHistoryBookClick -> openBook(intent.bookUrl)
+            is HomeIntent.CarouselBookClick -> openBook(intent.bookUrl)
             is HomeIntent.SelectSourceSet -> selectSourceSet(intent.sourceUrl)
             HomeIntent.DashboardSettingsClick -> {
                 _activeSheet.value = HomeSheet.DashboardSettings
@@ -114,6 +129,7 @@ class HomeViewModel(
             is HomeIntent.SetSectionVisible -> {
                 setSectionVisible(intent.section, intent.visible)
             }
+            is HomeIntent.MoveSection -> moveSection(intent.section, intent.offset)
             HomeIntent.ReadingGoalClick -> {
                 _activeDialog.value = HomeDialog.SetReadingGoal(
                     uiState.value.dailyGoalMinutes
@@ -187,13 +203,45 @@ class HomeViewModel(
         section: HomeDashboardSection,
         visible: Boolean,
     ) {
-        val sections = uiState.value.visibleSections.toMutableSet().apply {
-            if (visible) add(section) else remove(section)
+        val current = uiState.value.visibleSections
+        val sections: List<HomeDashboardSection> = if (visible) {
+            if (section in current) {
+                current
+            } else {
+                // 重新打开时放在默认顺序对应的位置，而不是一律追加到末尾。
+                val insertAt = current.indexOfFirst { defaultOrderOf(it) > defaultOrderOf(section) }
+                current.toMutableList().apply {
+                    add(if (insertAt < 0) size else insertAt, section)
+                }
+            }
+        } else {
+            current.filterNot { it == section }
         }
         viewModelScope.launch {
             homeDashboardUseCase.updateVisibleSections(sections)
         }
     }
+
+    private fun moveSection(
+        section: HomeDashboardSection,
+        offset: Int,
+    ) {
+        val current = uiState.value.visibleSections
+        val from = current.indexOf(section)
+        if (from < 0) return
+        val to = (from + offset).coerceIn(0, current.lastIndex)
+        if (to == from) return
+        val sections = current.toMutableList().apply {
+            val moved = removeAt(from)
+            add(to, moved)
+        }
+        viewModelScope.launch {
+            homeDashboardUseCase.updateVisibleSections(sections)
+        }
+    }
+
+    private fun defaultOrderOf(section: HomeDashboardSection): Int =
+        HomeDashboardSection.entries.indexOf(section)
 
     private fun requestRestore() {
         val backup = _backupState.value.latest
@@ -381,4 +429,16 @@ class HomeViewModel(
         chapterTitle = chapterTitle,
         chapterProgress = chapterProgress,
     )
+
+    private fun Book.toCarouselUi() = HomeCarouselBookUi(
+        bookUrl = bookUrl,
+        name = name,
+        author = author,
+        origin = origin,
+        coverPath = if (customCoverUrl.isNullOrEmpty()) coverUrl else customCoverUrl,
+    )
+
+    private companion object {
+        const val CAROUSEL_BOOK_LIMIT = 8
+    }
 }

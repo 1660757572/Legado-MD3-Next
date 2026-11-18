@@ -70,6 +70,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -101,6 +102,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
@@ -168,6 +170,8 @@ import io.legado.app.ui.widget.components.topbar.TopBarActionsRow
 import io.legado.app.ui.widget.components.mochi.ProvideMochiScrollBlurProgress
 import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 import ui.feice.mochi.basic.MochiButtonDefaults
+import ui.feice.mochi.effect.glass.LocalMochiGlassShadow
+import ui.feice.mochi.effect.glass.MochiNoGlassShadow
 import io.legado.app.ui.widget.components.variable.VariableEditorSheet
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.HtmlFormatter
@@ -803,31 +807,46 @@ private fun BookInfoTransparentTopAppBar(
         }
     } else {
         if (isMochi) ProvideMochiScrollBlurProgress { scrollBehavior.collapsedFraction }
-        MediumFlexibleTopAppBar(
-            modifier = hazeState?.let { Modifier.responsiveHazeEffectFixedStyle(it) } ?: Modifier,
-            title = { AppText(text = "", maxLines = 1) },
-            navigationIcon = {
-                // This M3 slot contributes 4dp itself. Complete Mochi's 16dp edge margin.
-                TopBarNavigationButton(
-                    onClick = onBackPressed,
-                    modifier = if (isMochi) {
-                        Modifier.padding(start = slotEdgePadding)
-                    } else Modifier,
-                )
-            },
-            actions = {
-                Box(modifier = Modifier.padding(end = slotEdgePadding)) {
-                    TopBarActionsRow {
-                        BookInfoTopBarActions(
-                            state = state,
-                            onMenuAction = onMenuAction,
-                        )
+        val topBar: @Composable () -> Unit = {
+            MediumFlexibleTopAppBar(
+                modifier = hazeState?.let { Modifier.responsiveHazeEffectFixedStyle(it) } ?: Modifier,
+                title = { AppText(text = "", maxLines = 1) },
+                navigationIcon = {
+                    // This M3 slot contributes 4dp itself. Complete Mochi's 16dp edge margin.
+                    TopBarNavigationButton(
+                        onClick = onBackPressed,
+                        modifier = if (isMochi) {
+                            Modifier.padding(start = slotEdgePadding)
+                        } else Modifier,
+                    )
+                },
+                actions = {
+                    Box(modifier = Modifier.padding(end = slotEdgePadding)) {
+                        TopBarActionsRow {
+                            BookInfoTopBarActions(
+                                state = state,
+                                onMenuAction = onMenuAction,
+                            )
+                        }
                     }
-                }
-            },
-            scrollBehavior = (scrollBehavior as? M3GlassScrollBehavior)?.m3Behavior,
-            colors = topBarColors,
-        )
+                },
+                scrollBehavior = (scrollBehavior as? M3GlassScrollBehavior)?.m3Behavior,
+                colors = topBarColors,
+            )
+        }
+        if (isMochi) {
+            // 原生顶栏会把玻璃外阴影绑定到背景渐隐进度；这里绕过原生顶栏、直接用 M3 栏，
+            // 默认阴影强度为 1，按钮后方会投出一块深色斑块。本页顶栏直接叠在封面大图上，
+            // 没有需要靠阴影分层的内容，按折叠进度给强度也只是把斑块推迟到滚动后出现，
+            // 这里直接关掉玻璃外阴影（MochiNoGlassShadow），任何滚动位置都不再出现。
+            CompositionLocalProvider(
+                LocalMochiGlassShadow provides MochiNoGlassShadow
+            ) {
+                topBar()
+            }
+        } else {
+            topBar()
+        }
     }
 }
 
@@ -1292,11 +1311,9 @@ private fun BookInfoHeader(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
+            // 两种头部布局共用同一份封面与信息实现：只切换容器排布，
+            // 点击、长按菜单和共享元素语义都不分叉
+            val headerCover: @Composable () -> Unit = {
                 Box(
                     modifier = Modifier
                         .width(BOOK_INFO_COVER_WIDTH_DP.dp)
@@ -1351,13 +1368,19 @@ private fun BookInfoHeader(
                         )
                     }
                 }
+            }
+            val headerMeta: @Composable (Boolean, Modifier) -> Unit = { centerText, metaModifier ->
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .align(Alignment.CenterVertically)
-                        .padding(top = 8.dp, bottom = 8.dp),
+                    modifier = metaModifier,
+                    horizontalAlignment = if (centerText) {
+                        Alignment.CenterHorizontally
+                    } else {
+                        Alignment.Start
+                    },
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // 居中布局下书名 / 作者 / 书源整段居中排；左封面布局保持左对齐
+                    val metaTextAlign = if (centerText) TextAlign.Center else null
                     if (locked) {
                         // 书名 / 作者 / 来源全部换成占位条：不渲染任何真实字符串，也不响应点击
                         PrivateMaskLine(widthFraction = 0.72f, thickness = 20.dp)
@@ -1379,6 +1402,7 @@ private fun BookInfoHeader(
                                 text = book.name,
                                 style = LegadoTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
+                                textAlign = metaTextAlign,
                                 maxLines = if (isTitleExpanded) Int.MAX_VALUE else 2,
                                 modifier = Modifier.combinedClickable(
                                     onClick = { onBookNameClick(false) },
@@ -1409,7 +1433,11 @@ private fun BookInfoHeader(
                         }
                         if (authorLabels.size > 1) {
                             FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = if (centerText) {
+                                    Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
+                                } else {
+                                    Arrangement.spacedBy(12.dp)
+                                },
                             ) {
                                 authorLabels.forEach { author ->
                                     AnimatedTextLine(
@@ -1428,6 +1456,7 @@ private fun BookInfoHeader(
                                 text = stringResource(R.string.author_show, book.realAuthor),
                                 style = LegadoTheme.typography.bodyLarge,
                                 color = LegadoTheme.colorScheme.onSurfaceVariant,
+                                textAlign = metaTextAlign,
                                 modifier = Modifier.combinedClickable(
                                     onClick = { onAuthorClick(false, null) },
                                     onLongClick = { onAuthorClick(true, null) }
@@ -1438,9 +1467,37 @@ private fun BookInfoHeader(
                             text = stringResource(R.string.origin_show, book.originName),
                             style = LegadoTheme.typography.labelMedium,
                             color = LegadoTheme.colorScheme.primary,
+                            textAlign = metaTextAlign,
                             modifier = Modifier.clickable(onClick = onOriginClick)
                         )
                     }
+                }
+            }
+            // 外观设置「书籍详情页 → 封面居中布局」：默认关闭，保持封面在左、信息在右的旧布局
+            val centeredHeader = LocalAppUiConfiguration.current.theme.bookInfoCenteredLayout
+            if (centeredHeader) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    headerCover()
+                    headerMeta(true, Modifier.fillMaxWidth())
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    headerCover()
+                    headerMeta(
+                        false,
+                        Modifier
+                            .weight(1f)
+                            .align(Alignment.CenterVertically)
+                            .padding(top = 8.dp, bottom = 8.dp)
+                    )
                 }
             }
             if (locked) {

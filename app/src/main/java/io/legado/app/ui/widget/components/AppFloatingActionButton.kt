@@ -62,7 +62,7 @@ import top.yukonga.miuix.kmp.basic.Text as MiuixText
  * 跨引擎浮动操作按钮。
  *
  * [containerColor] / [contentColor] 为 null 时按引擎取默认配色：Material / Mochi 用
- * `primaryContainer` + `primary`；COUI 用主题强调色，图标与默认内容色固定为白色。
+ * `primaryContainer` + `onPrimaryContainer`；COUI 用主题强调色，图标与默认内容色固定为白色。
  * COUI 仍支持显式 [containerColor]，其余引擎保留 [contentColor] 的覆盖。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,7 +181,7 @@ private fun FloatingActionButtonByEngine(
                 modifier = modifier,
                 onClick = onClick,
                 containerColor = containerColor ?: LegadoTheme.colorScheme.primaryContainer,
-                contentColor = contentColor ?: LegadoTheme.colorScheme.primary,
+                contentColor = contentColor ?: LegadoTheme.colorScheme.onPrimaryContainer,
                 content = fabContent,
             )
         }

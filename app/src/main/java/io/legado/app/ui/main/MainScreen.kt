@@ -281,7 +281,14 @@ fun MainScreen(
             return
         }
         coroutineScope.launch {
-            pagerState.animateScrollToPage(index)
+            // 跨两页以上直接落位：原来的 animateScrollToPage 会把中间几个整页依次组合、并逐帧重采玻璃背景，
+            // 在 Mochi 玻璃导航下就是明显的掉帧。相邻页仍保留滑动动画。
+            val distance = kotlin.math.abs(index - pagerState.currentPage)
+            if (distance > 1) {
+                pagerState.scrollToPage(index)
+            } else {
+                pagerState.animateScrollToPage(index)
+            }
         }
     }
     LaunchedEffect(destinations) {
@@ -339,15 +346,19 @@ fun MainScreen(
         val label = stringResource(destination.labelId)
         val iconPath = mainUiState.customIconPath(destination)
         val selectedPath = mainUiState.selectedCustomIconPath(destination).ifEmpty { iconPath }
-        MochiTabItem(
-            label = label,
-            selectedIcon = { tint -> ProvideAppContentColor(tint) {
-                NavigationIcon(destination, true, selectedPath, tint = tint)
-            } },
-            icon = { tint -> ProvideAppContentColor(tint) {
-                NavigationIcon(destination, false, iconPath, tint = tint)
-            } },
-        )
+        // 每次切页都会重组 MainScreen，remember 让 tab 项与图标 lambda 保持同一实例，
+        // 避免 MochiTabBar 每帧重建所有 cell。
+        remember(destination, label, iconPath, selectedPath) {
+            MochiTabItem(
+                label = label,
+                selectedIcon = { tint -> ProvideAppContentColor(tint) {
+                    NavigationIcon(destination, true, selectedPath, tint = tint)
+                } },
+                icon = { tint -> ProvideAppContentColor(tint) {
+                    NavigationIcon(destination, false, iconPath, tint = tint)
+                } },
+            )
+        }
     }.toImmutableList()
     val onMochiTabSelect: (Int) -> Unit = { index ->
         destinations.getOrNull(index)?.let { handleMainDestinationClick(index, it) }

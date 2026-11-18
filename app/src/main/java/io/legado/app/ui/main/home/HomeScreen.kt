@@ -6,14 +6,17 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -42,12 +45,15 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -98,7 +104,6 @@ import io.legado.app.ui.main.homepage.HomepageModuleManageSheet
 import io.legado.app.ui.main.homepage.HomepageUiState
 import io.legado.app.ui.main.homepage.HomepageViewModel
 import io.legado.app.ui.theme.LegadoTheme
-import io.legado.app.ui.widget.components.AppPullToRefresh
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
 import io.legado.app.ui.widget.components.book.SearchBookPreviewSheet
@@ -119,6 +124,8 @@ import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
 import io.legado.app.ui.widget.components.topbar.TopBarActionButton
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.delay
 import io.legado.app.utils.isContentScheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -452,8 +459,13 @@ fun HomeScreen(
                     AppActionMenu(
                         groups = persistentListOf(
                             AppActionGroup(
-                                id = "home_settings",
+                                id = "home_actions",
                                 actions = persistentListOf(
+                                    AppAction(
+                                        id = "refresh_homepage",
+                                        label = stringResource(R.string.refresh),
+                                        icon = Icons.Default.Refresh,
+                                    ),
                                     AppAction(
                                         "dashboard_settings",
                                         stringResource(R.string.home_dashboard_settings),
@@ -473,6 +485,7 @@ fun HomeScreen(
                         ),
                         onAction = { id ->
                             when {
+                                id == "refresh_homepage" -> onRefreshHomepage()
                                 id == "dashboard_settings" ->
                                     onIntent(HomeIntent.DashboardSettingsClick)
                                 id.startsWith("page:") -> {
@@ -494,12 +507,8 @@ fun HomeScreen(
             )
         },
     ) { paddingValues ->
-        AppPullToRefresh(
-            isRefreshing = homepageState.isRefreshing,
-            onRefresh = onRefreshHomepage,
-            modifier = Modifier.fillMaxSize(),
-            scrollBehavior = scrollBehavior,
-        ) {
+        // 下拉刷新会和越界回弹抢手势，刷新入口改由右上角更多菜单提供。
+        Box(modifier = Modifier.fillMaxSize()) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val dashboardScrollState = rememberScrollState()
                 val moduleNestedScrollConnection = remember(dashboardScrollState) {
@@ -620,7 +629,7 @@ fun HomeScreen(
         )
         HomeSheets(
             sheet = state.activeSheet,
-            visibleSections = state.visibleSections,
+            sections = state.visibleSections,
             onIntent = onIntent,
         )
         AppAlertDialog(
@@ -663,77 +672,220 @@ private fun HomeDashboardContent(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (HomeDashboardSection.RecentBook in state.visibleSections) {
-            RecentBookCard(
-                book = state.recentBook,
-                onClick = { onIntent(HomeIntent.RecentBookClick) },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-            )
-        }
+        // 顺序完全由 visibleSections 决定；统计卡两张并排，所以它们共用第一个出现的位置。
+        var statisticRowRendered = false
+        state.visibleSections.forEach { section ->
+            when (section) {
+                HomeDashboardSection.RecentBook -> RecentBookCard(
+                    book = state.recentBook,
+                    onClick = { onIntent(HomeIntent.RecentBookClick) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
 
-        val hasStatRead = HomeDashboardSection.TotalReadBooks in state.visibleSections
-        val hasStatTime = HomeDashboardSection.TotalReadTime in state.visibleSections
-        if (hasStatRead || hasStatTime) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (hasStatRead) {
-                    StatisticCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Leaderboard,
-                        title = stringResource(R.string.home_total_read_books),
-                        value = state.totalReadBooks.toString(),
-                        unit = stringResource(R.string.unit_books),
-                        onClick = onNavigateToReadRecord,
+                HomeDashboardSection.BookCarousel -> if (state.carouselBooks.isNotEmpty()) {
+                    RandomBooksCarousel(
+                        books = state.carouselBooks,
+                        onBookClick = { url -> onIntent(HomeIntent.CarouselBookClick(url)) },
                     )
                 }
-                if (hasStatTime) {
-                    StatisticCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.AccessTime,
-                        title = stringResource(R.string.home_total_reading_time),
-                        value = String.format(
-                            "%.1f",
-                            state.totalReadTimeMillis / 3_600_000.0,
-                        ),
-                        unit = stringResource(R.string.unit_hours),
-                        onClick = onNavigateToReadRecordOverview,
+
+                HomeDashboardSection.TotalReadBooks,
+                HomeDashboardSection.TotalReadTime -> if (!statisticRowRendered) {
+                    statisticRowRendered = true
+                    StatisticCardsRow(
+                        state = state,
+                        onNavigateToReadRecord = onNavigateToReadRecord,
+                        onNavigateToReadRecordOverview = onNavigateToReadRecordOverview,
                     )
                 }
+
+                HomeDashboardSection.RecentBooks -> if (state.recentBooks.isNotEmpty()) {
+                    RecentBooksRow(
+                        books = state.recentBooks,
+                        onBookClick = { url -> onIntent(HomeIntent.RecentHistoryBookClick(url)) },
+                    )
+                }
+
+                HomeDashboardSection.DailyGoal -> ReadingGoalCard(
+                    todayReadTimeMillis = state.todayReadTimeMillis,
+                    goalMinutes = state.dailyGoalMinutes,
+                    onClick = { onIntent(HomeIntent.ReadingGoalClick) },
+                )
+
+                HomeDashboardSection.WebDavBackup -> WebDavBackupCard(
+                    latestBackup = state.latestBackup,
+                    isLoading = state.isBackupLoading,
+                    isLoadError = state.isBackupLoadError,
+                    isActionRunning = state.isBackupActionRunning,
+                    onBackup = { onIntent(HomeIntent.BackupClick) },
+                    onRestore = { onIntent(HomeIntent.RestoreClick) },
+                    onOpenSettings = { onIntent(HomeIntent.BackupSettingsClick) },
+                    onRetry = { onIntent(HomeIntent.RetryBackupInfo) },
+                )
             }
         }
+    }
+}
 
-        if (HomeDashboardSection.RecentBooks in state.visibleSections && state.recentBooks.isNotEmpty()) {
-            RecentBooksRow(
-                books = state.recentBooks,
-                onBookClick = { url -> onIntent(HomeIntent.RecentHistoryBookClick(url)) },
+@Composable
+private fun StatisticCardsRow(
+    state: HomeUiState,
+    onNavigateToReadRecord: () -> Unit,
+    onNavigateToReadRecordOverview: () -> Unit,
+) {
+    val hasStatRead = HomeDashboardSection.TotalReadBooks in state.visibleSections
+    val hasStatTime = HomeDashboardSection.TotalReadTime in state.visibleSections
+    if (!hasStatRead && !hasStatTime) return
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (hasStatRead) {
+            StatisticCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Leaderboard,
+                title = stringResource(R.string.home_total_read_books),
+                value = state.totalReadBooks.toString(),
+                unit = stringResource(R.string.unit_books),
+                onClick = onNavigateToReadRecord,
             )
         }
-
-        if (HomeDashboardSection.DailyGoal in state.visibleSections) {
-            ReadingGoalCard(
-                todayReadTimeMillis = state.todayReadTimeMillis,
-                goalMinutes = state.dailyGoalMinutes,
-                onClick = { onIntent(HomeIntent.ReadingGoalClick) },
-            )
-        }
-
-        if (HomeDashboardSection.WebDavBackup in state.visibleSections) {
-            WebDavBackupCard(
-                latestBackup = state.latestBackup,
-                isLoading = state.isBackupLoading,
-                isLoadError = state.isBackupLoadError,
-                isActionRunning = state.isBackupActionRunning,
-                onBackup = { onIntent(HomeIntent.BackupClick) },
-                onRestore = { onIntent(HomeIntent.RestoreClick) },
-                onOpenSettings = { onIntent(HomeIntent.BackupSettingsClick) },
-                onRetry = { onIntent(HomeIntent.RetryBackupInfo) },
+        if (hasStatTime) {
+            StatisticCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.AccessTime,
+                title = stringResource(R.string.home_total_reading_time),
+                value = String.format(
+                    "%.1f",
+                    state.totalReadTimeMillis / 3_600_000.0,
+                ),
+                unit = stringResource(R.string.unit_hours),
+                onClick = onNavigateToReadRecordOverview,
             )
         }
     }
 }
+
+/**
+ * 随机推荐轮播：从书架里随机抽几本，自动轮播 + 手动横滑，点封面进书籍详情。
+ */
+@Composable
+private fun RandomBooksCarousel(
+    books: ImmutableList<HomeCarouselBookUi>,
+    onBookClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (books.isEmpty()) return
+    val pagerState = rememberPagerState(pageCount = { books.size })
+    LaunchedEffect(pagerState, books.size) {
+        if (books.size <= 1) return@LaunchedEffect
+        while (true) {
+            delay(CAROUSEL_INTERVAL_MILLIS)
+            if (!pagerState.isScrollInProgress) {
+                val next = (pagerState.currentPage + 1) % books.size
+                pagerState.animateScrollToPage(next)
+            }
+        }
+    }
+    GlassCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AppText(
+                text = stringResource(R.string.home_random_recommend),
+                style = LegadoTheme.typography.titleSmallEmphasized,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                pageSpacing = 12.dp,
+            ) { page ->
+                val book = books[page]
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(
+                            role = Role.Button,
+                            onClick = { onBookClick(book.bookUrl) },
+                        )
+                        .semantics {
+                            contentDescription = bookAccessibilityLabel(book.name, book.author)
+                            role = Role.Button
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(72.dp)
+                            .aspectRatio(5f / 7f)
+                            .clip(RoundedCornerShape(10.dp)),
+                    ) {
+                        BookshelfCover(
+                            name = book.name,
+                            author = book.author,
+                            path = book.coverPath,
+                            sourceOrigin = book.origin,
+                            modifier = Modifier.fillMaxSize(),
+                            coverModifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        AppText(
+                            text = book.name,
+                            style = LegadoTheme.typography.titleMediumEmphasized,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        AppText(
+                            text = book.author,
+                            style = LegadoTheme.typography.bodySmall,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            if (books.size > 1) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    books.indices.forEach { index ->
+                        val selected = pagerState.currentPage == index
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .size(width = if (selected) 16.dp else 6.dp, height = 6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    if (selected) {
+                                        LegadoTheme.colorScheme.primary
+                                    } else {
+                                        LegadoTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                                    }
+                                )
+                                .animateContentSize(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val CAROUSEL_INTERVAL_MILLIS = 4_000L
 
 @Composable
 private fun StatisticCard(
@@ -1281,26 +1433,63 @@ private fun WebDavBackupCard(
 private fun HomeDashboardSettingsSheet(
     show: Boolean,
     onDismissRequest: () -> Unit,
-    visibleSections: Set<HomeDashboardSection>,
+    sections: List<HomeDashboardSection>,
     onSectionVisibilityChanged: (HomeDashboardSection, Boolean) -> Unit,
+    onSectionMove: (HomeDashboardSection, Int) -> Unit,
 ) {
     if (!show) return
+    // 开启的组件按当前顺序排在前面，关闭的组件按默认顺序排在后面。
+    val orderedSections = remember(sections) {
+        sections + HomeDashboardSection.entries.filterNot { it in sections }
+    }
     AppModalBottomSheet(
         show = show,
         onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.home_dashboard_settings),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            for (section in HomeDashboardSection.entries) {
-                TinySwitchSettingItem(
-                    title = stringResource(section.labelRes()),
-                    checked = section in visibleSections,
-                    onCheckedChange = { visible ->
-                        onSectionVisibilityChanged(section, visible)
-                    },
-                )
+            orderedSections.forEach { section ->
+                val visible = section in sections
+                val index = sections.indexOf(section)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        TinySwitchSettingItem(
+                            title = stringResource(section.labelRes()),
+                            checked = visible,
+                            onCheckedChange = { checked ->
+                                onSectionVisibilityChanged(section, checked)
+                            },
+                        )
+                    }
+                    if (visible) {
+                        IconButton(
+                            onClick = { onSectionMove(section, -1) },
+                            enabled = index > 0,
+                        ) {
+                            AppIcon(
+                                imageVector = Icons.Default.KeyboardArrowUp,
+                                contentDescription = stringResource(R.string.a11y_move_up),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        IconButton(
+                            onClick = { onSectionMove(section, 1) },
+                            enabled = index in 0 until sections.lastIndex,
+                        ) {
+                            AppIcon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = stringResource(R.string.a11y_move_down),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1367,15 +1556,18 @@ private fun HomeDialogs(
 @Composable
 private fun HomeSheets(
     sheet: HomeSheet?,
-    visibleSections: Set<HomeDashboardSection>,
+    sections: List<HomeDashboardSection>,
     onIntent: (HomeIntent) -> Unit,
 ) {
     HomeDashboardSettingsSheet(
         show = sheet is HomeSheet.DashboardSettings,
         onDismissRequest = { onIntent(HomeIntent.DismissSheet) },
-        visibleSections = visibleSections,
+        sections = sections,
         onSectionVisibilityChanged = { section, visible ->
             onIntent(HomeIntent.SetSectionVisible(section, visible))
+        },
+        onSectionMove = { section, offset ->
+            onIntent(HomeIntent.MoveSection(section, offset))
         },
     )
     BackupOptionSheet(
@@ -1424,6 +1616,7 @@ private fun AppModalBottomSheet(
 @StringRes
 private fun HomeDashboardSection.labelRes(): Int = when (this) {
     HomeDashboardSection.RecentBook -> R.string.home_recent_reading
+    HomeDashboardSection.BookCarousel -> R.string.home_random_recommend
     HomeDashboardSection.TotalReadBooks -> R.string.home_total_read_books
     HomeDashboardSection.TotalReadTime -> R.string.home_total_reading_time
     HomeDashboardSection.RecentBooks -> R.string.home_recent_books

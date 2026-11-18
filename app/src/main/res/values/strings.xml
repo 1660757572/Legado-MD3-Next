@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--App-->
-    <string name="app_name">Legado</string>
+    <string name="app_name">Legado Next</string>
     <string name="app_name_a">Legado·A</string>
     <string name="receiving_shared_label">Legado·search</string>
     <string name="tip_perm_request_storage">Legado needs storage access to find and read books. Please go "App Settings" to allow "Storage Permission".</string>
@@ -1840,6 +1840,8 @@
     <string name="book_info_default_cover_background">Default cover background</string>
     <string name="book_info_author_search_fallback">Search by author when no related-books rule</string>
     <string name="book_info_author_search_fallback_summary">When the book source has no relatedBooks rule, search the author name on the current source and show other works by the same author as related books</string>
+    <string name="book_info_centered_layout">Centered cover layout</string>
+    <string name="book_info_centered_layout_summary">On: cover centered, with title, author and source centered below it. Off: cover on the left, details on the right</string>
     <string name="book_other_works">Other works by the author</string>
     <string name="book_info_background_blur_off">Show cover without blur</string>
     <string name="book_info_background_blur_on">Show blurred cover</string>
@@ -2505,6 +2507,7 @@
     <string name="home_recent_reading">Recently Reading</string>
     <string name="home_recent_books">Recent reading history</string>
     <string name="home_dashboard_settings">Home components</string>
+    <string name="home_random_recommend">Random picks</string>
     <string name="home_no_recent_reading">No reading history yet</string>
     <string name="home_total_read_books">Books Read</string>
     <string name="home_total_reading_time">Reading Time</string>

@@ -414,6 +414,8 @@ internal fun Preferences.toThemeSettings(): ThemeSettings = ThemeSettings(
         compatDsString(PreferKey.bookInfoDefaultCoverBackground) ?: "on",
     bookInfoAuthorSearchFallback =
         compatDsBoolean(PreferKey.bookInfoAuthorSearchFallback) ?: false,
+    bookInfoCenteredLayout =
+        compatDsBoolean(PreferKey.bookInfoCenteredLayout) ?: false,
     bookInfoInputColor = compatDsInt(PreferKey.bookInfoInputColor) ?: 0,
     backgroundImageLight = compatDsString(PreferKey.bgImage),
     backgroundImageDark = compatDsString(PreferKey.bgImageN),
@@ -498,6 +500,7 @@ internal fun ThemeSettings.toGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookInfoNetworkCoverBackground to bookInfoNetworkCoverBackground,
     PreferKey.bookInfoDefaultCoverBackground to bookInfoDefaultCoverBackground,
     PreferKey.bookInfoAuthorSearchFallback to bookInfoAuthorSearchFallback,
+    PreferKey.bookInfoCenteredLayout to bookInfoCenteredLayout,
     PreferKey.bgImage to backgroundImageLight,
     PreferKey.bgImageN to backgroundImageDark,
     PreferKey.bgImageBlurring to backgroundImageBlurring,

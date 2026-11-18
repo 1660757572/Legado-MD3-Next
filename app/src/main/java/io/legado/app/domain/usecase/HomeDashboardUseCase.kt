@@ -58,14 +58,14 @@ class HomeDashboardUseCase(
     fun observeSelectedSourceSetUrl(): Flow<String?> =
         gateway.observeSelectedSourceSetUrl()
 
-    fun observeVisibleSections(): Flow<Set<HomeDashboardSection>> =
+    fun observeVisibleSections(): Flow<List<HomeDashboardSection>> =
         gateway.observeVisibleSections()
 
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String) {
         gateway.updateSelectedSourceSetUrl(sourceUrl)
     }
 
-    suspend fun updateVisibleSections(sections: Set<HomeDashboardSection>) {
+    suspend fun updateVisibleSections(sections: List<HomeDashboardSection>) {
         gateway.updateVisibleSections(sections)
     }
 

@@ -105,7 +105,7 @@ fun ReaderMoreActionsSheet(
         onDismissRequest = onDismissRequest,
         contentPaddingEnabled = false,
     ) {
-        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
             ReaderBookHeader(book = state.book)
         }
         Spacer(modifier = Modifier.height(16.dp))

@@ -55,6 +55,7 @@ import io.legado.app.ui.book.read.ContentProcessConfigUiState
 import io.legado.app.ui.book.read.ContentProcessItemUi
 import io.legado.app.ui.book.read.ReadBookIntent
 import io.legado.app.ui.book.read.ReplaceRuleItemUi
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.ConfigListEntry
 import io.legado.app.ui.widget.components.ConfigListEntryRow
@@ -126,6 +127,13 @@ fun TextProcessingSheet(
     val maxHeight = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.height.toDp() * 0.72f
     }
+    // 原生 Mochi sheet 的停靠档位自己管理面板高度与正文视口，不再叠加 0.72 屏高上限；
+    // M3 / Miuix 分支仍保留该约束。
+    val sheetModifier = if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        Modifier
+    } else {
+        Modifier.heightIn(max = maxHeight)
+    }
     LaunchedEffect(show) {
         if (show) pagerState.scrollToPage(0)
     }
@@ -135,7 +143,7 @@ fun TextProcessingSheet(
         onDismissRequest = onDismissRequest,
         animateContentSize = false,
         contentPaddingEnabled = false,
-        modifier = Modifier.heightIn(max = maxHeight),
+        modifier = sheetModifier,
     ) {
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
             ReaderBookHeader(book = book)

@@ -264,6 +264,7 @@ object PreferKey {
     const val bookInfoNetworkCoverBackground = "bookInfoNetworkCoverBackground"
     const val bookInfoDefaultCoverBackground = "bookInfoDefaultCoverBackground"
     const val bookInfoAuthorSearchFallback = "bookInfoAuthorSearchFallback"
+    const val bookInfoCenteredLayout = "bookInfoCenteredLayout"
     const val cBackground = "colorBackground"
     const val cBBackground = "colorBottomBackground"
     const val enableDeepPersonalization = "enableDeepPersonalization"

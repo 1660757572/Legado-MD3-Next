@@ -17,11 +17,11 @@ interface HomeDashboardGateway {
 
     fun observeSelectedSourceSetUrl(): Flow<String?>
 
-    fun observeVisibleSections(): Flow<Set<HomeDashboardSection>>
+    fun observeVisibleSections(): Flow<List<HomeDashboardSection>>
 
     suspend fun updateDailyGoal(minutes: Int)
 
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String)
 
-    suspend fun updateVisibleSections(sections: Set<HomeDashboardSection>)
+    suspend fun updateVisibleSections(sections: List<HomeDashboardSection>)
 }

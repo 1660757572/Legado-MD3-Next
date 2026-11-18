@@ -53,6 +53,8 @@ data class ThemeSettings(
     val bookInfoNetworkCoverBackground: String = "on",
     val bookInfoDefaultCoverBackground: String = "on",
     val bookInfoAuthorSearchFallback: Boolean = false,
+    /** 书籍详情页头部：true 时封面居中、书名 / 作者 / 书源居中排在封面下方；false 为封面在左、信息在右。 */
+    val bookInfoCenteredLayout: Boolean = false,
     val bookInfoInputColor: Int = 0,
     val backgroundImageLight: String? = null,
     val backgroundImageDark: String? = null,

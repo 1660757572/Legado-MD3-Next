@@ -308,6 +308,7 @@ object BackupConfig {
         PreferKey.bookInfoNetworkCoverBackground,
         PreferKey.bookInfoDefaultCoverBackground,
         PreferKey.bookInfoAuthorSearchFallback,
+        PreferKey.bookInfoCenteredLayout,
         PreferKey.bookInfoInputColor,
         PreferKey.cBackground,
         PreferKey.cBBackground,

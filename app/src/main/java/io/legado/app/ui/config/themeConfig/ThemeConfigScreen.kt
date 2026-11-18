@@ -536,6 +536,16 @@ fun ThemeConfigScreen(
                             }
                         )
                     }
+                    SearchableSetting("theme.book_info_centered_layout") {
+                        SwitchSettingItem(
+                            title = stringResource(R.string.book_info_centered_layout),
+                            description = stringResource(R.string.book_info_centered_layout_summary),
+                            checked = theme.bookInfoCenteredLayout,
+                            onCheckedChange = { value ->
+                                updateTheme { it.copy(bookInfoCenteredLayout = value) }
+                            }
+                        )
+                    }
                 }
 
                 SplicedColumnGroup(title = stringResource(R.string.eye_protection)) {

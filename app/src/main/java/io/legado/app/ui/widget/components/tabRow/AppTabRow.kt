@@ -1,6 +1,9 @@
 package io.legado.app.ui.widget.components.tabRow
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -42,6 +45,8 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.glass.GlassTabRow
 import top.yukonga.miuix.kmp.glass.GlassTabRowDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.feice.mochi.basic.MochiChip
+import ui.feice.mochi.basic.MochiChipDefaults
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -138,7 +143,16 @@ private fun AppTabRowContent(
                 )
             }
         }
-        ComposeEngine.Material, ComposeEngine.Mochi, ComposeEngine.Coui -> {
+        ComposeEngine.Mochi -> {
+            AppMochiChipRow(
+                tabTitles = tabTitles,
+                selectedTabIndex = selectedTabIndex.coerceIn(tabTitles.indices),
+                onTabSelected = onTabSelected,
+                modifier = modifier,
+                isScrollable = isScrollable,
+            )
+        }
+        ComposeEngine.Material, ComposeEngine.Coui -> {
             if (isScrollable) {
                 val scrollState = rememberScrollState()
                 PrimaryScrollableTabRow(
@@ -307,6 +321,51 @@ private fun AppGlassTabRow(
                 height = GlassTabRowDefaults.NeutralHeight,
                 colors = GlassTabRowDefaults.neutralColors(),
                 samplingEnabled = samplingEnabled,
+            )
+        }
+    }
+}
+
+/**
+ * Mochi 引擎下的单选标签行：一排胶囊 chip（MochiChip），选中项用主色实底，
+ * 与 Material 引擎的 MD3 下划线 tab 区分开。chip 高度是 34dp，上下各 7dp 补齐原先 48dp 的栏高。
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AppMochiChipRow(
+    tabTitles: List<String>,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier,
+    isScrollable: Boolean,
+) {
+    val chipColors = MochiChipDefaults.colors()
+    val scrollState = rememberScrollState()
+    val bringIntoViewRequesters = remember(tabTitles.size) {
+        List(tabTitles.size) { BringIntoViewRequester() }
+    }
+    LaunchedEffect(selectedTabIndex, tabTitles.size) {
+        bringIntoViewRequesters.getOrNull(selectedTabIndex)?.bringIntoView()
+    }
+    val rowModifier = if (isScrollable) {
+        modifier
+            .padding(vertical = 7.dp)
+            .horizontalScroll(scrollState)
+    } else {
+        modifier.padding(vertical = 7.dp)
+    }
+    Row(
+        modifier = rowModifier,
+        horizontalArrangement = Arrangement.spacedBy(MochiChipDefaults.Spacing),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        tabTitles.forEachIndexed { index, title ->
+            MochiChip(
+                label = title,
+                selected = selectedTabIndex == index,
+                onClick = { onTabSelected(index) },
+                colors = chipColors,
+                modifier = Modifier.bringIntoViewRequester(bringIntoViewRequesters[index]),
             )
         }
     }

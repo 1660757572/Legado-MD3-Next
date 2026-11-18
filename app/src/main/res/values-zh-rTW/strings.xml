@@ -1,6 +1,6 @@
 <resources>
     <!--App-->
-    <string name="app_name">閱讀</string>
+    <string name="app_name">閱讀Next</string>
     <string name="app_name_a">閱讀·A</string>
     <string name="receiving_shared_label">閱讀·搜尋</string>
     <string name="tip_perm_request_storage">閱讀需要存取記憶卡權限，請前往「設定」—「應用程式權限」—打開所需權限</string>
@@ -1572,6 +1572,7 @@
     <string name="home_recent_reading">最近閱讀</string>
     <string name="home_recent_books">最近閱讀記錄</string>
     <string name="home_dashboard_settings">首頁元件</string>
+    <string name="home_random_recommend">隨機推薦</string>
     <string name="home_no_recent_reading">暫無閱讀記錄</string>
     <string name="home_total_read_books">累計閱讀</string>
     <string name="home_total_reading_time">閱讀時長</string>
@@ -1876,6 +1877,8 @@
     <string name="book_info_default_cover_background">預設封面背景設定</string>
     <string name="book_info_author_search_fallback">無關聯規則時按作者搜尋</string>
     <string name="book_info_author_search_fallback_summary">書源未設定關聯書籍（relatedBooks）規則時，用目前書源搜尋作者名，把作者的其它作品顯示為關聯書籍</string>
+    <string name="book_info_centered_layout">封面置中版面</string>
+    <string name="book_info_centered_layout_summary">開啟後封面置中，書名、作者、書源置中排在封面下方；關閉時封面在左，資訊在右側</string>
     <string name="book_other_works">作者其它作品</string>
     <string name="book_info_background_blur_off">關閉模糊封面</string>
     <string name="book_info_background_blur_on">開啟模糊封面</string>

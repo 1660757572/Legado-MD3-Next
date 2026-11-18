@@ -27,18 +27,18 @@ class ThemeSettingsMappingTest {
     }
 
     @Test
-    fun `Theme gateway 持久化边界固定为 74 键`() {
+    fun `Theme gateway 持久化边界固定为 75 键`() {
         val actualKeys = ThemeSettings().toGatewayPrefMap().keys
         val expectedKeys = ThemeSettings().expectedGatewayPrefMap().keys
 
-        assertEquals(74, actualKeys.size)
+        assertEquals(75, actualKeys.size)
         assertEquals(expectedKeys, actualKeys)
         assertFalse(PreferKey.customMode in actualKeys)
         assertFalse(PreferKey.bookInfoInputColor in actualKeys)
     }
 
     @Test
-    fun `Theme gateway 74 键写读映射逐字段对应`() {
+    fun `Theme gateway 75 键写读映射逐字段对应`() {
         themeMappingSamples().forEach { expected ->
             assertEquals(expected.expectedGatewayPrefMap(), expected.toGatewayPrefMap())
             assertEquals(
@@ -196,6 +196,7 @@ private fun themeMappingSamples(): List<ThemeSettings> {
         bookInfoNetworkCoverBackground = "network-background",
         bookInfoDefaultCoverBackground = "default-background",
         bookInfoAuthorSearchFallback = true,
+        bookInfoCenteredLayout = true,
         bookInfoInputColor = 0,
         backgroundImageLight = "light-background",
         backgroundImageDark = "dark-background",
@@ -235,6 +236,7 @@ private fun themeMappingSamples(): List<ThemeSettings> {
         base.copy(useHyperOs4Components = false),
         base.copy(useFlexibleTopAppBar = true),
         base.copy(bookInfoFollowCoverColor = true),
+        base.copy(bookInfoCenteredLayout = false),
         base.copy(enableItemDivider = true),
         base.copy(eyeProtectionEnabled = true),
         base.copy(eyeProtectionAutoNight = true),
@@ -295,6 +297,7 @@ private fun ThemeSettings.expectedGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookInfoNetworkCoverBackground to bookInfoNetworkCoverBackground,
     PreferKey.bookInfoDefaultCoverBackground to bookInfoDefaultCoverBackground,
     PreferKey.bookInfoAuthorSearchFallback to bookInfoAuthorSearchFallback,
+    PreferKey.bookInfoCenteredLayout to bookInfoCenteredLayout,
     PreferKey.bgImage to backgroundImageLight,
     PreferKey.bgImageN to backgroundImageDark,
     PreferKey.bgImageBlurring to backgroundImageBlurring,

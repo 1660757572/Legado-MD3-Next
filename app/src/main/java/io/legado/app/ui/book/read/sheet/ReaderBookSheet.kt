@@ -91,6 +91,7 @@ import io.legado.app.ui.book.toc.TocItemUi
 import io.legado.app.ui.book.toc.TocMarkingItemUi
 import io.legado.app.ui.book.toc.TocUiState
 import io.legado.app.ui.book.toc.TocViewModel
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.AppFloatingActionButtonMenu
 import io.legado.app.ui.widget.components.ChapterStatusIcons
@@ -260,9 +261,16 @@ private fun ReaderBookSheet(
     val scope = rememberCoroutineScope()
     var editingBookmark by remember { mutableStateOf<Bookmark?>(null) }
 
-    val density = LocalDensity.current
-    val maxHeight = with(density) {
+    val maxHeight = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.height.toDp() * 0.72f
+    }
+    // 原生 Mochi sheet 的停靠档位（FitContent / Large）已经自己管理面板高度与正文视口，
+    // 再叠一层 0.72 屏高的 heightIn 会把正文压短，目录 / 简介展开后被裁切；
+    // M3 / Miuix 分支仍保留这个上限约束。
+    val sheetModifier = if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        Modifier
+    } else {
+        Modifier.heightIn(max = maxHeight)
     }
 
     LaunchedEffect(show, initialPage) {
@@ -273,8 +281,7 @@ private fun ReaderBookSheet(
         onDismissRequest = onDismissRequest,
         animateContentSize = false,
         contentPaddingEnabled = false,
-        modifier = Modifier
-            .heightIn(max = maxHeight),
+        modifier = sheetModifier,
     ) {
         // 这里的 content 在 Miuix 玻璃 sheet 下由 root dialog host 的另一个 composition
         // 执行。订阅必须发生在消费侧：上游只传稳定的 StateFlow 引用，StateFlow 的值变化
@@ -288,7 +295,7 @@ private fun ReaderBookSheet(
         BackHandler(enabled = show && state.action.selectedIds.isNotEmpty()) {
             onIntent(TocIntent.ClearSelection)
         }
-        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
             ReaderBookHeader(
                 book = state.book,
                 bookSource = bookSource,
@@ -422,7 +429,7 @@ internal fun ReaderBookHeader(
             // 阅读抽屉也是书维度场景，本地优先不跑书源脚本
             bookUrl = book?.bookUrl,
             preferCache = true,
-            modifier = Modifier.width(40.dp),
+            modifier = Modifier.width(50.dp),
         )
         Column(
             modifier = Modifier.weight(1f),

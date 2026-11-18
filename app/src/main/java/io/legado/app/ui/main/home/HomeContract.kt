@@ -4,12 +4,11 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Stable
 import io.legado.app.data.entities.Book
 import io.legado.app.domain.model.DEFAULT_DAILY_READING_GOAL_MINUTES
-import io.legado.app.domain.model.DEFAULT_HOME_DASHBOARD_SECTIONS
+import io.legado.app.domain.model.DEFAULT_HOME_DASHBOARD_SECTION_ORDER
 import io.legado.app.domain.model.HomeDashboardSection
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.collections.immutable.toImmutableList
 
 @Stable
 data class HomeUiState(
@@ -19,9 +18,11 @@ data class HomeUiState(
     val dailyGoalMinutes: Int = DEFAULT_DAILY_READING_GOAL_MINUTES,
     val recentBook: HomeRecentBookUi? = null,
     val recentBooks: ImmutableList<HomeRecentBookUi> = persistentListOf(),
+    val carouselBooks: ImmutableList<HomeCarouselBookUi> = persistentListOf(),
     val selectedSourceSetUrl: String? = null,
-    val visibleSections: ImmutableSet<HomeDashboardSection> =
-        DEFAULT_HOME_DASHBOARD_SECTIONS.toImmutableSet(),
+    /** 顺序即首页渲染顺序；不在列表里表示该组件已关闭。 */
+    val visibleSections: ImmutableList<HomeDashboardSection> =
+        DEFAULT_HOME_DASHBOARD_SECTION_ORDER.toImmutableList(),
     val latestBackup: HomeBackupUi? = null,
     val isBackupLoading: Boolean = true,
     val isBackupLoadError: Boolean = false,
@@ -42,6 +43,15 @@ data class HomeRecentBookUi(
 )
 
 @Stable
+data class HomeCarouselBookUi(
+    val bookUrl: String,
+    val name: String,
+    val author: String,
+    val origin: String?,
+    val coverPath: String?,
+)
+
+@Stable
 data class HomeBackupUi(
     val name: String,
     val lastModify: Long,
@@ -50,11 +60,18 @@ data class HomeBackupUi(
 sealed interface HomeIntent {
     data object RecentBookClick : HomeIntent
     data class RecentHistoryBookClick(val bookUrl: String) : HomeIntent
+    data class CarouselBookClick(val bookUrl: String) : HomeIntent
     data class SelectSourceSet(val sourceUrl: String) : HomeIntent
     data object DashboardSettingsClick : HomeIntent
     data class SetSectionVisible(
         val section: HomeDashboardSection,
         val visible: Boolean,
+    ) : HomeIntent
+
+    /** [offset] -1 上移、+1 下移；越界时不做任何事。 */
+    data class MoveSection(
+        val section: HomeDashboardSection,
+        val offset: Int,
     ) : HomeIntent
     data object ReadingGoalClick : HomeIntent
     data class UpdateReadingGoal(val minutes: Int) : HomeIntent
