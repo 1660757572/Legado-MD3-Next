@@ -465,11 +465,14 @@ fun HomeScreen(
                 subtitle = currentPageSourceName,
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    TopBarActionButton(
-                        onClick = onToggleHomepageManage,
-                        imageVector = AppIcons.Settings,
-                        contentDescription = stringResource(R.string.homepage_module_manage),
-                    )
+                    // 「首页模块」在首页组件里关掉后，模块流与其管理入口一起隐藏。
+                    if (state.homepageModulesEnabled) {
+                        TopBarActionButton(
+                            onClick = onToggleHomepageManage,
+                            imageVector = AppIcons.Settings,
+                            contentDescription = stringResource(R.string.homepage_module_manage),
+                        )
+                    }
                     AppActionMenu(
                         groups = persistentListOf(
                             AppActionGroup(
@@ -579,50 +582,56 @@ fun HomeScreen(
                         )
                     }
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(viewportHeight),
-                    ) {
-                        if (selectedSets.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                AppText(stringResource(R.string.homepage_no_source_sets_selected))
-                            }
-                        } else {
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .nestedScroll(moduleNestedScrollConnection),
-                                key = { index ->
-                                    selectedSets.getOrNull(index)?.sourceUrl ?: index
-                                },
-                            ) { pageIndex ->
-                                val source = selectedSets.getOrNull(pageIndex)
-                                val sourceModules = remember(homepageState.modules, source) {
-                                    homepageState.modules.filter { module ->
-                                        if (source?.isCustomSet == true) {
-                                            val setId =
-                                                HomepageViewModel.customSetIdFromUrl(source.sourceUrl)
-                                            module.customSetId == setId
-                                        } else {
-                                            module.sourceUrl == source?.sourceUrl
-                                        }
-                                    }
-                                }
-                                HomepageModuleFeed(
-                                    modules = sourceModules,
-                                    actions = homepageFeedActions,
+                    // 「首页模块」关闭时不显示模块流，首页只保留上面的组件区。
+                    if (state.homepageModulesEnabled) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(viewportHeight),
+                        ) {
+                            if (selectedSets.isEmpty()) {
+                                Box(
                                     modifier = Modifier.fillMaxSize(),
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    onBookLongClick = onHomepageBookLongClick,
-                                    onErrorClick = { errorMessage = it },
-                                )
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    AppText(
+                                        stringResource(R.string.homepage_no_source_sets_selected)
+                                    )
+                                }
+                            } else {
+                                HorizontalPager(
+                                    state = pagerState,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .nestedScroll(moduleNestedScrollConnection),
+                                    key = { index ->
+                                        selectedSets.getOrNull(index)?.sourceUrl ?: index
+                                    },
+                                ) { pageIndex ->
+                                    val source = selectedSets.getOrNull(pageIndex)
+                                    val sourceModules =
+                                        remember(homepageState.modules, source) {
+                                            homepageState.modules.filter { module ->
+                                                if (source?.isCustomSet == true) {
+                                                    val setId = HomepageViewModel
+                                                        .customSetIdFromUrl(source.sourceUrl)
+                                                    module.customSetId == setId
+                                                } else {
+                                                    module.sourceUrl == source?.sourceUrl
+                                                }
+                                            }
+                                        }
+                                    HomepageModuleFeed(
+                                        modules = sourceModules,
+                                        actions = homepageFeedActions,
+                                        modifier = Modifier.fillMaxSize(),
+                                        sharedTransitionScope = sharedTransitionScope,
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                        onBookLongClick = onHomepageBookLongClick,
+                                        onErrorClick = { errorMessage = it },
+                                    )
+                                }
                             }
                         }
                     }
@@ -645,6 +654,7 @@ fun HomeScreen(
         HomeSheets(
             sheet = state.activeSheet,
             sections = state.visibleSections,
+            homepageModulesEnabled = state.homepageModulesEnabled,
             onIntent = onIntent,
         )
         AppAlertDialog(
@@ -1461,8 +1471,10 @@ private fun HomeDashboardSettingsSheet(
     show: Boolean,
     onDismissRequest: () -> Unit,
     sections: List<HomeDashboardSection>,
+    homepageModulesEnabled: Boolean,
     onSectionVisibilityChanged: (HomeDashboardSection, Boolean) -> Unit,
     onSectionMove: (HomeDashboardSection, Int) -> Unit,
+    onHomepageModulesEnabledChanged: (Boolean) -> Unit,
 ) {
     if (!show) return
     // 开启的组件按当前顺序排在前面，关闭的组件按默认顺序排在后面。
@@ -1518,6 +1530,12 @@ private fun HomeDashboardSettingsSheet(
                     }
                 }
             }
+            // 首页模块是独立的整屏区块，固定在组件区之后，所以只有开关、没有排序箭头。
+            TinySwitchSettingItem(
+                title = stringResource(R.string.home_dashboard_homepage_modules),
+                checked = homepageModulesEnabled,
+                onCheckedChange = onHomepageModulesEnabledChanged,
+            )
         }
     }
 }
@@ -1584,17 +1602,22 @@ private fun HomeDialogs(
 private fun HomeSheets(
     sheet: HomeSheet?,
     sections: List<HomeDashboardSection>,
+    homepageModulesEnabled: Boolean,
     onIntent: (HomeIntent) -> Unit,
 ) {
     HomeDashboardSettingsSheet(
         show = sheet is HomeSheet.DashboardSettings,
         onDismissRequest = { onIntent(HomeIntent.DismissSheet) },
         sections = sections,
+        homepageModulesEnabled = homepageModulesEnabled,
         onSectionVisibilityChanged = { section, visible ->
             onIntent(HomeIntent.SetSectionVisible(section, visible))
         },
         onSectionMove = { section, offset ->
             onIntent(HomeIntent.MoveSection(section, offset))
+        },
+        onHomepageModulesEnabledChanged = { enabled ->
+            onIntent(HomeIntent.SetHomepageModulesEnabled(enabled))
         },
     )
     BackupOptionSheet(

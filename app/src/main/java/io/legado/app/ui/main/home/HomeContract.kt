@@ -23,6 +23,8 @@ data class HomeUiState(
     /** 顺序即首页渲染顺序；不在列表里表示该组件已关闭。 */
     val visibleSections: ImmutableList<HomeDashboardSection> =
         DEFAULT_HOME_DASHBOARD_SECTION_ORDER.toImmutableList(),
+    /** 关闭后隐藏首页模块流与右上角「首页模块管理」入口。 */
+    val homepageModulesEnabled: Boolean = true,
     val latestBackup: HomeBackupUi? = null,
     val isBackupLoading: Boolean = true,
     val isBackupLoadError: Boolean = false,
@@ -72,6 +74,8 @@ sealed interface HomeIntent {
         val section: HomeDashboardSection,
         val offset: Int,
     ) : HomeIntent
+
+    data class SetHomepageModulesEnabled(val enabled: Boolean) : HomeIntent
     data object ReadingGoalClick : HomeIntent
     data class UpdateReadingGoal(val minutes: Int) : HomeIntent
     data object BackupClick : HomeIntent

@@ -26,6 +26,8 @@ data class BookInfoUiState(
     val book: BookInfoBookUi? = null,
     val hasChapters: Boolean = false,
     val tocLoadFailed: Boolean = false,
+    /** 详情页内嵌「目录」分段用的章节列表；与 VM 里的缓存是同一个引用，不做拷贝。 */
+    val tocChapters: List<BookChapter> = emptyList(),
     val webFiles: List<BookInfoWebFile> = emptyList(),
     val highlightedTags: List<HighlightedTag> = emptyList(),
     val kindLabels: List<String> = emptyList(),
@@ -205,6 +207,9 @@ sealed interface BookInfoIntent {
     data object ReadClick : BookInfoIntent
     data object ShelfClick : BookInfoIntent
     data object TocClick : BookInfoIntent
+
+    /** 详情页内嵌目录里点了某一章：直接跳到该章阅读。 */
+    data class ChapterClick(val index: Int) : BookInfoIntent
     data object CoverClick : BookInfoIntent
     data object CoverLongClick : BookInfoIntent
     data object GroupClick : BookInfoIntent

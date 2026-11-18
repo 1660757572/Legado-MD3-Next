@@ -1845,6 +1845,8 @@
     <string name="book_info_cover_scale">Cover size</string>
     <string name="book_info_cover_scale_summary">Enlarge the cover in the book details header, up to 50%% larger. Current: %1$d%%</string>
     <string name="book_info_hide_cover">Hide header cover</string>
+    <string name="book_info_tab_intro">Synopsis</string>
+    <string name="home_dashboard_homepage_modules">Homepage modules</string>
     <string name="book_info_hide_cover_summary">Hide the cover image in the book details header; the space is kept so the title stays in place</string>
     <string name="book_info_backdrop_overlay">Backdrop color overlay</string>
     <string name="book_info_backdrop_overlay_summary">Tint the blurred cover background with the book color. Turn off to keep only the fade into the page background</string>

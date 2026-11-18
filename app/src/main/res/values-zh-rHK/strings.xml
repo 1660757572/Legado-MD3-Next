@@ -2478,6 +2478,8 @@
     <string name="book_info_cover_scale">封面尺寸</string>
     <string name="book_info_cover_scale_summary">放大書籍詳情頁頂部封面，最多放大 50%%。目前：%1$d%%</string>
     <string name="book_info_hide_cover">隱藏頂部封面</string>
+    <string name="book_info_tab_intro">簡介</string>
+    <string name="home_dashboard_homepage_modules">首頁模組</string>
     <string name="book_info_hide_cover_summary">隱藏書籍詳情頁頂部封面，但保留佔位，書名等文字位置不變</string>
     <string name="book_info_backdrop_overlay">背景顏色遮罩</string>
     <string name="book_info_backdrop_overlay_summary">用書籍取色為模糊背景大圖疊加一層著色；關閉後只保留過渡到頁面底色的漸層</string>

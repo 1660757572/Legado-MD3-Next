@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -281,6 +283,8 @@ private fun ReaderBookSheet(
         onDismissRequest = onDismissRequest,
         animateContentSize = false,
         contentPaddingEnabled = false,
+        // 目录正文自带 contentPadding，底边距只能由安全区补：否则最后一行会被小白条压住。
+        contentWindowInsets = { WindowInsets.navigationBars },
         modifier = sheetModifier,
     ) {
         // 这里的 content 在 Miuix 玻璃 sheet 下由 root dialog host 的另一个 composition

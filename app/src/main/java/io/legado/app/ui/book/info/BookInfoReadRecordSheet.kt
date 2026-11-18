@@ -7,10 +7,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Icon
@@ -49,6 +50,24 @@ fun BookReadRecordSheet(
         onDismissRequest = onDismissRequest,
         title = stringResource(R.string.read_record),
     ) {
+        BookReadRecordContent(
+            totalReadTime = totalReadTime,
+            timelineDays = timelineDays,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+/**
+ * 阅读记录正文：详情页内嵌分段与独立 Sheet 共用同一份渲染。
+ */
+@Composable
+fun BookReadRecordContent(
+    totalReadTime: Long,
+    timelineDays: List<ReadRecordTimelineDay>,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             containerColor = LegadoTheme.colorScheme.surfaceContainerLow
@@ -90,27 +109,28 @@ fun BookReadRecordSheet(
                 EmptyMessage(message = stringResource(R.string.empty))
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
+            // 会话条数有限，普通 Column 就够了；内嵌使用时靠外层限高 + 滚动。
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 timelineDays.forEach { day ->
-                    item(key = "header_${day.date}") {
-                        AppText(
-                            text = day.date,
-                            style = LegadoTheme.typography.titleSmall,
-                            color = LegadoTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                    }
-                    items(day.sessions, key = { it.id }) { session ->
+                    AppText(
+                        text = day.date,
+                        style = LegadoTheme.typography.titleSmall,
+                        color = LegadoTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                    day.sessions.forEach { session ->
                         TimelineSessionRow(session = session)
                     }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

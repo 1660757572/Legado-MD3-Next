@@ -9,9 +9,10 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
@@ -115,10 +116,13 @@ fun ReaderMoreActionsSheet(
         MoreActionIds.map { ReadBookButtonConfigItem(it, true) }
     }
 
+    val isListLayout = state.menuConfig.moreActionsLayout == MORE_ACTIONS_LAYOUT_LIST
     AppModalBottomSheet(
         show = show,
         onDismissRequest = onDismissRequest,
         contentPaddingEnabled = false,
+        // 正文自己管理底边距：补上导航栏安全区，小白条后面不再压住最后一行。
+        contentWindowInsets = { WindowInsets.navigationBars },
     ) {
         Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
             ReaderBookHeader(book = state.book)
@@ -146,6 +150,12 @@ fun ReaderMoreActionsSheet(
                 layout = state.menuConfig.moreActionsLayout,
                 onIntent = onIntent,
                 dispatch = ::dispatch,
+                // 列表版式交给外层 Column 约束高度：内容短就贴内容，内容长就占满剩余空间并内部滚动。
+                listModifier = if (isListLayout) {
+                    Modifier.weight(1f, fill = false)
+                } else {
+                    Modifier
+                },
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -169,9 +179,10 @@ private fun MoreActionsPager(
     onIntent: (ReadBookIntent) -> Unit,
     dispatch: (ReadBookIntent) -> Unit,
     layout: String,
+    listModifier: Modifier = Modifier,
 ) {
     if (layout == MORE_ACTIONS_LAYOUT_LIST) {
-        MoreActionsList(actions, state, onIntent, dispatch)
+        MoreActionsList(actions, state, onIntent, dispatch, listModifier)
         return
     }
     val pages = actions.chunked(8).ifEmpty { listOf(emptyList()) }
@@ -264,22 +275,31 @@ private fun MoreActionsList(
     state: ReadBookUiState,
     onIntent: (ReadBookIntent) -> Unit,
     dispatch: (ReadBookIntent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .heightIn(max = 420.dp)
-            .verticalScroll(rememberScrollState())
             .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        actions.forEach { action ->
-            ActionListRow(
-                action = action,
-                state = state,
-                onIntent = onIntent,
-                dispatch = dispatch,
-            )
+        // Mochi 的列表不是裸行堆叠：整块行容器带一层圆角底色，行本身就是它的子项。
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(LegadoTheme.colorScheme.surfaceContainerLow)
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            actions.forEach { action ->
+                ActionListRow(
+                    action = action,
+                    state = state,
+                    onIntent = onIntent,
+                    dispatch = dispatch,
+                )
+            }
         }
     }
 }
@@ -295,7 +315,7 @@ private fun ActionListRow(
     val opensSubMenu = action.id == "image_style" || action.id == "page_anim" ||
             action.id == "change_source" || action.id == "refresh" ||
             action.id == "source_custom_button"
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

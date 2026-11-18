@@ -429,6 +429,7 @@ class BookInfoViewModel(
             BookInfoIntent.ReadClick -> onReadClick()
             BookInfoIntent.ShelfClick -> onShelfClick()
             BookInfoIntent.TocClick -> onTocClick()
+            is BookInfoIntent.ChapterClick -> onChapterClick(intent.index)
             BookInfoIntent.CoverClick -> setSheet(BookInfoSheet.CoverPicker)
             BookInfoIntent.CoverLongClick -> currentBook?.getDisplayCover()?.takeIf { it.isNotBlank() }
                 ?.let { showDialog(BookInfoDialog.PhotoPreview(it)) }
@@ -1460,6 +1461,36 @@ class BookInfoViewModel(
         }
     }
 
+    private fun onChapterClick(index: Int) {
+        val book = currentBook ?: return
+        val chapter = currentChapterList.getOrNull(index) ?: return
+        fun jump() {
+            chapterChanged = true
+            book.durChapterIndex = index
+            book.durChapterPos = 0
+            book.durChapterTitle = chapter.title
+            execute {
+                bookRepository.update(book)
+                book
+            }.onSuccess {
+                currentBook = it
+                syncUiState(isTocLoading = false)
+                openReader(it)
+            }
+        }
+        if (inBookshelf) {
+            jump()
+        } else {
+            // 与目录入口同一口径：未入架先落库「未上架」书和章节，再进阅读。
+            book.addType(BookType.notShelf)
+            saveBook(book) {
+                saveChapterList {
+                    jump()
+                }
+            }
+        }
+    }
+
     private fun updateGroup(groupId: Long) {
         currentBook?.let { book ->
             book.group = groupId
@@ -1809,6 +1840,7 @@ class BookInfoViewModel(
             it.copy(
                 book = currentBook?.toBookInfoBookUi(),
                 hasChapters = currentChapterList.isNotEmpty(),
+                tocChapters = currentChapterList,
                 tocLoadFailed = tocLoadFailed,
                 webFiles = currentWebFiles,
                 relatedBooks = currentRelatedBooks.toImmutableList(),

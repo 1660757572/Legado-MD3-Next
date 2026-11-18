@@ -74,3 +74,9 @@ val DEFAULT_HOME_DASHBOARD_SECTIONS: Set<HomeDashboardSection> =
 
 const val DEFAULT_DAILY_READING_GOAL_MINUTES = 30
 const val MAX_DAILY_READING_GOAL_MINUTES = 24 * 60
+
+/**
+ * 「首页模块」关闭时追加在 [HomeDashboardSection] 持久化串尾部的标记。
+ * [HomeDashboardSection.fromStorage] 只认识组件标识，会忽略这个 token，所以组件顺序不受影响。
+ */
+const val HOMEPAGE_MODULES_DISABLED_TOKEN = "homepage_modules_disabled"

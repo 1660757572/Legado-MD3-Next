@@ -4,10 +4,12 @@ import io.legado.app.data.dao.ReadRecordDao
 import io.legado.app.data.local.preferences.LocalPreferencesKeys
 import io.legado.app.domain.gateway.HomeDashboardGateway
 import io.legado.app.domain.model.DEFAULT_HOME_DASHBOARD_SECTION_ORDER
+import io.legado.app.domain.model.HOMEPAGE_MODULES_DISABLED_TOKEN
 import io.legado.app.domain.model.HomeDashboardSection
 import io.legado.app.domain.model.HomeReadingBook
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 
 class HomeDashboardRepository(
     private val readRecordDao: ReadRecordDao,
@@ -64,11 +66,31 @@ class HomeDashboardRepository(
             "",
         ).map { it.takeIf(String::isNotBlank) }
 
+    /**
+     * 首页组件的持久化串只读一次：组件顺序和「首页模块」开关都编在这一个值里。
+     * 开关用尾部标记 [HOMEPAGE_MODULES_DISABLED_TOKEN] 表示关闭，[HomeDashboardSection.fromStorage]
+     * 会忽略它，所以组件顺序不受影响。
+     */
+    private val dashboardSectionsPreference = localPreferencesRepository.getPreference(
+        LocalPreferencesKeys.HOME_DASHBOARD_SECTIONS,
+        HomeDashboardSection.toStorage(DEFAULT_HOME_DASHBOARD_SECTION_ORDER),
+    )
+
+    /** 最近一次读到的原始串，供两个写入口在「只改自己那部分」时合并。 */
+    @Volatile
+    private var latestSectionsRaw: String = HomeDashboardSection.toStorage(
+        DEFAULT_HOME_DASHBOARD_SECTION_ORDER
+    )
+
     override fun observeVisibleSections(): Flow<List<HomeDashboardSection>> =
-        localPreferencesRepository.getPreference(
-            LocalPreferencesKeys.HOME_DASHBOARD_SECTIONS,
-            HomeDashboardSection.toStorage(DEFAULT_HOME_DASHBOARD_SECTION_ORDER),
-        ).map(HomeDashboardSection::fromStorage)
+        dashboardSectionsPreference
+            .onEach { latestSectionsRaw = it }
+            .map(HomeDashboardSection::fromStorage)
+
+    override fun observeHomepageModulesEnabled(): Flow<Boolean> =
+        dashboardSectionsPreference
+            .onEach { latestSectionsRaw = it }
+            .map(::hasHomepageModulesDisabledToken)
 
     override suspend fun updateDailyGoal(minutes: Int) {
         localPreferencesRepository.updatePreference(
@@ -85,9 +107,36 @@ class HomeDashboardRepository(
     }
 
     override suspend fun updateVisibleSections(sections: List<HomeDashboardSection>) {
+        // 只改组件顺序，保留「首页模块」关闭标记。
+        val modulesDisabled = hasHomepageModulesDisabledToken(latestSectionsRaw)
         localPreferencesRepository.updatePreference(
             LocalPreferencesKeys.HOME_DASHBOARD_SECTIONS,
-            HomeDashboardSection.toStorage(sections.distinct()),
+            encodeSections(sections.distinct(), modulesDisabled),
         )
     }
+
+    override suspend fun updateHomepageModulesEnabled(enabled: Boolean) {
+        // 只改开关，组件顺序沿用当前值。
+        val sections = HomeDashboardSection.fromStorage(latestSectionsRaw)
+        localPreferencesRepository.updatePreference(
+            LocalPreferencesKeys.HOME_DASHBOARD_SECTIONS,
+            encodeSections(sections, !enabled),
+        )
+    }
+
+    private fun encodeSections(
+        sections: List<HomeDashboardSection>,
+        modulesDisabled: Boolean,
+    ): String {
+        val storage = HomeDashboardSection.toStorage(sections)
+        if (!modulesDisabled) return storage
+        return if (storage.isBlank()) {
+            HOMEPAGE_MODULES_DISABLED_TOKEN
+        } else {
+            "$storage,$HOMEPAGE_MODULES_DISABLED_TOKEN"
+        }
+    }
+
+    private fun hasHomepageModulesDisabledToken(raw: String): Boolean =
+        raw.split(',').any { it.trim() == HOMEPAGE_MODULES_DISABLED_TOKEN }
 }

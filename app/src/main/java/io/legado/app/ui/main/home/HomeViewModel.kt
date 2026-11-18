@@ -56,23 +56,36 @@ class HomeViewModel(
     /**
      * 轮播推荐：从书架里随机抽几本。书架数据变化（新增/删除/换封面）才重新抽，
      * 单独的一次抽签结果在多次界面刷新间保持稳定。
+     *
+     * 只抽「未读」书：私密书不出现在任何列表里，读完的书（未读章节数为 0）也没有再推的必要。
      */
     private val carouselBooks = bookRepository.getAllBooks()
         .map { books ->
-            books.shuffled()
+            books.filter { book ->
+                !book.isPrivate && book.getUnreadChapterNum() > 0
+            }.shuffled()
                 .take(CAROUSEL_BOOK_LIMIT)
                 .map { it.toCarouselUi() }
                 .toImmutableList()
         }
+
+    /** 轮播数据与「首页模块」开关同属首页组件配置，一起进 UI 状态。 */
+    private val carouselData = combine(
+        carouselBooks,
+        homeDashboardUseCase.observeHomepageModulesEnabled(),
+    ) { books, modulesEnabled ->
+        books to modulesEnabled
+    }
 
     val uiState = combine(
         dashboardData,
         _backupState,
         _activeDialog,
         _activeSheet,
-        carouselBooks,
+        carouselData,
     ) { dashboardData, backup, dialog, sheet, carousel ->
         val (dashboard, selectedSourceUrl, visibleSections) = dashboardData
+        val (carousel, modulesEnabled) = carousel
         HomeUiState(
             totalReadBooks = dashboard.totalReadBooks,
             totalReadTimeMillis = dashboard.totalReadTimeMillis,
@@ -87,6 +100,7 @@ class HomeViewModel(
             carouselBooks = carousel,
             selectedSourceSetUrl = selectedSourceUrl,
             visibleSections = visibleSections.toImmutableList(),
+            homepageModulesEnabled = modulesEnabled,
             latestBackup = backup.latest?.toUi(),
             isBackupLoading = backup.isLoading,
             isBackupLoadError = backup.isLoadError,
@@ -129,6 +143,11 @@ class HomeViewModel(
                 setSectionVisible(intent.section, intent.visible)
             }
             is HomeIntent.MoveSection -> moveSection(intent.section, intent.offset)
+            is HomeIntent.SetHomepageModulesEnabled -> {
+                viewModelScope.launch {
+                    homeDashboardUseCase.updateHomepageModulesEnabled(intent.enabled)
+                }
+            }
             HomeIntent.ReadingGoalClick -> {
                 _activeDialog.value = HomeDialog.SetReadingGoal(
                     uiState.value.dailyGoalMinutes

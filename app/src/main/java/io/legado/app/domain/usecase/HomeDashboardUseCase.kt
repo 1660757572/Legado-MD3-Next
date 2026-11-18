@@ -61,12 +61,19 @@ class HomeDashboardUseCase(
     fun observeVisibleSections(): Flow<List<HomeDashboardSection>> =
         gateway.observeVisibleSections()
 
+    fun observeHomepageModulesEnabled(): Flow<Boolean> =
+        gateway.observeHomepageModulesEnabled()
+
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String) {
         gateway.updateSelectedSourceSetUrl(sourceUrl)
     }
 
     suspend fun updateVisibleSections(sections: List<HomeDashboardSection>) {
         gateway.updateVisibleSections(sections)
+    }
+
+    suspend fun updateHomepageModulesEnabled(enabled: Boolean) {
+        gateway.updateHomepageModulesEnabled(enabled)
     }
 
     private fun currentDate(): Flow<String> = flow {

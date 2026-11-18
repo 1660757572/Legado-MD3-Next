@@ -48,6 +48,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
@@ -76,6 +77,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -104,6 +106,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
@@ -112,6 +115,7 @@ import coil3.size.Size
 import io.legado.app.R
 import io.legado.app.constant.BookType
 import io.legado.app.data.entities.BaseSource
+import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
@@ -157,6 +161,8 @@ import io.legado.app.ui.widget.components.privacy.PrivateLockedHint
 import io.legado.app.ui.widget.components.privacy.PrivateMaskLine
 import io.legado.app.ui.widget.components.progressIndicator.AppCircularProgressIndicator
 import io.legado.app.ui.widget.components.text.AnimatedTextLine
+import io.legado.app.ui.widget.components.EmptyMessage
+import io.legado.app.ui.widget.components.tabRow.CardTabRow
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.ui.widget.components.text.HtmlContent
 import io.legado.app.ui.widget.components.text.MarkdownBlock
@@ -318,6 +324,8 @@ private fun BookInfoScreenContent(
         M3GlassScrollBehavior(TopAppBarDefaults.exitUntilCollapsedScrollBehavior())
     }
     val listState = rememberLazyListState()
+    // 简介 / 目录 / 阅读记录 三合一的页内分段：0 简介、1 目录、2 阅读记录。
+    var infoContentTab by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -448,73 +456,114 @@ private fun BookInfoScreenContent(
                                             inBookshelf = state.inBookshelf,
                                             hasShelfDuplicates = state.shelfDuplicates.isNotEmpty(),
                                             onShelfClick = { onIntent(BookInfoIntent.ShelfClick) },
-                                            onTocClick = { onIntent(BookInfoIntent.TocClick) },
                                             onGroupClick = { onIntent(BookInfoIntent.GroupClick) },
                                             onSourceClick = { onIntent(BookInfoIntent.ChangeSourceClick) },
-                                            onReadRecordClick = { onIntent(BookInfoIntent.ReadRecordClick) },
                                         )
-                                        if (
-                                            state.characters.isNotEmpty() ||
-                                            state.knowledgeEntries.isNotEmpty() ||
-                                            state.recentEvents.isNotEmpty()
-                                        ) {
-                                            BookInfoCharacters(
-                                                characters = state.characters,
-                                                onCharacterClick = {
-                                                    onIntent(BookInfoIntent.CharacterClick(it))
-                                                },
-                                                onNetworkClick = {
-                                                    onIntent(BookInfoIntent.CharacterNetworkClick)
-                                                },
-                                                onViewAllClick = {
-                                                    onIntent(BookInfoIntent.CharacterListClick)
-                                                },
-                                                onKnowledgeClick = {
-                                                    onIntent(BookInfoIntent.KnowledgeListClick)
-                                                },
-                                                onEventsClick = {
-                                                    onIntent(BookInfoIntent.EventListClick)
+                                        // 目录与阅读记录不再走二级页面/Sheet，改成页内分段切换。
+                                        CardTabRow(
+                                            tabTitles = listOf(
+                                                stringResource(R.string.book_info_tab_intro),
+                                                stringResource(R.string.view_toc),
+                                                stringResource(R.string.read_record),
+                                            ),
+                                            selectedTabIndex = infoContentTab,
+                                            onTabSelected = { infoContentTab = it },
+                                            modifier = Modifier.padding(
+                                                start = 16.dp,
+                                                end = 16.dp,
+                                                top = 4.dp,
+                                            ),
+                                        )
+                                        HorizontalDivider(
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.8f)
+                                                .align(Alignment.CenterHorizontally)
+                                                .padding(vertical = 12.dp),
+                                            thickness = 1.dp,
+                                            color = LegadoTheme.colorScheme.outlineVariant
+                                                .copy(alpha = 0.6f),
+                                        )
+                                        when (infoContentTab) {
+                                            1 -> BookInfoTocSection(
+                                                chapters = state.tocChapters,
+                                                currentIndex = book.durChapterIndex,
+                                                isLoading = state.isTocLoading,
+                                                onChapterClick = { index ->
+                                                    onIntent(BookInfoIntent.ChapterClick(index))
                                                 },
                                             )
-                                        }
-                                        BookInfoSummary(
-                                            book = book,
-                                            tocLoadFailed = state.tocLoadFailed,
-                                            onRemarkClick = { onIntent(BookInfoIntent.RemarkClick) },
-                                            bookSource = state.bookSource,
-                                            onJumpToAnotherApp = jumpToAnotherApp,
-                                            onIntroButtonClick = { name, click ->
-                                                onIntent(
-                                                    BookInfoIntent.IntroButtonClick(
-                                                        name,
-                                                        click
+
+                                            2 -> BookReadRecordContent(
+                                                totalReadTime = state.readRecordTotalTime,
+                                                timelineDays = state.readRecordTimelineDays,
+                                                modifier = Modifier.padding(horizontal = 16.dp),
+                                            )
+
+                                            else -> {
+                                                if (
+                                                    state.characters.isNotEmpty() ||
+                                                    state.knowledgeEntries.isNotEmpty() ||
+                                                    state.recentEvents.isNotEmpty()
+                                                ) {
+                                                    BookInfoCharacters(
+                                                        characters = state.characters,
+                                                        onCharacterClick = {
+                                                            onIntent(BookInfoIntent.CharacterClick(it))
+                                                        },
+                                                        onNetworkClick = {
+                                                            onIntent(BookInfoIntent.CharacterNetworkClick)
+                                                        },
+                                                        onViewAllClick = {
+                                                            onIntent(BookInfoIntent.CharacterListClick)
+                                                        },
+                                                        onKnowledgeClick = {
+                                                            onIntent(BookInfoIntent.KnowledgeListClick)
+                                                        },
+                                                        onEventsClick = {
+                                                            onIntent(BookInfoIntent.EventListClick)
+                                                        },
                                                     )
-                                                )
-                                            },
-                                            onIntroImageClick = { click ->
-                                                onIntent(BookInfoIntent.IntroImageClick(click))
-                                            },
-                                            onIntroImageLongClick = { source ->
-                                                onIntent(BookInfoIntent.IntroImageLongClick(source))
-                                            },
-                                        )
-                                        state.relatedBooks.forEach { module ->
-                                            RelatedBooksBanner(
-                                                title = module.title,
-                                                books = module.books,
-                                                showMore = module.resolvedUrl.isNotBlank(),
-                                                onBookClick = { book, _ ->
-                                                    onIntent(BookInfoIntent.RelatedBookClick(book))
-                                                },
-                                                onMoreClick = {
-                                                    onIntent(
-                                                        BookInfoIntent.RelatedBooksMore(
-                                                            module.title,
-                                                            module.resolvedUrl
+                                                }
+                                                BookInfoSummary(
+                                                    book = book,
+                                                    tocLoadFailed = state.tocLoadFailed,
+                                                    onRemarkClick = { onIntent(BookInfoIntent.RemarkClick) },
+                                                    bookSource = state.bookSource,
+                                                    onJumpToAnotherApp = jumpToAnotherApp,
+                                                    onIntroButtonClick = { name, click ->
+                                                        onIntent(
+                                                            BookInfoIntent.IntroButtonClick(
+                                                                name,
+                                                                click
+                                                            )
                                                         )
+                                                    },
+                                                    onIntroImageClick = { click ->
+                                                        onIntent(BookInfoIntent.IntroImageClick(click))
+                                                    },
+                                                    onIntroImageLongClick = { source ->
+                                                        onIntent(BookInfoIntent.IntroImageLongClick(source))
+                                                    },
+                                                )
+                                                state.relatedBooks.forEach { module ->
+                                                    RelatedBooksBanner(
+                                                        title = module.title,
+                                                        books = module.books,
+                                                        showMore = module.resolvedUrl.isNotBlank(),
+                                                        onBookClick = { book, _ ->
+                                                            onIntent(BookInfoIntent.RelatedBookClick(book))
+                                                        },
+                                                        onMoreClick = {
+                                                            onIntent(
+                                                                BookInfoIntent.RelatedBooksMore(
+                                                                    module.title,
+                                                                    module.resolvedUrl
+                                                                )
+                                                            )
+                                                        },
                                                     )
-                                                },
-                                            )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1565,10 +1614,8 @@ private fun BookInfoActions(
     inBookshelf: Boolean,
     hasShelfDuplicates: Boolean,
     onShelfClick: () -> Unit,
-    onTocClick: () -> Unit,
     onGroupClick: () -> Unit,
     onSourceClick: () -> Unit,
-    onReadRecordClick: () -> Unit,
 ) {
     var awaitingShelfAddition by rememberSaveable { mutableStateOf(false) }
     var showShelfRemoveHint by rememberSaveable { mutableStateOf(false) }
@@ -1610,8 +1657,9 @@ private fun BookInfoActions(
         modifier = Modifier
             .fillMaxWidth()
             .background(LegadoTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            // 只留加入书架 + 换源两颗按钮，成组居中：左右各留 32dp，按钮本身按权重平分剩余宽度。
+            .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         BookInfoActionCard(
             modifier = Modifier.weight(1f),
@@ -1646,21 +1694,9 @@ private fun BookInfoActions(
         )
         BookInfoActionCard(
             modifier = Modifier.weight(1f),
-            icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
-            label = stringResource(R.string.view_toc),
-            onClick = onTocClick
-        )
-        BookInfoActionCard(
-            modifier = Modifier.weight(1f),
             icon = Icons.Default.Code,
             label = stringResource(R.string.change_origin),
             onClick = onSourceClick
-        )
-        BookInfoActionCard(
-            modifier = Modifier.weight(1f),
-            icon = Icons.Default.Timeline,
-            label = stringResource(R.string.read_record),
-            onClick = onReadRecordClick
         )
     }
 }
@@ -1706,6 +1742,96 @@ private fun BookInfoActionCard(
 }
 
 @Composable
+private fun BookInfoTocSection(
+    chapters: List<BookChapter>,
+    currentIndex: Int,
+    isLoading: Boolean,
+    onChapterClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (chapters.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 28.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            EmptyMessage(
+                message = stringResource(
+                    if (isLoading) R.string.loading else R.string.chapter_list_empty
+                )
+            )
+        }
+        return
+    }
+    // 内嵌目录只占一段固定高度，避免把详情页拉成一条无限列表；打开时直接定位到当前章节。
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = currentIndex.coerceIn(0, chapters.lastIndex)
+    )
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(LegadoTheme.colorScheme.surface)
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+    ) {
+        AppText(
+            text = stringResource(R.string.read_chapter_total, chapters.size),
+            style = LegadoTheme.typography.labelMedium,
+            color = LegadoTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 360.dp),
+        ) {
+            itemsIndexed(
+                items = chapters,
+                key = { index, _ -> index },
+            ) { index, chapter ->
+                val selected = index == currentIndex
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(role = Role.Button) { onChapterClick(index) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppText(
+                        text = (index + 1).toString(),
+                        style = LegadoTheme.typography.labelMedium,
+                        color = if (selected) {
+                            LegadoTheme.colorScheme.primary
+                        } else {
+                            LegadoTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.width(44.dp),
+                    )
+                    AppText(
+                        text = chapter.title,
+                        style = if (selected) {
+                            LegadoTheme.typography.bodyMediumEmphasized
+                        } else {
+                            LegadoTheme.typography.bodyMedium
+                        },
+                        color = if (selected) {
+                            LegadoTheme.colorScheme.primary
+                        } else {
+                            LegadoTheme.colorScheme.onSurface
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun BookInfoSummary(
     book: BookInfoBookUi,
     tocLoadFailed: Boolean,
@@ -1723,15 +1849,7 @@ private fun BookInfoSummary(
             .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // 简介区上方的细分割线：只占 80% 宽、居中，上下各留 12dp，避免把区块压得太紧。
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .align(Alignment.CenterHorizontally)
-                .padding(vertical = 12.dp),
-            thickness = 1.dp,
-            color = LegadoTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-        )
+        // 分割线已上移到分段选择器下方，这里直接开始简介内容。
         AnimatedTextLine(
             text = stringResource(R.string.toc_s, book.durChapterTitle ?: stringResource(R.string.loading)),
             style = LegadoTheme.typography.titleMedium,

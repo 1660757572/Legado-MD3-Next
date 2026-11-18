@@ -19,9 +19,14 @@ interface HomeDashboardGateway {
 
     fun observeVisibleSections(): Flow<List<HomeDashboardSection>>
 
+    /** 首页模块（发现页风格的模块流）是否参与首页布局；关闭后连同「首页模块管理」入口一起隐藏。 */
+    fun observeHomepageModulesEnabled(): Flow<Boolean>
+
     suspend fun updateDailyGoal(minutes: Int)
 
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String)
 
     suspend fun updateVisibleSections(sections: List<HomeDashboardSection>)
+
+    suspend fun updateHomepageModulesEnabled(enabled: Boolean)
 }
