@@ -48,6 +48,8 @@ enum class ReadSetting(
     TouchSlop("reading.touch_slop", R.string.page_touch_slop_title, ReadSettingSection.PageControl),
     SliderVibration("reading.slider_vibration", R.string.enable_slider_vibrator, ReadSettingSection.Other),
     TocSheet("reading.toc_sheet", R.string.use_new_toc_sheet, ReadSettingSection.Other),
+    MoreActionsLayout("reading.more_actions_layout", R.string.more_actions_layout_style,
+        ReadSettingSection.Other, R.string.more_actions_layout_style_summary),
     TocSplitLength("reading.toc_split_length", R.string.no_toc_split_length_title, ReadSettingSection.Other),
     SelectionVibration("reading.selection_vibration", R.string.enable_select_vibrator, ReadSettingSection.Other),
     AutoChangeSource("reading.auto_change_source", R.string.auto_change_source, ReadSettingSection.Other),

@@ -546,6 +546,44 @@ fun ThemeConfigScreen(
                             }
                         )
                     }
+                    SearchableSetting("theme.book_info_cover_scale") {
+                        SliderSettingItem(
+                            title = stringResource(R.string.book_info_cover_scale),
+                            description = stringResource(
+                                R.string.book_info_cover_scale_summary,
+                                theme.bookInfoCoverScalePercent,
+                            ),
+                            value = theme.bookInfoCoverScalePercent.toFloat(),
+                            defaultValue = 100f,
+                            valueRange = 100f..150f,
+                            steps = 4,
+                            onValueChange = { value ->
+                                updateTheme {
+                                    it.copy(bookInfoCoverScalePercent = value.toInt())
+                                }
+                            },
+                        )
+                    }
+                    SearchableSetting("theme.book_info_hide_cover") {
+                        SwitchSettingItem(
+                            title = stringResource(R.string.book_info_hide_cover),
+                            description = stringResource(R.string.book_info_hide_cover_summary),
+                            checked = theme.bookInfoHideCover,
+                            onCheckedChange = { value ->
+                                updateTheme { it.copy(bookInfoHideCover = value) }
+                            }
+                        )
+                    }
+                    SearchableSetting("theme.book_info_backdrop_overlay") {
+                        SwitchSettingItem(
+                            title = stringResource(R.string.book_info_backdrop_overlay),
+                            description = stringResource(R.string.book_info_backdrop_overlay_summary),
+                            checked = theme.bookInfoBackdropOverlay,
+                            onCheckedChange = { value ->
+                                updateTheme { it.copy(bookInfoBackdropOverlay = value) }
+                            }
+                        )
+                    }
                 }
 
                 SplicedColumnGroup(title = stringResource(R.string.eye_protection)) {

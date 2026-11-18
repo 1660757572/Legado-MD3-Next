@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -97,6 +98,7 @@ import io.legado.app.lib.permission.Permissions
 import io.legado.app.lib.permission.PermissionsCompat
 import io.legado.app.ui.config.backupConfig.BackupOptionSheet
 import io.legado.app.ui.config.backupConfig.RestoreOptionSheet
+import io.legado.app.ui.main.bookCoverSharedElementKey
 import io.legado.app.ui.main.homepage.HomepageFeedActions
 import io.legado.app.ui.main.homepage.HomepageManageActions
 import io.legado.app.ui.main.homepage.HomepageModuleFeed
@@ -349,6 +351,17 @@ fun HomeRouteScreen(
         onToggleHomepageManage = homepageViewModel::toggleManageMode,
         onNavigateToReadRecord = onNavigateToReadRecord,
         onNavigateToReadRecordOverview = onNavigateToReadRecordOverview,
+        onOpenBookInfo = { book ->
+            // 与阅读页同一个封面共享元素契约：点轮播进详情，不绕过详情直接开读
+            onNavigateToBookInfo(
+                book.name,
+                book.author,
+                book.bookUrl,
+                book.origin,
+                book.coverPath,
+                null,
+            )
+        },
         onHomepageBookLongClick = { book, sharedCoverKey ->
             previewBook = book
             previewSharedCoverKey = sharedCoverKey
@@ -404,6 +417,7 @@ fun HomeScreen(
     onToggleHomepageManage: () -> Unit,
     onNavigateToReadRecord: () -> Unit = {},
     onNavigateToReadRecordOverview: () -> Unit = {},
+    onOpenBookInfo: (HomeCarouselBookUi) -> Unit = {},
     onHomepageBookLongClick: (SearchBook, String?) -> Unit = { _, _ -> },
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -558,6 +572,7 @@ fun HomeScreen(
                             onIntent = onIntent,
                             onNavigateToReadRecord = onNavigateToReadRecord,
                             onNavigateToReadRecordOverview = onNavigateToReadRecordOverview,
+                            onOpenBookInfo = onOpenBookInfo,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -664,6 +679,7 @@ private fun HomeDashboardContent(
     onIntent: (HomeIntent) -> Unit,
     onNavigateToReadRecord: () -> Unit,
     onNavigateToReadRecordOverview: () -> Unit,
+    onOpenBookInfo: (HomeCarouselBookUi) -> Unit,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -686,7 +702,8 @@ private fun HomeDashboardContent(
                 HomeDashboardSection.BookCarousel -> if (state.carouselBooks.isNotEmpty()) {
                     RandomBooksCarousel(
                         books = state.carouselBooks,
-                        onBookClick = { url -> onIntent(HomeIntent.CarouselBookClick(url)) },
+                        // 轮播只做发现入口：点书进详情页，不直接跳阅读
+                        onBookClick = onOpenBookInfo,
                     )
                 }
 
@@ -773,7 +790,7 @@ private fun StatisticCardsRow(
 @Composable
 private fun RandomBooksCarousel(
     books: ImmutableList<HomeCarouselBookUi>,
-    onBookClick: (String) -> Unit,
+    onBookClick: (HomeCarouselBookUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (books.isEmpty()) return
@@ -795,11 +812,21 @@ private fun RandomBooksCarousel(
                 .padding(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AppText(
-                text = stringResource(R.string.home_random_recommend),
-                style = LegadoTheme.typography.titleSmallEmphasized,
+            Row(
                 modifier = Modifier.padding(horizontal = 16.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                AppIcon(
+                    imageVector = Icons.Default.Shuffle,
+                    contentDescription = null,
+                    tint = LegadoTheme.colorScheme.primary,
+                )
+                AppText(
+                    text = stringResource(R.string.home_random_recommend),
+                    style = LegadoTheme.typography.titleMediumEmphasized,
+                )
+            }
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxWidth(),
@@ -813,7 +840,7 @@ private fun RandomBooksCarousel(
                         .clip(RoundedCornerShape(12.dp))
                         .clickable(
                             role = Role.Button,
-                            onClick = { onBookClick(book.bookUrl) },
+                            onClick = { onBookClick(book) },
                         )
                         .semantics {
                             contentDescription = bookAccessibilityLabel(book.name, book.author)
@@ -1026,7 +1053,7 @@ private fun RecentBookCard(
                             coverModifier = Modifier.fillMaxSize(),
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
-                            sharedCoverKey = book.bookUrl?.let { "home_recent_$it" },
+                            sharedCoverKey = book.bookUrl?.let(::bookCoverSharedElementKey),
                         )
                         Column(
                             modifier = Modifier.weight(1f),

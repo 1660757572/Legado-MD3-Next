@@ -407,6 +407,18 @@ fun ReadConfigScreen(
                         )
                     }
 
+                    Setting(ReadSetting.MoreActionsLayout) {
+                        DropdownListSettingItem(
+                            title = stringResource(ReadSetting.MoreActionsLayout.titleRes),
+                            selectedValue = settings.moreActionsLayout,
+                            displayEntries = stringArrayResource(R.array.more_actions_layout_entries),
+                            entryValues = stringArrayResource(R.array.more_actions_layout_values),
+                            onValueChange = {
+                                onIntent(ReadConfigIntent.MoreActionsLayoutChanged(it))
+                            }
+                        )
+                    }
+
                     Setting(ReadSetting.TocSplitLength) {
                         SliderSettingItem(
                             title = stringResource(ReadSetting.TocSplitLength.titleRes),

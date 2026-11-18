@@ -106,6 +106,16 @@
 		<item>Disable</item>
 	</string-array>
 
+	<string-array name="more_actions_layout_entries">
+		<item>Grid (swipe pages)</item>
+		<item>List</item>
+	</string-array>
+
+	<string-array name="more_actions_layout_values">
+		<item>grid</item>
+		<item>list</item>
+	</string-array>
+
 	<string-array name="title_bar_mode">
 		<item>Show in TopBar</item>
 		<item>Show in another line</item>

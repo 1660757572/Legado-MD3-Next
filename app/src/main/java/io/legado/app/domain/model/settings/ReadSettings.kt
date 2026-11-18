@@ -123,6 +123,8 @@ data class ReadSettings(
     val showMenuIcon: Boolean = false,
     val titleBarCompact: Boolean = false,
     val moreActionsConfig: String = "",
+    /** 阅读页「更多」菜单 sheet 的版式：grid（网格分页）/ list（列表）。 */
+    val moreActionsLayout: String = "grid",
     /** 0 表示使用书源提供的弹窗高度。 */
     val paragraphCommentHeightPercent: Int = 0,
 ) {

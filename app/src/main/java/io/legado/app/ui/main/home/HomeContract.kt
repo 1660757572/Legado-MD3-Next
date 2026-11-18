@@ -60,7 +60,6 @@ data class HomeBackupUi(
 sealed interface HomeIntent {
     data object RecentBookClick : HomeIntent
     data class RecentHistoryBookClick(val bookUrl: String) : HomeIntent
-    data class CarouselBookClick(val bookUrl: String) : HomeIntent
     data class SelectSourceSet(val sourceUrl: String) : HomeIntent
     data object DashboardSettingsClick : HomeIntent
     data class SetSectionVisible(

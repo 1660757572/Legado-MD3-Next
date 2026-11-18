@@ -498,6 +498,7 @@ class ReadSettingsRepository(
             showMenuIcon = compatDsValue(Keys.ShowMenuIcon, false),
             titleBarCompact = compatDsValue(Keys.TitleBarCompact, false),
             moreActionsConfig = compatDsValue(Keys.MoreActionsConfig, ""),
+            moreActionsLayout = compatDsValue(Keys.MoreActionsLayout, "grid"),
         )
     }
 
@@ -624,6 +625,7 @@ class ReadSettingsRepository(
         val ShowMenuIcon = booleanPreferencesKey(PreferKey.showMenuIcon)
         val TitleBarCompact = booleanPreferencesKey(PreferKey.titleBarCompact)
         val MoreActionsConfig = stringPreferencesKey(PreferKey.moreActionsConfig)
+        val MoreActionsLayout = stringPreferencesKey(PreferKey.moreActionsLayout)
     }
 }
 
@@ -756,4 +758,5 @@ internal fun ReadSettings.toGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.showMenuIcon to showMenuIcon,
     PreferKey.titleBarCompact to titleBarCompact,
     PreferKey.moreActionsConfig to moreActionsConfig,
+    PreferKey.moreActionsLayout to moreActionsLayout,
 )

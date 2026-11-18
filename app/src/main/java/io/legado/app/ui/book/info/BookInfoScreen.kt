@@ -64,6 +64,7 @@ import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -133,7 +134,6 @@ import io.legado.app.ui.theme.rememberImageSeedColor
 import io.legado.app.ui.theme.rememberThemeOverride
 import io.legado.app.ui.theme.responsiveHazeEffectFixedStyle
 import io.legado.app.ui.theme.MiuixBlurredTopBar
-import io.legado.app.ui.widget.components.AppPullToRefresh
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.AppTextField
 import io.legado.app.ui.widget.components.WebViewContainerCompose
@@ -237,6 +237,7 @@ fun BookInfoScreen(
             usesDefaultCover = usesDefaultCover,
             defaultCoverBackground = state.bookInfoDefaultCoverBackground,
             networkCoverBackground = state.bookInfoNetworkCoverBackground,
+            overlayEnabled = LocalAppUiConfiguration.current.theme.bookInfoBackdropOverlay,
         )
     }
     val bookColorTheme = rememberBookInfoColorTheme(
@@ -402,13 +403,8 @@ private fun BookInfoScreenContent(
                             usesDefaultCover = usesDefaultCover,
                             onNetworkCoverLoadError = onNetworkCoverLoadError,
                         )
-                        AppPullToRefresh(
-                            modifier = Modifier.fillMaxSize(),
-                            isRefreshing = state.isTocLoading,
-                            onRefresh = { onIntent(BookInfoIntent.MenuAction(BookInfoMenuAction.Refresh)) },
-                            topPadding = paddingValues.calculateTopPadding(),
-                            scrollBehavior = scrollBehavior
-                        ) {
+                        // 下拉刷新手势会和越界回弹抢事件，刷新入口只留菜单里的「刷新」。
+                        Box(modifier = Modifier.fillMaxSize()) {
                             LazyColumn(
                                 state = listState,
                                 modifier = Modifier.fillMaxSize(),
@@ -912,13 +908,17 @@ private fun resolveBookInfoBackdropStyle(
     usesDefaultCover: Boolean,
     defaultCoverBackground: String,
     networkCoverBackground: String,
+    overlayEnabled: Boolean = true,
 ): BookInfoBackdropStyle {
     val backgroundMode = if (usesDefaultCover) {
         defaultCoverBackground
     } else {
         networkCoverBackground
     }
-    return resolveBookInfoBackdropStyle(backgroundMode)
+    return resolveBookInfoBackdropStyle(
+        backgroundMode = backgroundMode,
+        overlayEnabled = overlayEnabled,
+    )
 }
 
 /** 详情页更多菜单的稳定 ID 前缀：`book_` + `BookInfoMenuAction.name`。 */
@@ -1283,6 +1283,11 @@ private fun BookInfoHeader(
         if (allowCoverRatioAdapt) coverAspectRatioState.floatValue
         else BOOK_INFO_COVER_DEFAULT_ASPECT_RATIO
     )
+    val headerTheme = LocalAppUiConfiguration.current.theme
+    val coverScale = headerTheme.bookInfoCoverScalePercent.coerceIn(100, 150) / 100f
+    val coverWidthDp = BOOK_INFO_COVER_WIDTH_DP * coverScale
+    val coverHeightScaledDp = coverHeightDp * coverScale
+    val hideCover = headerTheme.bookInfoHideCover
     // 比例合法性已在 BookCoverImage 上报前校验，这里直接写入
     val onCoverImageAspectRatio: ((Float) -> Unit)? = if (allowCoverRatioAdapt) {
         { aspectRatio -> coverAspectRatioState.floatValue = aspectRatio }
@@ -1314,13 +1319,14 @@ private fun BookInfoHeader(
             // 两种头部布局共用同一份封面与信息实现：只切换容器排布，
             // 点击、长按菜单和共享元素语义都不分叉
             val headerCover: @Composable () -> Unit = {
+                // 隐藏封面时占位尺寸保持不变，书名 / 作者的位置不会上移。
                 Box(
                     modifier = Modifier
-                        .width(BOOK_INFO_COVER_WIDTH_DP.dp)
-                        .height(coverHeightDp.dp)
+                        .width(coverWidthDp.dp)
+                        .height(coverHeightScaledDp.dp)
                         .then(
-                            // 脱敏时封面不可点：点开大图等于直接泄漏
-                            if (locked) {
+                            // 隐藏或脱敏时封面不可点：点开大图等于直接泄漏
+                            if (hideCover || locked) {
                                 Modifier
                             } else {
                                 Modifier.combinedClickable(
@@ -1330,11 +1336,16 @@ private fun BookInfoHeader(
                             }
                         )
                         .semantics {
-                            role = Role.Button
-                            contentDescription = if (locked) hiddenDescription else coverDescription
+                            if (!hideCover) {
+                                role = Role.Button
+                                contentDescription =
+                                    if (locked) hiddenDescription else coverDescription
+                            }
                         }
                 ) {
-                    if (locked) {
+                    if (hideCover) {
+                        Spacer(modifier = Modifier.fillMaxSize())
+                    } else if (locked) {
                         PrivateLockedCover(
                             name = null,
                             author = null,
@@ -1712,6 +1723,15 @@ private fun BookInfoSummary(
             .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // 简介区上方的细分割线：只占 80% 宽、居中，上下各留 12dp，避免把区块压得太紧。
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .align(Alignment.CenterHorizontally)
+                .padding(vertical = 12.dp),
+            thickness = 1.dp,
+            color = LegadoTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+        )
         AnimatedTextLine(
             text = stringResource(R.string.toc_s, book.durChapterTitle ?: stringResource(R.string.loading)),
             style = LegadoTheme.typography.titleMedium,

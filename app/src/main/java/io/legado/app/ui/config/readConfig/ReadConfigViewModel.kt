@@ -130,6 +130,7 @@ private fun ReadConfigIntent.toSettingsTransform(): (ReadSettings) -> ReadSettin
     is ReadConfigIntent.PageTouchSlopChanged -> { settings -> settings.copy(pageTouchSlop = value) }
     is ReadConfigIntent.SliderVibratorChanged -> { settings -> settings.copy(sliderVibrator = value) }
     is ReadConfigIntent.UseNewTocSheetChanged -> { settings -> settings.copy(useNewTocSheet = value) }
+    is ReadConfigIntent.MoreActionsLayoutChanged -> { settings -> settings.copy(moreActionsLayout = value) }
     is ReadConfigIntent.MaxLengthWithNoTocChanged -> {
         settings -> settings.copy(maxLengthWithNoToc = value.coerceIn(3000, 100000))
     }
@@ -203,6 +204,7 @@ private fun ReadSettings.toUiState(
         pageTouchSlop = pageTouchSlop,
         sliderVibrator = sliderVibrator,
         useNewTocSheet = useNewTocSheet,
+        moreActionsLayout = moreActionsLayout,
         maxLengthWithNoToc = maxLengthWithNoToc,
         selectVibrator = selectVibrator,
         autoChangeSource = autoChangeSource,

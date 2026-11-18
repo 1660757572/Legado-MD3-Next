@@ -265,6 +265,9 @@ object PreferKey {
     const val bookInfoDefaultCoverBackground = "bookInfoDefaultCoverBackground"
     const val bookInfoAuthorSearchFallback = "bookInfoAuthorSearchFallback"
     const val bookInfoCenteredLayout = "bookInfoCenteredLayout"
+    const val bookInfoCoverScalePercent = "bookInfoCoverScalePercent"
+    const val bookInfoHideCover = "bookInfoHideCover"
+    const val bookInfoBackdropOverlay = "bookInfoBackdropOverlay"
     const val cBackground = "colorBackground"
     const val cBBackground = "colorBottomBackground"
     const val enableDeepPersonalization = "enableDeepPersonalization"
@@ -436,6 +439,7 @@ object PreferKey {
     const val showMenuIcon = "showMenuIcon"
     const val titleBarCompact = "titleBarCompact"
     const val moreActionsConfig = "moreActionsConfig"
+    const val moreActionsLayout = "moreActionsLayout"
     const val disableReturnKey = "disableReturnKey"
     const val selectText = "selectText"
     /** 当前生效的段评气泡包目录名（bubblePackages/<dirName>）。 */

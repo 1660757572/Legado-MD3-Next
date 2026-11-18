@@ -217,6 +217,16 @@
         <item>不显示</item>
     </string-array>
 
+    <string-array name="more_actions_layout_entries">
+        <item>网格（左右翻页）</item>
+        <item>列表</item>
+    </string-array>
+
+    <string-array name="more_actions_layout_values">
+        <item>grid</item>
+        <item>list</item>
+    </string-array>
+
     <string-array name="click_image_way_title">
         <item>新版行为</item>
         <item>预览图片</item>

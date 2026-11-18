@@ -489,6 +489,7 @@ data class ReplaceRuleItemUi(
 data class ReadMenuConfig(
     val titleBarIconPosition: Int = 3,
     val showTitleBarIcons: Boolean = false,
+    val moreActionsLayout: String = "grid",
     val readMenuFloatingBottomBar: Boolean = true,
     val readMenuBottomCornerRadius: Int = 32,
     val readMenuIconItemsPerRow: Int = 5,

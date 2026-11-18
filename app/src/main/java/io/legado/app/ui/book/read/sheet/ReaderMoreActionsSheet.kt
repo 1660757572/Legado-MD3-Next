@@ -1,17 +1,23 @@
 package io.legado.app.ui.book.read.sheet
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -31,6 +37,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.FindReplace
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -39,15 +46,23 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.constant.PageAnim
@@ -128,6 +143,7 @@ fun ReaderMoreActionsSheet(
                     onClick = { editing = true },
                 ),
                 state = state,
+                layout = state.menuConfig.moreActionsLayout,
                 onIntent = onIntent,
                 dispatch = ::dispatch,
             )
@@ -152,7 +168,12 @@ private fun MoreActionsPager(
     state: ReadBookUiState,
     onIntent: (ReadBookIntent) -> Unit,
     dispatch: (ReadBookIntent) -> Unit,
+    layout: String,
 ) {
+    if (layout == MORE_ACTIONS_LAYOUT_LIST) {
+        MoreActionsList(actions, state, onIntent, dispatch)
+        return
+    }
     val pages = actions.chunked(8).ifEmpty { listOf(emptyList()) }
     val pagerState = rememberPagerState { pages.size }
     val scrollModifier = if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
@@ -163,40 +184,164 @@ private fun MoreActionsPager(
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().then(scrollModifier)) {
         val itemSize = (maxWidth - 56.dp) / 4
         val rowCount = if (actions.size > 4) 2 else 1
-        HorizontalPager(
-            state = pagerState,
-            // 页数很少，手势频繁停在边界；保留平台 stretch 过冲会在松手后反向回弹。
-            overscrollEffect = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(
-                    itemSize * rowCount + if (rowCount == 2) 24.dp else 16.dp
-                ),
-        ) { page ->
-            val pageItems = pages[page]
-            Column(
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                pageItems.chunked(4).forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        rowItems.forEach { action ->
-                            ActionSquareHost(
-                                action = action,
-                                state = state,
-                                onIntent = onIntent,
-                                dispatch = dispatch,
-                                modifier = Modifier.weight(1f),
-                            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            HorizontalPager(
+                state = pagerState,
+                // 页数很少，手势频繁停在边界；保留平台 stretch 过冲会在松手后反向回弹。
+                overscrollEffect = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(
+                        itemSize * rowCount + if (rowCount == 2) 24.dp else 16.dp
+                    ),
+            ) { page ->
+                val pageItems = pages[page]
+                Column(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    pageItems.chunked(4).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            rowItems.forEach { action ->
+                                ActionSquareHost(
+                                    action = action,
+                                    state = state,
+                                    onIntent = onIntent,
+                                    dispatch = dispatch,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            repeat(4 - rowItems.size) { Spacer(Modifier.weight(1f)) }
                         }
-                        repeat(4 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+            // 分页指示器：没有它用户不知道这一屏还能左右滑
+            if (pages.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    pages.indices.forEach { index ->
+                        val isCurrent = pagerState.currentPage == index
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .height(6.dp)
+                                .width(if (isCurrent) 16.dp else 6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    if (isCurrent) {
+                                        LegadoTheme.colorScheme.primary
+                                    } else {
+                                        LegadoTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                                    }
+                                )
+                                .semantics {
+                                    contentDescription = "${index + 1}/${pages.size}"
+                                    selected = isCurrent
+                                },
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+private const val MORE_ACTIONS_LAYOUT_LIST = "list"
+
+/** 列表版式：单列可滚动，行尾箭头表示可展开二级菜单。 */
+@Composable
+private fun MoreActionsList(
+    actions: List<MoreActionSpec>,
+    state: ReadBookUiState,
+    onIntent: (ReadBookIntent) -> Unit,
+    dispatch: (ReadBookIntent) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 420.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        actions.forEach { action ->
+            ActionListRow(
+                action = action,
+                state = state,
+                onIntent = onIntent,
+                dispatch = dispatch,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionListRow(
+    action: MoreActionSpec,
+    state: ReadBookUiState,
+    onIntent: (ReadBookIntent) -> Unit,
+    dispatch: (ReadBookIntent) -> Unit,
+) {
+    var expanded by remember(action.id) { mutableStateOf(false) }
+    val opensSubMenu = action.id == "image_style" || action.id == "page_anim" ||
+            action.id == "change_source" || action.id == "refresh" ||
+            action.id == "source_custom_button"
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(role = Role.Button) {
+                    if (opensSubMenu) expanded = true else action.onClick()
+                }
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = action.icon,
+                contentDescription = null,
+                tint = if (action.selected) {
+                    LegadoTheme.colorScheme.primary
+                } else {
+                    LegadoTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            Text(
+                text = action.label,
+                style = LegadoTheme.typography.bodyMedium,
+                color = if (action.selected) {
+                    LegadoTheme.colorScheme.primary
+                } else {
+                    LegadoTheme.colorScheme.onSurface
+                },
+                modifier = Modifier.weight(1f),
+            )
+            if (opensSubMenu) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.expand),
+                    tint = LegadoTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        MoreActionPopup(
+            action = action,
+            state = state,
+            onIntent = onIntent,
+            dispatch = dispatch,
+            expanded = expanded,
+            onDismiss = { expanded = false },
+        )
     }
 }
 
@@ -224,104 +369,124 @@ private fun ActionSquareHost(
             },
             onMoreClick = { expanded = true },
         )
-        when (action.id) {
-            "source_custom_button" -> AppActionMenu(
-                groups = persistentListOf(
-                    AppActionGroup(
-                        id = ReaderMoreSourceCustomGroup,
-                        actions = persistentListOf(
-                            AppAction(
-                                id = ReaderMoreSourceCustomLong,
-                                label = stringResource(R.string.source_custom_button_long_action),
-                            ),
+        MoreActionPopup(
+            action = action,
+            state = state,
+            onIntent = onIntent,
+            dispatch = dispatch,
+            expanded = expanded,
+            onDismiss = { expanded = false },
+        )
+    }
+}
+
+/** 网格格子和列表行共用的二级菜单锚点。 */
+@Composable
+private fun BoxScope.MoreActionPopup(
+    action: MoreActionSpec,
+    state: ReadBookUiState,
+    onIntent: (ReadBookIntent) -> Unit,
+    dispatch: (ReadBookIntent) -> Unit,
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+) {
+    when (action.id) {
+        "source_custom_button" -> AppActionMenu(
+            groups = persistentListOf(
+                AppActionGroup(
+                    id = ReaderMoreSourceCustomGroup,
+                    actions = persistentListOf(
+                        AppAction(
+                            id = ReaderMoreSourceCustomLong,
+                            label = stringResource(R.string.source_custom_button_long_action),
                         ),
                     ),
                 ),
-                onAction = { dispatch(ReadBookIntent.SourceCustomButton(true)) },
-                modifier = Modifier.matchParentSize(),
-                embeddedExpanded = expanded,
-                onDismissRequest = { expanded = false },
-                trigger = {},
-            )
+            ),
+            onAction = { dispatch(ReadBookIntent.SourceCustomButton(true)) },
+            modifier = Modifier.matchParentSize(),
+            embeddedExpanded = expanded,
+            onDismissRequest = onDismiss,
+            trigger = {},
+        )
 
-            "change_source" -> AppActionMenu(
-                groups = persistentListOf(
-                    AppActionGroup(
-                        id = ReaderMoreChangeSourceGroup,
-                        actions = persistentListOf(
-                            AppAction(
-                                id = ReaderMoreChangeBookSource,
-                                label = stringResource(R.string.change_origin),
-                            ),
-                            AppAction(
-                                id = ReaderMoreChangeChapterSource,
-                                label = stringResource(R.string.chapter_change_source),
-                            ),
+        "change_source" -> AppActionMenu(
+            groups = persistentListOf(
+                AppActionGroup(
+                    id = ReaderMoreChangeSourceGroup,
+                    actions = persistentListOf(
+                        AppAction(
+                            id = ReaderMoreChangeBookSource,
+                            label = stringResource(R.string.change_origin),
+                        ),
+                        AppAction(
+                            id = ReaderMoreChangeChapterSource,
+                            label = stringResource(R.string.chapter_change_source),
                         ),
                     ),
                 ),
-                onAction = { id ->
-                    when (id) {
-                        ReaderMoreChangeBookSource -> dispatch(ReadBookIntent.MenuBookChangeSource)
-                        ReaderMoreChangeChapterSource ->
-                            dispatch(ReadBookIntent.MenuChapterChangeSource)
-                    }
-                },
-                modifier = Modifier.matchParentSize(),
-                embeddedExpanded = expanded,
-                onDismissRequest = { expanded = false },
-                trigger = {},
-            )
+            ),
+            onAction = { id ->
+                when (id) {
+                    ReaderMoreChangeBookSource -> dispatch(ReadBookIntent.MenuBookChangeSource)
+                    ReaderMoreChangeChapterSource ->
+                        dispatch(ReadBookIntent.MenuChapterChangeSource)
+                }
+            },
+            modifier = Modifier.matchParentSize(),
+            embeddedExpanded = expanded,
+            onDismissRequest = onDismiss,
+            trigger = {},
+        )
 
-            "refresh" -> AppActionMenu(
-                groups = persistentListOf(
-                    AppActionGroup(
-                        id = ReaderMoreRefreshGroup,
-                        actions = persistentListOf(
-                            AppAction(
-                                id = ReaderMoreRefreshDur,
-                                label = stringResource(R.string.menu_refresh_dur),
-                            ),
-                            AppAction(
-                                id = ReaderMoreRefreshAfter,
-                                label = stringResource(R.string.menu_refresh_after),
-                            ),
-                            AppAction(
-                                id = ReaderMoreRefreshAll,
-                                label = stringResource(R.string.menu_refresh_all),
-                            ),
+        "refresh" -> AppActionMenu(
+            groups = persistentListOf(
+                AppActionGroup(
+                    id = ReaderMoreRefreshGroup,
+                    actions = persistentListOf(
+                        AppAction(
+                            id = ReaderMoreRefreshDur,
+                            label = stringResource(R.string.menu_refresh_dur),
+                        ),
+                        AppAction(
+                            id = ReaderMoreRefreshAfter,
+                            label = stringResource(R.string.menu_refresh_after),
+                        ),
+                        AppAction(
+                            id = ReaderMoreRefreshAll,
+                            label = stringResource(R.string.menu_refresh_all),
                         ),
                     ),
                 ),
-                onAction = { id ->
-                    when (id) {
-                        ReaderMoreRefreshDur -> dispatch(ReadBookIntent.MenuRefreshDur)
-                        ReaderMoreRefreshAfter -> dispatch(ReadBookIntent.MenuRefreshAfter)
-                        ReaderMoreRefreshAll -> dispatch(ReadBookIntent.MenuRefreshAll)
-                    }
-                },
-                modifier = Modifier.matchParentSize(),
-                embeddedExpanded = expanded,
-                onDismissRequest = { expanded = false },
-                trigger = {},
-            )
+            ),
+            onAction = { id ->
+                when (id) {
+                    ReaderMoreRefreshDur -> dispatch(ReadBookIntent.MenuRefreshDur)
+                    ReaderMoreRefreshAfter -> dispatch(ReadBookIntent.MenuRefreshAfter)
+                    ReaderMoreRefreshAll -> dispatch(ReadBookIntent.MenuRefreshAll)
+                }
+            },
+            modifier = Modifier.matchParentSize(),
+            embeddedExpanded = expanded,
+            onDismissRequest = onDismiss,
+            trigger = {},
+        )
 
-            "image_style" -> ImageStyleDropdown(
-                expanded = expanded,
-                currentStyle = state.book?.getImageStyle() ?: Book.imgStyleDefault,
-                modifier = Modifier.matchParentSize(),
-                onDismissRequest = { expanded = false },
-                onIntent = onIntent,
-            )
+        "image_style" -> ImageStyleDropdown(
+            expanded = expanded,
+            currentStyle = state.book?.getImageStyle() ?: Book.imgStyleDefault,
+            modifier = Modifier.matchParentSize(),
+            onDismissRequest = onDismiss,
+            onIntent = onIntent,
+        )
 
-            "page_anim" -> PageAnimDropdown(
-                expanded = expanded,
-                currentPageAnim = state.book?.getPageAnim() ?: -1,
-                modifier = Modifier.matchParentSize(),
-                onDismissRequest = { expanded = false },
-                onIntent = onIntent,
-            )
-        }
+        "page_anim" -> PageAnimDropdown(
+            expanded = expanded,
+            currentPageAnim = state.book?.getPageAnim() ?: -1,
+            modifier = Modifier.matchParentSize(),
+            onDismissRequest = onDismiss,
+            onIntent = onIntent,
+        )
     }
 }
 

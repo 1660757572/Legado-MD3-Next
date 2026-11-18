@@ -2122,6 +2122,7 @@ class ReadBookViewModel(
             menuConfig = ReadMenuConfig(
                 titleBarIconPosition = ReadBookConfig.titleBarIconPosition,
                 showTitleBarIcons = ReadBookConfig.showTitleBarIcons,
+                moreActionsLayout = readSettingsRepository.currentSettings.moreActionsLayout,
                 readMenuFloatingBottomBar = ReadBookConfig.readMenuFloatingBottomBar,
                 readMenuBottomCornerRadius = ReadBookConfig.readMenuBottomCornerRadius,
                 readMenuIconItemsPerRow = ReadBookConfig.readMenuIconItemsPerRow,

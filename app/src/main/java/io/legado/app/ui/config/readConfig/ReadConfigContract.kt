@@ -33,6 +33,7 @@ data class ReadConfigUiState(
     val pageTouchSlop: Int = 0,
     val sliderVibrator: Boolean = false,
     val useNewTocSheet: Boolean = true,
+    val moreActionsLayout: String = "grid",
     val maxLengthWithNoToc: Int = 3000,
     val selectVibrator: Boolean = false,
     val autoChangeSource: Boolean = true,
@@ -97,6 +98,7 @@ sealed interface ReadConfigIntent {
     data class PageTouchSlopChanged(val value: Int) : ReadConfigIntent
     data class SliderVibratorChanged(val value: Boolean) : ReadConfigIntent
     data class UseNewTocSheetChanged(val value: Boolean) : ReadConfigIntent
+    data class MoreActionsLayoutChanged(val value: String) : ReadConfigIntent
     data class MaxLengthWithNoTocChanged(val value: Int) : ReadConfigIntent
     data class SelectVibratorChanged(val value: Boolean) : ReadConfigIntent
     data class AutoChangeSourceChanged(val value: Boolean) : ReadConfigIntent

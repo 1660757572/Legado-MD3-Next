@@ -120,7 +120,6 @@ class HomeViewModel(
         when (intent) {
             HomeIntent.RecentBookClick -> openRecentBook()
             is HomeIntent.RecentHistoryBookClick -> openBook(intent.bookUrl)
-            is HomeIntent.CarouselBookClick -> openBook(intent.bookUrl)
             is HomeIntent.SelectSourceSet -> selectSourceSet(intent.sourceUrl)
             HomeIntent.DashboardSettingsClick -> {
                 _activeSheet.value = HomeSheet.DashboardSettings

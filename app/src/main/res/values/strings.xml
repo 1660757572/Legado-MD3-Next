@@ -1842,6 +1842,14 @@
     <string name="book_info_author_search_fallback_summary">When the book source has no relatedBooks rule, search the author name on the current source and show other works by the same author as related books</string>
     <string name="book_info_centered_layout">Centered cover layout</string>
     <string name="book_info_centered_layout_summary">On: cover centered, with title, author and source centered below it. Off: cover on the left, details on the right</string>
+    <string name="book_info_cover_scale">Cover size</string>
+    <string name="book_info_cover_scale_summary">Enlarge the cover in the book details header, up to 50%% larger. Current: %1$d%%</string>
+    <string name="book_info_hide_cover">Hide header cover</string>
+    <string name="book_info_hide_cover_summary">Hide the cover image in the book details header; the space is kept so the title stays in place</string>
+    <string name="book_info_backdrop_overlay">Backdrop color overlay</string>
+    <string name="book_info_backdrop_overlay_summary">Tint the blurred cover background with the book color. Turn off to keep only the fade into the page background</string>
+    <string name="more_actions_layout_style">More menu layout</string>
+    <string name="more_actions_layout_style_summary">Layout of the reader \"more\" action sheet: grid pages or a single scrollable list</string>
     <string name="book_other_works">Other works by the author</string>
     <string name="book_info_background_blur_off">Show cover without blur</string>
     <string name="book_info_background_blur_on">Show blurred cover</string>

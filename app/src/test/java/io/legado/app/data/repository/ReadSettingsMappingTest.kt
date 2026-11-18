@@ -34,11 +34,11 @@ class ReadSettingsMappingTest {
     }
 
     @Test
-    fun `gateway 持久化映射覆盖 ReadSettings 全部 117 个字段`() {
+    fun `gateway 持久化映射覆盖 ReadSettings 全部 118 个字段`() {
         val actualKeys = ReadSettings().toGatewayPrefMap().keys
         val expectedKeys = ReadSettings().expectedGatewayPrefMap().keys
 
-        assertEquals(117, actualKeys.size)
+        assertEquals(118, actualKeys.size)
         assertEquals(expectedKeys, actualKeys)
     }
 
@@ -252,6 +252,7 @@ private fun readSettingsMappingSamples(): List<ReadSettings> {
         base.copy(showMenuIcon = true),
         base.copy(titleBarCompact = true),
         base.copy(moreActionsConfig = "change_source,refresh"),
+        base.copy(moreActionsLayout = "list"),
     )
 }
 
@@ -373,4 +374,5 @@ private fun ReadSettings.expectedGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.showMenuIcon to showMenuIcon,
     PreferKey.titleBarCompact to titleBarCompact,
     PreferKey.moreActionsConfig to moreActionsConfig,
+    PreferKey.moreActionsLayout to moreActionsLayout,
 )
