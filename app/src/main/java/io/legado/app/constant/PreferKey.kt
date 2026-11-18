@@ -267,6 +267,9 @@ object PreferKey {
     const val bookInfoCenteredLayout = "bookInfoCenteredLayout"
     const val bookInfoCoverScalePercent = "bookInfoCoverScalePercent"
     const val bookInfoHideCover = "bookInfoHideCover"
+    const val bookInfoShowGroupTag = "bookInfoShowGroupTag"
+    /** 可复用标签库（换行分隔），书籍信息编辑时可直接点选。 */
+    const val reusableTagLibrary = "reusableTagLibrary"
     const val bookInfoBackdropOverlay = "bookInfoBackdropOverlay"
     const val bookInfoCoverCornerTopStart = "bookInfoCoverCornerTopStart"
     const val bookInfoCoverCornerTopEnd = "bookInfoCoverCornerTopEnd"

@@ -58,6 +58,7 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Timeline
@@ -175,7 +176,10 @@ import io.legado.app.ui.widget.components.topbar.TopBarActionButton
 import io.legado.app.ui.widget.components.topbar.TopBarActionsRow
 import io.legado.app.ui.widget.components.mochi.ProvideMochiScrollBlurProgress
 import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
+import ui.feice.mochi.basic.MochiButton
 import ui.feice.mochi.basic.MochiButtonDefaults
+import ui.feice.mochi.basic.MochiButtonStyle
+import ui.feice.mochi.basic.MochiIconButton
 import ui.feice.mochi.effect.glass.LocalMochiGlassShadow
 import ui.feice.mochi.effect.glass.MochiNoGlassShadow
 import io.legado.app.ui.widget.components.variable.VariableEditorSheet
@@ -359,21 +363,6 @@ private fun BookInfoScreenContent(
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            // 未验证时不提供"直接开始阅读"的入口，避免绕过验证
-            if (!state.privateLocked) {
-                ExtendedFloatingActionButton(
-                    onClick = { onIntent(BookInfoIntent.ReadClick) },
-                    modifier = Modifier.semantics {
-                        contentDescription = readingLabel
-                    },
-                    containerColor = LegadoTheme.colorScheme.primaryContainer,
-                    contentColor = LegadoTheme.colorScheme.onPrimaryContainer,
-                    icon = { AppIcon(Icons.Default.Book, null) },
-                    text = { AppText(stringResource(R.string.reading)) },
-                )
-            }
-        },
         alwaysDrawBehindBars = true,
     ) { paddingValues ->
         val book = state.book
@@ -426,7 +415,7 @@ private fun BookInfoScreenContent(
                                         book = book,
                                         highlightedTags = state.highlightedTags,
                                         kindLabels = state.kindLabels,
-                                        groupNames = state.groupNames,
+                                        groupNames = state.groupNames.takeIf { state.showGroupTag },
                                         onKindClick = onOpenExplore,
                                         onCoverClick = { onIntent(BookInfoIntent.CoverClick) },
                                         onCoverLongClick = { onIntent(BookInfoIntent.CoverLongClick) },
@@ -444,25 +433,17 @@ private fun BookInfoScreenContent(
                                     )
                                 }
                                 item {
-                                    // 内容区顶部用「背景图取色 → 页面底色」的渐变铺开，
-                                    // 否则封面区域一结束就是一块硬边白块。
+                                    // 内容区顶部不再铺不透明底色：背景图的取色延伸要能透到这里，
+                                    // 只在最上面压一层很淡的 scrim 让正文更好读。
                                     val contentFadePx = with(LocalDensity.current) { 180.dp.toPx() }
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
                                                 Brush.verticalGradient(
-                                                    0f to lerp(
-                                                        LegadoTheme.colorScheme.surface,
-                                                        LegadoTheme.colorScheme.secondaryContainer,
-                                                        0.16f,
-                                                    ),
-                                                    0.45f to lerp(
-                                                        LegadoTheme.colorScheme.surface,
-                                                        LegadoTheme.colorScheme.secondaryContainer,
-                                                        0.07f,
-                                                    ),
-                                                    1f to LegadoTheme.colorScheme.surface,
+                                                    0f to LegadoTheme.colorScheme.surface.copy(alpha = 0.18f),
+                                                    0.5f to LegadoTheme.colorScheme.surface.copy(alpha = 0.08f),
+                                                    1f to Color.Transparent,
                                                     startY = 0f,
                                                     endY = contentFadePx,
                                                 )
@@ -475,6 +456,8 @@ private fun BookInfoScreenContent(
                                             onShelfClick = { onIntent(BookInfoIntent.ShelfClick) },
                                             onGroupClick = { onIntent(BookInfoIntent.GroupClick) },
                                             onSourceClick = { onIntent(BookInfoIntent.ChangeSourceClick) },
+                                            onReadClick = { onIntent(BookInfoIntent.ReadClick) },
+                                            readEnabled = !state.privateLocked,
                                         )
                                         // 目录与阅读记录不再走二级页面/Sheet，改成页内分段切换。
                                         CardTabRow(
@@ -1119,6 +1102,13 @@ private fun BookInfoOverflowAction(
                             label = stringResource(R.string.to_top),
                         )
                     )
+                    add(
+                        AppAction(
+                            id = "$MENU_PREFIX${BookInfoMenuAction.ToggleShowGroupTag.name}",
+                            label = stringResource(R.string.book_info_show_group_tag),
+                            checked = state.showGroupTag,
+                        )
+                    )
                     if (book?.isLocal == false) {
                         add(
                             AppAction(
@@ -1219,6 +1209,25 @@ private fun BookInfoBackdrop(
             label = "BackdropCrossfade"
         ) { currentBook ->
             if (currentBook.style.showCover) {
+                // 铺满全屏的同一张封面（重模糊）当作「取色延伸」的底色：
+                // 480dp 封面图结束之后，下面不会直接露出页面白底。
+                BookCoverImage(
+                    name = currentBook.name,
+                    author = currentBook.author,
+                    path = currentBook.coverPath,
+                    sourceOrigin = currentBook.sourceOrigin,
+                    memoryCacheKey = currentBook.coverPath?.let { "$it#book-info-backdrop-extend" },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(30.dp),
+                    contentScale = ContentScale.Crop,
+                    showLoadingPlaceholder = false,
+                    onError = { onNetworkCoverLoadError(currentBook.coverPath) },
+                    requestBuilder = {
+                        // 只要一张糊底，没必要按原图尺寸解码，省一份大图内存。
+                        size(Size(720, 1280))
+                    }
+                )
                 BookCoverImage(
                     name = currentBook.name,
                     author = currentBook.author,
@@ -1267,10 +1276,13 @@ private fun BookInfoBackdrop(
                             0.40f to if (style.applySeedOverlay) {
                                 seedOverlay.copy(alpha = 0.18f)
                             } else {
-                                LegadoTheme.colorScheme.surface.copy(alpha = 0.35f)
+                                Color.Transparent
                             },
-                            0.60f to LegadoTheme.colorScheme.surface.copy(alpha = 0.85f),
-                            0.80f to LegadoTheme.colorScheme.surface,
+                            // 480dp 封面图结束后，取色延伸要一直透到底色：
+                            // 只在接近页面底部时才收成 surface，避免出现一大块纯白。
+                            0.58f to LegadoTheme.colorScheme.surface.copy(alpha = 0.10f),
+                            0.78f to LegadoTheme.colorScheme.surface.copy(alpha = 0.55f),
+                            0.92f to LegadoTheme.colorScheme.surface.copy(alpha = 0.94f),
                             1f to LegadoTheme.colorScheme.surface,
                         )
                     )
@@ -1375,15 +1387,11 @@ private fun BookInfoHeader(
                         Color.Transparent,
                         if (applySeedOverlay) {
                             lerp(LegadoTheme.colorScheme.surface, LegadoTheme.seedColor, 0.08f)
-                                .copy(alpha = 0.5f)
+                                .copy(alpha = 0.10f)
                         } else {
-                            LegadoTheme.colorScheme.surface.copy(alpha = 0.5f)
+                            LegadoTheme.colorScheme.surface.copy(alpha = 0.10f)
                         },
-                        lerp(
-                            LegadoTheme.colorScheme.surface,
-                            LegadoTheme.colorScheme.secondaryContainer,
-                            0.16f,
-                        ),
+                        LegadoTheme.colorScheme.surface.copy(alpha = 0.18f),
                     )
                 )
             )
@@ -1646,6 +1654,8 @@ private fun BookInfoActions(
     onShelfClick: () -> Unit,
     onGroupClick: () -> Unit,
     onSourceClick: () -> Unit,
+    onReadClick: () -> Unit,
+    readEnabled: Boolean,
 ) {
     var awaitingShelfAddition by rememberSaveable { mutableStateOf(false) }
     var showShelfRemoveHint by rememberSaveable { mutableStateOf(false) }
@@ -1683,6 +1693,69 @@ private fun BookInfoActions(
         else -> shelfLabel
     }
 
+    val shelfIcon = when {
+        conflictHighlight -> Icons.Default.Shuffle
+        inBookshelf -> Icons.Outlined.Book
+        else -> Icons.Default.BookmarkAdd
+    }
+    val changeOriginLabel = stringResource(R.string.change_origin)
+    val readingLabel = stringResource(R.string.reading)
+    val shelfClick = {
+        if (!inBookshelf) {
+            awaitingShelfAddition = true
+        } else {
+            awaitingShelfAddition = false
+            showShelfRemoveHint = false
+            showLongPressGroupHint = false
+        }
+        onShelfClick()
+    }
+    // Mochi：左图标（加书架）+ 中主按钮（开始阅读，跟取色）+ 右图标（换源）
+    if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MochiIconButton(
+                onClick = shelfClick,
+                style = MochiButtonStyle.Tonal,
+                size = 52.dp,
+                modifier = Modifier.semantics { contentDescription = shelfDescription },
+            ) {
+                AppIcon(shelfIcon, null, Modifier.size(22.dp))
+            }
+            MochiButton(
+                onClick = onReadClick,
+                enabled = readEnabled,
+                style = MochiButtonStyle.Filled,
+                minHeight = 52.dp,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = readingLabel },
+            ) {
+                AppIcon(Icons.Default.PlayArrow, null, Modifier.size(20.dp))
+                AppText(
+                    text = stringResource(R.string.reading),
+                    style = LegadoTheme.typography.labelLargeEmphasized,
+                )
+            }
+            MochiIconButton(
+                onClick = onSourceClick,
+                style = MochiButtonStyle.Tonal,
+                size = 52.dp,
+                modifier = Modifier.semantics {
+                    contentDescription = changeOriginLabel
+                },
+            ) {
+                AppIcon(Icons.Default.Code, null, Modifier.size(22.dp))
+            }
+        }
+        return
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1693,11 +1766,7 @@ private fun BookInfoActions(
     ) {
         BookInfoActionCard(
             modifier = Modifier.weight(1f),
-            icon = when {
-                conflictHighlight -> Icons.Default.Shuffle
-                inBookshelf -> Icons.Outlined.Book
-                else -> Icons.Default.BookmarkAdd
-            },
+            icon = shelfIcon,
             label = shelfLabel,
             contentDescription = shelfDescription,
             containerColor = if (conflictHighlight) {
@@ -1711,16 +1780,7 @@ private fun BookInfoActions(
                 LegadoTheme.colorScheme.onSurface
             },
             onLongClick = onGroupClick,
-            onClick = {
-                if (!inBookshelf) {
-                    awaitingShelfAddition = true
-                } else {
-                    awaitingShelfAddition = false
-                    showShelfRemoveHint = false
-                    showLongPressGroupHint = false
-                }
-                onShelfClick()
-            },
+            onClick = shelfClick,
         )
         BookInfoActionCard(
             modifier = Modifier.weight(1f),
@@ -1814,8 +1874,9 @@ private fun BookInfoTocSection(
             state = listState,
             modifier = Modifier
                 .fillMaxWidth()
-                // 至少露出约 15 章，避免只露 9 行；再高就由内部滚动接管。
-                .heightIn(max = 600.dp),
+                // 参考阅读页目录 sheet 的密度：限高 500dp，行间距拉开一点。
+                .heightIn(max = 500.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             itemsIndexed(
                 items = chapters,
@@ -1823,16 +1884,15 @@ private fun BookInfoTocSection(
             ) { index, chapter ->
                 val selected = index == currentIndex
                 if (chapter.isVolume) {
-                    // 分卷标题：整行铺开，不带序号，和章节行用底色区分。
+                    // 分卷标题：整行铺开、不可点击、不可折叠，和章节卡片用不同底色区分。
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 6.dp)
                             .background(
-                                color = LegadoTheme.colorScheme.surfaceContainerLow,
-                                shape = RoundedCornerShape(12.dp),
+                                color = LegadoTheme.colorScheme.surfaceContainer,
+                                shape = RoundedCornerShape(14.dp),
                             )
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AppText(
@@ -1847,21 +1907,12 @@ private fun BookInfoTocSection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(LegadoTheme.colorScheme.surfaceContainerLow)
                             .clickable(role = Role.Button) { onChapterClick(index) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AppText(
-                            text = (index + 1).toString(),
-                            style = LegadoTheme.typography.labelMedium,
-                            color = if (selected) {
-                                LegadoTheme.colorScheme.primary
-                            } else {
-                                LegadoTheme.colorScheme.onSurfaceVariant
-                            },
-                            modifier = Modifier.width(44.dp),
-                        )
                         AppText(
                             text = chapter.title,
                             style = if (selected) {
@@ -1879,12 +1930,6 @@ private fun BookInfoTocSection(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                }
-                if (index != chapters.lastIndex) {
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = LegadoTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                    )
                 }
             }
         }

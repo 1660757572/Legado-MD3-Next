@@ -27,18 +27,18 @@ class ThemeSettingsMappingTest {
     }
 
     @Test
-    fun `Theme gateway 持久化边界固定为 82 键`() {
+    fun `Theme gateway 持久化边界固定为 83 键`() {
         val actualKeys = ThemeSettings().toGatewayPrefMap().keys
         val expectedKeys = ThemeSettings().expectedGatewayPrefMap().keys
 
-        assertEquals(82, actualKeys.size)
+        assertEquals(83, actualKeys.size)
         assertEquals(expectedKeys, actualKeys)
         assertFalse(PreferKey.customMode in actualKeys)
         assertFalse(PreferKey.bookInfoInputColor in actualKeys)
     }
 
     @Test
-    fun `Theme gateway 82 键写读映射逐字段对应`() {
+    fun `Theme gateway 83 键写读映射逐字段对应`() {
         themeMappingSamples().forEach { expected ->
             assertEquals(expected.expectedGatewayPrefMap(), expected.toGatewayPrefMap())
             assertEquals(
@@ -311,6 +311,7 @@ private fun ThemeSettings.expectedGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookInfoCoverScalePercent to bookInfoCoverScalePercent,
     PreferKey.bookInfoHideCover to bookInfoHideCover,
     PreferKey.bookInfoBackdropOverlay to bookInfoBackdropOverlay,
+    PreferKey.bookInfoShowGroupTag to bookInfoShowGroupTag,
     PreferKey.bookInfoCoverCornerTopStart to bookInfoCoverCornerTopStart,
     PreferKey.bookInfoCoverCornerTopEnd to bookInfoCoverCornerTopEnd,
     PreferKey.bookInfoCoverCornerBottomEnd to bookInfoCoverCornerBottomEnd,

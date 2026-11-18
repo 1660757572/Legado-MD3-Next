@@ -1504,6 +1504,12 @@
     <string name="unsupport_archivefile_entry">压缩文件内没有支持的文件</string>
     <string name="no_books_dir">没有设置书籍保存位置!</string>
     <string name="delete_alert">删除提醒</string>
+    <string name="book_info_show_group_tag">显示书籍分组</string>
+    <string name="tag_library">标签管理</string>
+    <string name="tag_library_empty">还没有可复用的标签</string>
+    <string name="tag_library_tip">点击标签可从标签库删除</string>
+    <string name="tag_library_quick">从标签库快速添加</string>
+    <string name="explore_sheet_title">发现设置</string>
     <string name="no_book_found_bookshelf">未在书架上找到所选书籍, 是否重新导入？</string>
     <string name="archive_not_found">未能在书籍保存目录找到压缩文件，是否重新导入？</string>
     <string name="privacy_policy">用户隐私与协议</string>
@@ -2056,6 +2062,7 @@
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
     <string name="replace_purify_badge">计数替换净化</string>
     <string name="page_anim_fade">渐变</string>
+    <string name="page_anim_water_ripple">水波纹</string>
     <string name="show_bookshelf_tab_menu">显示更多分组按钮</string>
     <string name="show_unread_new">显示新章节更新标志</string>
     <string name="read_change_all">换源按钮默认弹出整书换源</string>

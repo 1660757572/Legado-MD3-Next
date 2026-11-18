@@ -76,6 +76,11 @@ internal fun AnimatedContentTransitionScope<Scene<NavKey>>.navigationPreset(
         NavigationAnimationStyle.Miuix -> sidePushTransform(forward, direction, swipeEdge != null)
         NavigationAnimationStyle.Scale -> if (forward) sidePushTransform(true, direction, false)
             else scaleTransform(direction, swipeEdge)
+        NavigationAnimationStyle.Mochi -> if (forward) {
+            sidePushTransform(true, direction, swipeEdge != null)
+        } else {
+            mochiBackTransform(direction, swipeEdge)
+        }
     }
 }
 
@@ -102,6 +107,31 @@ private fun sidePushTransform(forward: Boolean, direction: Int, predictive: Bool
 // Gesture and exit curves from InstallerX Revived's Scale preset.
 private val GestureEasing = CubicBezierEasing(0.1f, 0.1f, 0f, 1f)
 private val QuickExitEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+
+/**
+ * Mochi 预测性返回：退场页向后缩小并收成圆角，新页从侧向轻微推入。
+ *
+ * 手势拖动时用线性时长，让 NavDisplay 的进度 seek 与手指位移一一对应；
+ * 松手后（swipeEdge == null）用 Mochi 的弹簧手感收尾。
+ */
+private fun mochiBackTransform(direction: Int, swipeEdge: Int?): ContentTransform {
+    val enterMotion = if (swipeEdge != null) {
+        tween<IntOffset>(durationMillis = 300, easing = LinearEasing)
+    } else {
+        spring(
+            dampingRatio = 1f,
+            stiffness = MochiMotions.stiffnessFor(0.42f),
+            visibilityThreshold = IntOffset(1, 1),
+        )
+    }
+    val enter = slideInHorizontally(enterMotion) { width -> (-direction * width * UnderPageTravel).roundToInt() }
+    val exit = scaleOut(
+        tween(ScaleDurationMillis, easing = if (swipeEdge != null) GestureEasing else QuickExitEasing),
+        targetScale = 0.9f,
+        transformOrigin = TransformOrigin.Center,
+    ) + fadeOut(tween(ScaleDurationMillis))
+    return enter togetherWith exit
+}
 
 private fun scaleTransform(direction: Int, swipeEdge: Int?): ContentTransform {
     val pivot = TransformOrigin(if (swipeEdge == NavigationEvent.EDGE_LEFT) 0.8f else 0.2f, 0.5f)
@@ -140,6 +170,8 @@ internal data class NavigationPageScene(
             NavigationAnimationStyle.Default -> Modifier
             NavigationAnimationStyle.Miuix -> Modifier.fillMaxSize().sidePushSurface(displayLeft)
             NavigationAnimationStyle.Scale -> Modifier.fillMaxSize().scalePageCorners()
+            // Mochi 预测性返回：退场页缩小并收圆角，同侧的玻璃投影/裁剪沿用 sidePush 的表面。
+            NavigationAnimationStyle.Mochi -> Modifier.fillMaxSize().sidePushSurface(displayLeft)
         }
         Box(modifier, propagateMinConstraints = true) { scene.content() }
     }

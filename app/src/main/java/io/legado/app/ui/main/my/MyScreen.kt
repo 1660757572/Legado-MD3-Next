@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.FindReplace
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Settings
@@ -44,6 +45,9 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -118,6 +122,7 @@ fun MyScreen(
     onNavigate: (PrefClickEvent) -> Unit,
 ) {
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
+    var showTagLibrary by remember { mutableStateOf(false) }
     AppScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets.systemBars
@@ -190,6 +195,11 @@ fun MyScreen(
                     imageVector = AppIcons.leadingOrNull(Icons.Default.Sell),
                     onClick = { onNavigate(PrefClickEvent.OpenHighlightTagRule) }
                 )
+                ClickableSettingItem(
+                    title = stringResource(R.string.tag_library),
+                    imageVector = AppIcons.leadingOrNull(Icons.Default.Label),
+                    onClick = { showTagLibrary = true }
+                )
             }
 
             SplicedColumnGroup(
@@ -249,6 +259,10 @@ fun MyScreen(
                 )
             }
         }
+        TagLibrarySheet(
+            show = showTagLibrary,
+            onDismissRequest = { showTagLibrary = false },
+        )
     }
 }
 

@@ -53,7 +53,10 @@ enum class TextAnimationLevel(val storedValue: String) {
 enum class NavigationAnimationStyle(val storedValue: String) {
     Default("default"),
     Miuix("miuix"),
-    Scale("scale");
+    Scale("scale"),
+
+    /** Mochi 风格的预测性返回：退场页缩小 + 圆角收起，配合玻璃投影。 */
+    Mochi("mochi_predictive");
 
     companion object {
         fun fromStoredValue(value: String?): NavigationAnimationStyle = when (value) {

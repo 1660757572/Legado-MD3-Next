@@ -351,6 +351,7 @@ fun ThemeConfigScreen(
                                     NavigationAnimationStyle.Default -> stringResource(R.string.text_default)
                                     NavigationAnimationStyle.Miuix -> "Miuix"
                                     NavigationAnimationStyle.Scale -> stringResource(R.string.navigation_animation_scale)
+                                    NavigationAnimationStyle.Mochi -> "Mochi"
                                 }
                             }.toTypedArray(),
                             entryValues = styles.map { it.storedValue }.toTypedArray(),

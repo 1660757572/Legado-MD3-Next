@@ -90,7 +90,8 @@ class HomeDashboardRepository(
     override fun observeHomepageModulesEnabled(): Flow<Boolean> =
         dashboardSectionsPreference
             .onEach { latestSectionsRaw = it }
-            .map(::hasHomepageModulesDisabledToken)
+            // 串里带「关闭」标记 = 首页模块被关掉，因此这里要取反。
+            .map { raw -> !hasHomepageModulesDisabledToken(raw) }
 
     override suspend fun updateDailyGoal(minutes: Int) {
         localPreferencesRepository.updatePreference(

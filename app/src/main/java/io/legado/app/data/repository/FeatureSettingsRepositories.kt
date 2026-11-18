@@ -411,19 +411,21 @@ internal fun Preferences.toThemeSettings(): ThemeSettings = ThemeSettings(
     useHyperOs4Components = compatDsBoolean(PreferKey.useHyperOs4Components) ?: false,
     bookInfoFollowCoverColor = compatDsBoolean(PreferKey.bookInfoFollowCoverColor) ?: true,
     bookInfoNetworkCoverBackground =
-        compatDsString(PreferKey.bookInfoNetworkCoverBackground) ?: "on",
+        compatDsString(PreferKey.bookInfoNetworkCoverBackground) ?: "off",
     bookInfoDefaultCoverBackground =
         compatDsString(PreferKey.bookInfoDefaultCoverBackground) ?: "on",
     bookInfoAuthorSearchFallback =
         compatDsBoolean(PreferKey.bookInfoAuthorSearchFallback) ?: false,
     bookInfoCenteredLayout =
-        compatDsBoolean(PreferKey.bookInfoCenteredLayout) ?: false,
+        compatDsBoolean(PreferKey.bookInfoCenteredLayout) ?: true,
     bookInfoCoverScalePercent =
         (compatDsInt(PreferKey.bookInfoCoverScalePercent) ?: 100).coerceIn(100, 150),
     bookInfoHideCover =
-        compatDsBoolean(PreferKey.bookInfoHideCover) ?: false,
+        compatDsBoolean(PreferKey.bookInfoHideCover) ?: true,
     bookInfoBackdropOverlay =
-        compatDsBoolean(PreferKey.bookInfoBackdropOverlay) ?: true,
+        compatDsBoolean(PreferKey.bookInfoBackdropOverlay) ?: false,
+    bookInfoShowGroupTag =
+        compatDsBoolean(PreferKey.bookInfoShowGroupTag) ?: true,
     bookInfoCoverCornerTopStart =
         (compatDsInt(PreferKey.bookInfoCoverCornerTopStart) ?: 4).coerceIn(0, 48),
     bookInfoCoverCornerTopEnd =
@@ -520,6 +522,7 @@ internal fun ThemeSettings.toGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookInfoCoverScalePercent to bookInfoCoverScalePercent,
     PreferKey.bookInfoHideCover to bookInfoHideCover,
     PreferKey.bookInfoBackdropOverlay to bookInfoBackdropOverlay,
+    PreferKey.bookInfoShowGroupTag to bookInfoShowGroupTag,
     PreferKey.bookInfoCoverCornerTopStart to bookInfoCoverCornerTopStart,
     PreferKey.bookInfoCoverCornerTopEnd to bookInfoCoverCornerTopEnd,
     PreferKey.bookInfoCoverCornerBottomEnd to bookInfoCoverCornerBottomEnd,

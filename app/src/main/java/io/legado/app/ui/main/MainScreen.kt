@@ -288,7 +288,9 @@ fun MainScreen(
         }
         coroutineScope.launch {
             val distance = kotlin.math.abs(index - pagerState.currentPage)
-            if (distance > 1) {
+            // 相邻页（距离 >= 1）也走渐显：整页位移在 Mochi 下会连续重采玻璃背景，
+            // 与其掉帧不如统一「直接落位 + 渐显」，视觉上仍是平滑过渡。
+            if (distance >= 1) {
                 pagerState.scrollToPage(index)
                 pageFadeAlpha.snapTo(0f)
                 try {

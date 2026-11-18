@@ -1659,6 +1659,9 @@ class BookInfoViewModel(
 
             BookInfoMenuAction.ShowLog -> showAppLog()
             BookInfoMenuAction.TogglePrivate -> toggleBookPrivate()
+            BookInfoMenuAction.ToggleShowGroupTag -> viewModelScope.launch {
+                themeSettingsGateway.update { it.copy(bookInfoShowGroupTag = !it.bookInfoShowGroupTag) }
+            }
         }
     }
 
@@ -2179,6 +2182,7 @@ internal fun BookInfoUiState.withSettings(
     bookInfoFollowCoverColor = theme.bookInfoFollowCoverColor,
     bookInfoNetworkCoverBackground = theme.bookInfoNetworkCoverBackground,
     bookInfoDefaultCoverBackground = theme.bookInfoDefaultCoverBackground,
+    showGroupTag = theme.bookInfoShowGroupTag,
     loadCoverOnlyOnWifi = cover.loadOnlyOnWifi,
     defaultCover = cover.defaultCover,
     defaultCoverDark = cover.defaultCoverDark,

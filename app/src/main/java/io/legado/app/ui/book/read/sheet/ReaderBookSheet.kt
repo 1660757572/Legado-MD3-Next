@@ -335,7 +335,8 @@ private fun ReaderBookSheet(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 8.dp, end = 16.dp),
+                // 分段选择器与下方内容之间要留出间距，否则分段胶囊会和正文贴在一起。
+                .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
         )
         HorizontalPager(
             state = pagerState,

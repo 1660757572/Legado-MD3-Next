@@ -59,8 +59,9 @@ fun ExploreSourceSelectSheet(
     AppModalBottomSheet(
         show = show,
         onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.explore_sheet_title),
     ) {
-        Column {
+        Column(modifier = Modifier.padding(top = 4.dp)) {
             AnimatedVisibility (layoutMode != null) {
                 val isGridMode = layoutMode == 1
                 Row(

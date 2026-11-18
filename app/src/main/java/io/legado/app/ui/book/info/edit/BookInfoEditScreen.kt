@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
+import io.legado.app.data.repository.ReusableTagRepository
 import io.legado.app.ui.book.info.ChangeCoverSheet
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.fadingEdge
@@ -385,7 +389,7 @@ fun BookTypeDropdown(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun KindEditor(
     kindList: List<String>,
@@ -396,6 +400,8 @@ fun KindEditor(
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var editText by remember { mutableStateOf("") }
     val hapticFeedback = LocalHapticFeedback.current
+    val reusableTags by remember { ReusableTagRepository.observeTags() }
+        .collectAsState(initial = ReusableTagRepository.tags())
 
     val listState = rememberLazyListState()
     fun moveKind(from: Int, to: Int) {
@@ -414,6 +420,33 @@ fun KindEditor(
         AppText(
             text = stringResource(R.string.my_tags)
         )
+        if (reusableTags.isNotEmpty()) {
+            // 标签库快速点选：点一下添加，再点一下移除，避免每次手输。
+            AppText(
+                text = stringResource(R.string.tag_library_quick),
+                style = LegadoTheme.typography.labelMedium,
+                color = LegadoTheme.colorScheme.onSurfaceVariant,
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                reusableTags.forEach { tag ->
+                    val added = kindList.contains(tag)
+                    KindChip(
+                        text = tag,
+                        isDragging = false,
+                        onClick = {
+                            onKindListChange(
+                                if (added) kindList - tag else kindList + tag
+                            )
+                        },
+                        modifier = Modifier,
+                    )
+                }
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically

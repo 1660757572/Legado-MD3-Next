@@ -25,6 +25,7 @@ fun PageAnimConfigSheet(
         R.string.page_anim_parallax to PageAnim.parallaxPageAnim,
         R.string.page_anim_scroll to PageAnim.scrollPageAnim,
         R.string.page_anim_fade to PageAnim.fadePageAnim,
+        R.string.page_anim_water_ripple to PageAnim.waterRipplePageAnim,
         R.string.page_anim_none to PageAnim.noAnim,
     )
 

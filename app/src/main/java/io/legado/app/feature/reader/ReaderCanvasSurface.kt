@@ -1759,11 +1759,51 @@ fun ReaderCanvasSurface(
                     }
                 } else Modifier
 
+                // 水波纹：目标页盖在源页之上，按「以触点为圆心的圆」逐步揭示，
+                // 半径跟着翻页进度长到覆盖全屏，收尾时正好露出完整的目标页。
+                val rippleClipModifier = if (
+                    transitionMode == ReaderTransitionMode.WATER_RIPPLE &&
+                    (
+                        (role == PagedLayerRole.NEXT && composedTurnDirection == ReaderTurnDirection.NEXT) ||
+                            (role == PagedLayerRole.PREVIOUS && composedTurnDirection == ReaderTurnDirection.PREVIOUS)
+                        )
+                ) {
+                    val centerX = curlTouchX
+                    val centerY = curlTouchY
+                    Modifier.drawWithContent {
+                        val progress = (abs(displayOffset) / size.width.coerceAtLeast(1f))
+                            .coerceIn(0f, 1f)
+                        if (progress <= 0f) return@drawWithContent
+                        val cx = if (centerX <= 0f && centerY <= 0f) size.width / 2f else centerX
+                        val cy = if (centerX <= 0f && centerY <= 0f) size.height / 2f else centerY
+                        val farthest = maxOf(
+                            hypot(cx, cy),
+                            hypot(size.width - cx, cy),
+                            hypot(cx, size.height - cy),
+                            hypot(size.width - cx, size.height - cy),
+                        )
+                        val radius = farthest * progress
+                        if (radius <= 0f) return@drawWithContent
+                        val path = Path().apply {
+                            addOval(
+                                androidx.compose.ui.geometry.Rect(
+                                    center = Offset(cx, cy),
+                                    radius = radius,
+                                )
+                            )
+                        }
+                        clipPath(path) {
+                            this@drawWithContent.drawContent()
+                        }
+                    }
+                } else Modifier
+
                 ReaderPageCanvas(
                     page, backgroundColor, pageBackgroundImage, backgroundImageAlpha, selectionColor, textAccentColor,
                     Modifier
                         .fillMaxSize()
                         .then(coverClipModifier)
+                        .then(rippleClipModifier)
                         .graphicsLayer {
                             val transform = ReaderPageTransitionPolicy.forComposedWindow(
                                 transition.copy(offsetPx = displayOffset),

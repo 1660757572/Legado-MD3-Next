@@ -19,6 +19,9 @@ object PageAnim {
     const val googleCurlPageAnim = 7
     const val parallaxPageAnim = 8
 
+    /** 水波纹：以触点/点击位置为圆心做圆形揭示。 */
+    const val waterRipplePageAnim = 9
+
     @Target(AnnotationTarget.VALUE_PARAMETER)
     @Retention(AnnotationRetention.SOURCE)
     @IntDef(
@@ -31,6 +34,7 @@ object PageAnim {
         iosCurlPageAnim,
         googleCurlPageAnim,
         parallaxPageAnim,
+        waterRipplePageAnim,
     )
     annotation class Anim
 

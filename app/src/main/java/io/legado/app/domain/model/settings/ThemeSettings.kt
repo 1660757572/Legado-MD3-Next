@@ -50,17 +50,19 @@ data class ThemeSettings(
     val miuixTopBarLiquidGlass: Boolean = false,
     val useHyperOs4Components: Boolean = false,
     val bookInfoFollowCoverColor: Boolean = true,
-    val bookInfoNetworkCoverBackground: String = "on",
+    val bookInfoNetworkCoverBackground: String = "off",
     val bookInfoDefaultCoverBackground: String = "on",
     val bookInfoAuthorSearchFallback: Boolean = false,
     /** 书籍详情页头部：true 时封面居中、书名 / 作者 / 书源居中排在封面下方；false 为封面在左、信息在右。 */
-    val bookInfoCenteredLayout: Boolean = false,
+    val bookInfoCenteredLayout: Boolean = true,
     /** 详情页头部封面缩放，100–150（百分比）。 */
     val bookInfoCoverScalePercent: Int = 100,
     /** 隐藏详情页头部封面，但保留其占位，书名位置不变。 */
-    val bookInfoHideCover: Boolean = false,
+    val bookInfoHideCover: Boolean = true,
     /** 详情页背景大图的取色遮罩；关闭后只保留由封面到页面底色的渐变。 */
-    val bookInfoBackdropOverlay: Boolean = true,
+    val bookInfoBackdropOverlay: Boolean = false,
+    /** 详情页头部标签行是否显示书籍所属分组（右上角菜单可开关）。 */
+    val bookInfoShowGroupTag: Boolean = true,
     /** 详情页封面四角圆角（dp），四个角可分别设置。 */
     val bookInfoCoverCornerTopStart: Int = 4,
     val bookInfoCoverCornerTopEnd: Int = 4,

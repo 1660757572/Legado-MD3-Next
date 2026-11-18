@@ -486,13 +486,25 @@ fun BookshelfScreen(
     val clearSelection = {
         onIntent(BookshelfIntent.ClearSelection)
     }
+    // Mochi 顶栏在选择模式下要放 6 个动作按钮，搜索按钮会被挤扁：
+    // 进入选择模式时直接把搜索栏展开，用栏位做搜索，顶栏留出完整宽度给动作按钮。
+    val mochiSelectionSearch = LegadoTheme.composeEngine == ComposeEngine.Mochi
     val exitEditMode = {
         onIntent(BookshelfIntent.ExitEditMode)
+        if (mochiSelectionSearch) {
+            onIntent(BookshelfIntent.SetSearchMode(false))
+        }
     }
     val toggleEditMode = {
         onIntent(BookshelfIntent.ToggleEditMode)
+        if (mochiSelectionSearch && !isEditMode) {
+            onIntent(BookshelfIntent.SetSearchMode(true))
+        }
     }
     val toggleBookSelection: (String) -> Unit = { bookUrl ->
+        if (mochiSelectionSearch && !isEditMode) {
+            onIntent(BookshelfIntent.SetSearchMode(true))
+        }
         onIntent(BookshelfIntent.ToggleBookSelection(bookUrl))
     }
 
@@ -1321,13 +1333,16 @@ private fun BookshelfTopBar(
         // Selection can show seven actions. Preserve their space alongside the close button.
         compactMiuixActions = uiState.isEditMode,
         actions = {
-            TopBarActionButton(
-                onClick = onSearchClick,
-                onLongClick = onSearchLongClick,
-                onLongClickLabel = if (searchFirst) filterContentDescription else searchContentDescription,
-                imageVector = AppIcons.Search,
-                contentDescription = if (searchFirst) searchContentDescription else filterContentDescription,
-            )
+            // Mochi 选择模式：搜索改由下方常显的搜索栏承担，这里不再占一个动作按钮。
+            if (!(uiState.isEditMode && LegadoTheme.composeEngine == ComposeEngine.Mochi)) {
+                TopBarActionButton(
+                    onClick = onSearchClick,
+                    onLongClick = onSearchLongClick,
+                    onLongClickLabel = if (searchFirst) filterContentDescription else searchContentDescription,
+                    imageVector = AppIcons.Search,
+                    contentDescription = if (searchFirst) searchContentDescription else filterContentDescription,
+                )
+            }
             actions()
         },
         bottomContent = {

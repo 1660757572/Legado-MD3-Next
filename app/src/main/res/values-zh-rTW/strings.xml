@@ -1303,6 +1303,12 @@
     <string name="unsupport_archivefile_entry">压缩文件内没有支持的文件</string>
     <string name="no_books_dir">没有设置书籍保存位置!</string>
     <string name="delete_alert">删除提醒</string>
+    <string name="book_info_show_group_tag">顯示書籍分組</string>
+    <string name="tag_library">標籤管理</string>
+    <string name="tag_library_empty">還沒有可重複使用的標籤</string>
+    <string name="tag_library_tip">點擊標籤可從標籤庫刪除</string>
+    <string name="tag_library_quick">從標籤庫快速添加</string>
+    <string name="explore_sheet_title">發現設定</string>
     <string name="no_book_found_bookshelf">未在书架上找到所选书籍, 是否重新导入？</string>
     <string name="archive_not_found">未能在书籍保存目录找到压缩文件，是否重新导入？</string>
     <string name="privacy_policy">用户隐私与协议</string>
@@ -2102,6 +2108,7 @@
     <string name="title_bar_mode">選單中的標題模式</string>
     <string name="replace_purify_badge">計算取代淨化規則數</string>
     <string name="page_anim_fade">淡入淡出</string>
+    <string name="page_anim_water_ripple">水波紋</string>
     <string name="show_bookshelf_tab_menu">顯示更多書架分頁</string>
     <string name="show_unread_new">顯示新章節標記</string>
     <string name="read_change_all">換源預設套用到整本書</string>

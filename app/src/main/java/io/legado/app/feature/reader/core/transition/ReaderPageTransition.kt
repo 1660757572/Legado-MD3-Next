@@ -12,7 +12,9 @@ enum class ReaderTransitionMode {
     FADE,
     NONE,
     GOOGLE_CURL,
-    PARALLAX;
+    PARALLAX,
+    /** 水波纹：以触点为中心做圆形揭示，圆心固定在手势起点。 */
+    WATER_RIPPLE;
 
     companion object {
         fun fromPageAnim(value: Int): ReaderTransitionMode = when (value) {
@@ -24,6 +26,7 @@ enum class ReaderTransitionMode {
             6 -> IOS_CURL
             7 -> GOOGLE_CURL
             8 -> PARALLAX
+            9 -> WATER_RIPPLE
             else -> NONE
         }
     }
@@ -158,7 +161,7 @@ object ReaderPageTransitionPolicy {
         if (pageExtentPx <= 0f || baseDurationMillis <= 0 || currentOffsetPx == targetOffsetPx) return 0
         // FadePageDelegate animates its normalized alpha for the full configured duration.
         // Horizontal/curl delegates scale duration by their remaining scroll distance.
-        return if (mode == ReaderTransitionMode.FADE) {
+        return if (mode == ReaderTransitionMode.FADE || mode == ReaderTransitionMode.WATER_RIPPLE) {
             baseDurationMillis
         } else {
             settleDurationMillis(currentOffsetPx, targetOffsetPx, pageExtentPx, baseDurationMillis)
@@ -245,6 +248,10 @@ fun ReaderPageTransition.transforms(mode: ReaderTransitionMode): ReaderTransitio
             ReaderTransitionMode.FADE -> ReaderTransitionTransforms(
                 previous = ReaderPageTransform(alpha = progress),
             )
+            // 水波纹：目标页盖在当前页上，由外层按圆形裁剪揭示，这里只声明「谁参与绘制」。
+            ReaderTransitionMode.WATER_RIPPLE -> ReaderTransitionTransforms(
+                previous = ReaderPageTransform(),
+            )
             ReaderTransitionMode.COVER, ReaderTransitionMode.PARALLAX -> ReaderTransitionTransforms(
                 previous = ReaderPageTransform(translationX = -width + offsetPx),
                 current = ReaderPageTransform(translationX =
@@ -259,6 +266,9 @@ fun ReaderPageTransition.transforms(mode: ReaderTransitionMode): ReaderTransitio
         ReaderTurnDirection.NEXT -> when (mode) {
             ReaderTransitionMode.FADE -> ReaderTransitionTransforms(
                 next = ReaderPageTransform(alpha = progress),
+            )
+            ReaderTransitionMode.WATER_RIPPLE -> ReaderTransitionTransforms(
+                next = ReaderPageTransform(),
             )
             ReaderTransitionMode.COVER, ReaderTransitionMode.PARALLAX -> ReaderTransitionTransforms(
                 current = ReaderPageTransform(translationX = offsetPx),

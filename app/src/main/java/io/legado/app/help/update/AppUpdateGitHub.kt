@@ -24,7 +24,7 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
 
     private val otherSettingsGateway get() = org.koin.core.context.GlobalContext.get().get<io.legado.app.domain.gateway.OtherSettingsGateway>()
 
-    private const val repoPath = "HapeLee/legado-with-MD3"
+    private const val repoPath = "1660757572/legado-X"
     private const val githubApiBaseUrl = "https://api.github.com/repos/$repoPath/releases"
     private const val manifestTimeoutMillis = 2500L
     private const val checkTimeoutMillis = 15000L

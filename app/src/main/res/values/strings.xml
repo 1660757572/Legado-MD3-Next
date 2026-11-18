@@ -1569,6 +1569,12 @@
     <string name="unsupport_archivefile_entry">Cannot find supported files in archive</string>
     <string name="no_books_dir">There is no book save location set!</string>
     <string name="delete_alert">Delete Alert</string>
+    <string name="book_info_show_group_tag">Show Group Tag</string>
+    <string name="tag_library">Tag Library</string>
+    <string name="tag_library_empty">No reusable tags yet</string>
+    <string name="tag_library_tip">Tap a tag to remove it.</string>
+    <string name="tag_library_quick">From tag library</string>
+    <string name="explore_sheet_title">Discover Settings</string>
     <string name="no_book_found_bookshelf">No book found in bookshelf, import again ?</string>
     <string name="archive_not_found">Can not find archive selected, continue to download ?</string>
     <string name="privacy_policy">User Privacy and Agreement</string>
@@ -2113,6 +2119,7 @@
     <string name="auto_check_new_backup_s">Check for new backups when opening the app, if new backups are found, prompt the user to update.</string>
     <string name="replace_purify_badge">Count Replacements and Purify Rules</string>
     <string name="page_anim_fade">Fade</string>
+    <string name="page_anim_water_ripple">Water Ripple</string>
     <string name="show_bookshelf_tab_menu">Show More Bookshelf Tab</string>
     <string name="show_unread_new">Show New Chapter Flag</string>
     <string name="read_change_all">Source Change Default Applies to Entire Book</string>
