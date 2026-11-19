@@ -39,6 +39,8 @@ data class AppShellSettings(
     val textAnimationLevel: TextAnimationLevel = TextAnimationLevel.Slide,
     /** Mochi 分类 chip 之间以及内容左右的间距，单位 dp。 */
     val categoryChipSpacing: Int = 12,
+    /** 书籍详情页是否展示书源分类标签；关闭后编辑页也只显示用户自己添加的标签。 */
+    val bookInfoShowSourceTags: Boolean = true,
 )
 
 enum class TextAnimationLevel(val storedValue: String) {

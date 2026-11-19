@@ -9,6 +9,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.BookType
 import io.legado.app.data.entities.Book
 import io.legado.app.data.repository.BookRepository
+import io.legado.app.domain.gateway.AppShellSettingsGateway
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.applyTagGroupRulesForBook
@@ -47,12 +48,14 @@ data class BookInfoEditUiState(
     val originalKindList: List<String> = emptyList(),
     val selectedType: BookInfoEditType = BookInfoEditType.TEXT,
     val fixedType: Boolean = false,
+    val showSourceKinds: Boolean = true,
     val book: Book? = null,
 )
 
 class BookInfoEditViewModel(
     application: Application,
     private val bookRepository: BookRepository,
+    private val appShellSettingsGateway: AppShellSettingsGateway,
 ) : BaseViewModel(application) {
     var book: Book? = null
     private val _uiState = MutableStateFlow(BookInfoEditUiState())
@@ -81,6 +84,7 @@ class BookInfoEditViewModel(
                     originalKindList = customTags,
                     selectedType = selectedType,
                     fixedType = it.config.fixedType,
+                    showSourceKinds = appShellSettingsGateway.currentSettings.bookInfoShowSourceTags,
                     book = it
                 )
             }
@@ -121,6 +125,14 @@ class BookInfoEditViewModel(
 
     fun onFixedTypeChange(fixed: Boolean) {
         _uiState.value = _uiState.value.copy(fixedType = fixed)
+    }
+
+    /** 书源分类标签是全局展示偏好：立即落盘，详情页和下次进入编辑页都读取同一份状态。 */
+    fun onShowSourceKindsChange(show: Boolean) {
+        _uiState.value = _uiState.value.copy(showSourceKinds = show)
+        execute {
+            appShellSettingsGateway.update { it.copy(bookInfoShowSourceTags = show) }
+        }
     }
 
     fun resetCover() {

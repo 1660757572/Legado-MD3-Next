@@ -912,9 +912,9 @@ private fun RandomBooksCarousel(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         AppText(
-                            text = book.name,
+                            text = book.name.wrapBookTitleAfterTenChars(),
                             style = LegadoTheme.typography.titleMediumEmphasized,
-                            maxLines = 2,
+                            maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
                         )
                         AppText(
@@ -1346,6 +1346,14 @@ private fun ReadingGoalCard(
             }
         }
     }
+}
+
+/** 随机推荐书名超过 10 个字时在第十个字后强制换行，避免按容器宽度随意折行。 */
+private fun String.wrapBookTitleAfterTenChars(): String {
+    val count = codePointCount(0, length)
+    if (count <= 10) return this
+    val split = offsetByCodePoints(0, 10)
+    return substring(0, split) + "\n" + substring(split)
 }
 
 @Composable

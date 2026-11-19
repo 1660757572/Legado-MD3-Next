@@ -99,6 +99,7 @@ object PreferKey {
     const val launcherIcon = "launcherIcon"
     const val launcherIconFollowDark = "launcherIconFollowDark"
     const val categoryChipSpacing = "categoryChipSpacing"
+    const val bookInfoShowSourceTags = "bookInfoShowSourceTags"
     const val textSelectAble = "selectText"
     const val shareLayout = "shareLayout"
     const val comicStyleSelect = "comicStyleSelect"

@@ -715,6 +715,7 @@ val appModule = module {
         BookInfoEditViewModel(
             application = get(),
             bookRepository = get(),
+            appShellSettingsGateway = get(),
         )
     }
     viewModel {

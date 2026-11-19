@@ -42,7 +42,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,10 +89,12 @@ import kotlinx.collections.immutable.toImmutableList
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import ui.feice.mochi.basic.MochiButton
+import ui.feice.mochi.basic.MochiButtonDefaults
 import ui.feice.mochi.basic.MochiButtonStyle
 import ui.feice.mochi.basic.MochiChip
 import ui.feice.mochi.basic.MochiChipGroup
 import ui.feice.mochi.basic.MochiTextField
+import ui.feice.mochi.theme.MochiTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -276,14 +277,13 @@ fun BookInfoEditContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        var showSourceKinds by rememberSaveable { mutableStateOf(true) }
         SwitchSettingItem(
             title = stringResource(R.string.show_source_categories),
             description = stringResource(R.string.show_source_categories_summary),
-            checked = showSourceKinds,
-            onCheckedChange = { showSourceKinds = it }
+            checked = uiState.showSourceKinds,
+            onCheckedChange = { viewModel.onShowSourceKindsChange(it) }
         )
-        if (showSourceKinds) {
+        if (uiState.showSourceKinds) {
             Spacer(modifier = Modifier.height(8.dp))
             BookInfoEditTextField(
                 value = uiState.sourceKindList.joinToString(", "),
@@ -596,19 +596,51 @@ fun KindEditor(
         title = stringResource(R.string.tag_library_quick),
         mochiLayout = MochiSheetLayout.Compact,
         startAction = {
-            IconButton(onClick = { showTagLibrary = false }) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = stringResource(R.string.close)
-                )
+            if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+                MochiButton(
+                    onClick = { showTagLibrary = false },
+                    style = MochiButtonStyle.Text,
+                    colors = MochiButtonDefaults.barColors(),
+                    contentPadding = MochiButtonDefaults.BarContentPadding,
+                    minHeight = MochiButtonDefaults.BarItemSize,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close),
+                        tint = MochiTheme.colorScheme.onSurface,
+                    )
+                }
+            } else {
+                IconButton(onClick = { showTagLibrary = false }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close)
+                    )
+                }
             }
         },
         endAction = {
-            IconButton(onClick = { showTagLibrary = false }) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(R.string.confirm)
-                )
+            if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+                MochiButton(
+                    onClick = { showTagLibrary = false },
+                    style = MochiButtonStyle.Text,
+                    colors = MochiButtonDefaults.barColors(),
+                    contentPadding = MochiButtonDefaults.BarContentPadding,
+                    minHeight = MochiButtonDefaults.BarItemSize,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = stringResource(R.string.confirm),
+                        tint = MochiTheme.colorScheme.onSurface,
+                    )
+                }
+            } else {
+                IconButton(onClick = { showTagLibrary = false }) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = stringResource(R.string.confirm)
+                    )
+                }
             }
         },
     ) {

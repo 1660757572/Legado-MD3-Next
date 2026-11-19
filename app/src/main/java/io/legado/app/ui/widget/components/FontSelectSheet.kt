@@ -31,6 +31,7 @@ import io.legado.app.ui.widget.components.menu.AppAction
 import io.legado.app.ui.widget.components.menu.AppActionGroup
 import io.legado.app.ui.widget.components.menu.AppActionMenu
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
+import io.legado.app.ui.widget.components.modalBottomSheet.MochiSheetLayout
 import io.legado.app.utils.FileDoc
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.toastOnUi
@@ -103,6 +104,9 @@ fun FontSelectSheet(
         show = show,
         onDismissRequest = onDismissRequest,
         title = title,
+        // 字体网格高于一屏；用 FitContent 让面板展开到 Large 后自带滚动，
+        // 否则默认 HalfScreen 的非滚动正文会在底部被裁掉。
+        mochiLayout = MochiSheetLayout.FitContent,
         startAction = {
             startAction?.invoke()
             val typefaces = systemTypefaces

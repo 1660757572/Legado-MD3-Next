@@ -1025,6 +1025,8 @@ fun BookshelfScreen(
                                     }
                                 ),
                             beyondViewportPageCount = 0,
+                            // 书架分类页左右切换不保留越界回弹：松手后只做正常落位。
+                            overscrollEffect = null,
                             key = { if (it < uiState.groups.size) uiState.groups[it].groupId else it }
                         ) { pageIndex ->
                             val group = uiState.groups.getOrNull(pageIndex)

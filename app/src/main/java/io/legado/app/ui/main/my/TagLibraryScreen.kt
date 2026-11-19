@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +48,7 @@ import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 import ui.feice.mochi.basic.MochiButton
 import ui.feice.mochi.basic.MochiButtonStyle
 import ui.feice.mochi.basic.MochiRemovableChip
+import ui.feice.mochi.basic.MochiTextField
 
 /**
  * 「我的 → 标签管理」二级页面：维护书籍信息编辑页可复用的标签。
@@ -70,40 +72,6 @@ fun TagLibraryScreen(onBack: () -> Unit) {
                 scrollBehavior = scrollBehavior,
             )
         },
-        floatingActionButton = {
-            if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
-                MochiButton(
-                    onClick = {
-                        val trimmed = input.trim()
-                        if (trimmed.isNotEmpty()) {
-                            ReusableTagRepository.add(trimmed)
-                            input = ""
-                        }
-                    },
-                    style = MochiButtonStyle.Filled,
-                    cornerRadius = 20.dp,
-                ) {
-                    AppIcon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add),
-                        tint = LegadoTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            } else {
-                io.legado.app.ui.widget.components.AppFloatingActionButton(
-                    onClick = {
-                        val trimmed = input.trim()
-                        if (trimmed.isNotEmpty()) {
-                            ReusableTagRepository.add(trimmed)
-                            input = ""
-                        }
-                    },
-                    icon = Icons.Default.Add,
-                    tooltipText = stringResource(R.string.add),
-                )
-            }
-        },
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -117,25 +85,52 @@ fun TagLibraryScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AppTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    label = stringResource(R.string.tag),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                MediumOutlinedButton(
-                    onClick = {
-                        val trimmed = input.trim()
-                        if (trimmed.isNotEmpty()) {
-                            ReusableTagRepository.add(trimmed)
-                            input = ""
-                        }
-                    },
-                    icon = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.add),
-                )
+                val addTag = {
+                    val trimmed = input.trim()
+                    if (trimmed.isNotEmpty()) {
+                        ReusableTagRepository.add(trimmed)
+                        input = ""
+                    }
+                }
+                if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+                    MochiTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = stringResource(R.string.tag),
+                        singleLine = true,
+                        maxLines = 1,
+                        clearButton = true,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    MochiButton(
+                        onClick = addTag,
+                        style = MochiButtonStyle.Filled,
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        minHeight = 48.dp,
+                    ) {
+                        AppIcon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(R.string.add),
+                            tint = LegadoTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                } else {
+                    AppTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        label = stringResource(R.string.tag),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    MediumOutlinedButton(
+                        onClick = addTag,
+                        icon = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add),
+                    )
+                }
             }
 
             if (tags.isEmpty()) {

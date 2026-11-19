@@ -431,7 +431,17 @@ private fun BookInfoScreenContent(
                         Box(modifier = Modifier.fillMaxSize()) {
                             LazyColumn(
                                 state = listState,
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    // 阅读记录/知识页是独立信息页，用实底遮住后面的封面背景；
+                                    // 简介/目录仍保留透视，避免详情页整体失去背景层次。
+                                    .then(
+                                        if (infoContentTab >= 2) {
+                                            Modifier.background(LegadoTheme.colorScheme.surface)
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
                                 contentPadding = PaddingValues(
                                     top = paddingValues.calculateTopPadding() + 8.dp,
                                     bottom = paddingValues.calculateBottomPadding() + 88.dp,
@@ -441,7 +451,13 @@ private fun BookInfoScreenContent(
                                     BookInfoHeader(
                                         book = book,
                                         highlightedTags = state.highlightedTags,
-                                        kindLabels = state.kindLabels,
+                                        kindLabels = if (
+                                            LocalAppUiConfiguration.current.appShell.bookInfoShowSourceTags
+                                        ) {
+                                            state.kindLabels
+                                        } else {
+                                            emptyList()
+                                        },
                                         groupNames = state.groupNames.takeIf { state.showGroupTag },
                                         onKindClick = onOpenExplore,
                                         onCoverClick = { onIntent(BookInfoIntent.CoverClick) },
@@ -2021,8 +2037,8 @@ private fun BookInfoTocSection(
                 state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    // 参考阅读页目录 sheet 的密度：限高 500dp，行间距拉开一点。
-                    .heightIn(max = 550.dp),
+                    // 参考阅读页目录 sheet 的密度：限高 600dp，行间距拉开一点。
+                    .heightIn(max = 600.dp),
                 contentPadding = PaddingValues(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {

@@ -1,7 +1,10 @@
 package io.legado.app.ui.widget.components.tabRow
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,9 +30,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -51,10 +56,8 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.glass.GlassTabRow
 import top.yukonga.miuix.kmp.glass.GlassTabRowDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.feice.mochi.basic.MochiButton
-import ui.feice.mochi.basic.MochiButtonColors
-import ui.feice.mochi.basic.MochiButtonDefaults
 import ui.feice.mochi.basic.Text
+import ui.feice.mochi.shape.MochiCapsule
 import ui.feice.mochi.theme.MochiTheme
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -151,6 +154,8 @@ private fun MochiChipTabRow(
                 .fadingEdge(listState, gradientWidth = 20.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(chipSpacing),
+            // 分类栏不需要 Mochi 的越界拉伸回弹，滑到头直接停住。
+            overscrollEffect = null,
         ) {
             itemsIndexed(tabTitles) { index, title ->
                 MochiCategoryChip(
@@ -168,7 +173,8 @@ private fun MochiChipTabRow(
 
 /**
  * 分类栏专用的 Mochi 芯片：外观与 [MochiChip] 一致，但关闭按压缩放/跟手位移。
- * 横向滑动时按钮形变会抢走手势，这里改用无形变的 MochiButton 承载同一套配色与语义。
+ * [MochiButton] 会在 Main 阶段消费整段手势，导致芯片上的横向拖动无法交给
+ * [LazyRow]；这里改用普通 clickable 只处理点击，把拖动完整留给分类栏滚动。
  */
 @Composable
 private fun MochiCategoryChip(
@@ -185,31 +191,27 @@ private fun MochiCategoryChip(
         if (selected) cs.onPrimary else cs.onSurface,
         label = "categoryChipContent",
     )
-    val colors = MochiButtonColors(
-        container = container,
-        content = content,
-        outline = Color.Transparent,
-        pressedContainer = Color.Transparent,
-        glow = Color.White.copy(alpha = if (cs.isDark) 0.16f else 0.4f),
-        disabledContainer = cs.onSurface.copy(alpha = 0.08f),
-        disabledContent = cs.onSurface.copy(alpha = 0.38f),
-    )
-    MochiButton(
-        onClick = onClick,
-        modifier = Modifier.semantics { this.selected = selected },
-        colors = colors,
-        contentPadding = PaddingValues(horizontal = 14.dp),
-        minHeight = 34.dp,
-        behavior = MochiButtonDefaults.behavior(
-            pressScale = 1f,
-            follow = 0.dp,
-            maxGrow = 0.dp,
-        ),
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .height(34.dp)
+            .clip(MochiCapsule)
+            .background(container)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .semantics { this.selected = selected }
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             maxLines = 1,
             style = MochiTheme.textStyles.subhead.copy(fontWeight = FontWeight.Medium),
+            color = content,
         )
     }
 }
