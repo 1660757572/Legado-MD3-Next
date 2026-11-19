@@ -38,8 +38,8 @@ internal fun ProvideMochiTheme(
     val colors = remember(colorScheme, isDark) { colorScheme.toMochiColorScheme(isDark) }
     val textStyles = remember(typography) { typography.toMochiTextStyles() }
     // 默认 0.65 的阻力在分类栏/分页器上拉出的越界太远，松手后的回弹也很抢眼；
-    // 调到 0.36 后手指只能带出很小一段位移，滚动到头的感觉更接近 Mochi 官方。
-    val overscrollSpec = remember { MochiOverscrollSpec(rubberBand = 0.36f) }
+    // 调到 0.30 后手指只能带出很小一段位移，滚动到头的感觉更接近 Mochi 官方。
+    val overscrollSpec = remember { MochiOverscrollSpec(rubberBand = 0.30f) }
     val toastState = rememberMochiToastState()
     DisposableEffect(toastState) {
         MochiToastBridge.attach(toastState)

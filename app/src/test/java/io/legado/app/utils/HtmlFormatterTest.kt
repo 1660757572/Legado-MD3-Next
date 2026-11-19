@@ -31,6 +31,21 @@ class HtmlFormatterTest {
     }
 
     @Test
+    fun formatDetailIntroText_keepsUserLayoutWithoutForcedIndent() {
+        assertEquals(
+            "第一段\n第二段",
+            HtmlFormatter.formatDetailIntroText("第一段<br>第二段")
+        )
+        assertEquals(
+            "已经手动缩进\n下一行",
+            HtmlFormatter.formatDetailIntroText("已经手动缩进\n下一行")
+        )
+        assertFalse(
+            HtmlFormatter.formatDetailIntroText("第一段\n第二段").startsWith("　　")
+        )
+    }
+
+    @Test
     fun formatDisplayText_dropsBookMetaLines() {
         val result = HtmlFormatter.formatDisplayText(
             "书名：某某传<br>作者：张三<br>【分类】玄幻<br>最新章节：第一千章 大结局<br>简介：这是正文第一段<br>这是正文第二段"

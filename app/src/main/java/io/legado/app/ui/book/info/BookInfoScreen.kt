@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -156,6 +157,7 @@ import io.legado.app.ui.theme.rememberImageSeedColor
 import io.legado.app.ui.theme.rememberThemeOverride
 import io.legado.app.ui.theme.responsiveHazeEffectFixedStyle
 import io.legado.app.ui.theme.MiuixBlurredTopBar
+import io.legado.app.ui.widget.components.AppFloatingActionButtonMenu
 import io.legado.app.ui.widget.components.FabMenuItem
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.AppTextField
@@ -348,6 +350,18 @@ private fun BookInfoScreenContent(
         M3GlassScrollBehavior(TopAppBarDefaults.exitUntilCollapsedScrollBehavior())
     }
     val listState = rememberLazyListState()
+    // 目录页的滚动/分卷/浮动按钮状态上提到页面层：目录列表不能再用 600dp 固定高度，
+    // 否则下方会露出一块页面底色（截图里的大白块）；上提后列表可以铺满可视区，
+    // 悬浮按钮也能稳定贴在屏幕右下角，而不是跟着目录项滚走。
+    val tocChapters = state.tocChapters
+    val tocListState = rememberLazyListState()
+    var tocCollapsedVolumes by remember(tocChapters) { mutableStateOf(emptySet<Int>()) }
+    var tocInitialScrollApplied by remember(tocChapters) { mutableStateOf(false) }
+    var tocFabExpanded by remember { mutableStateOf(false) }
+    val tocFocusRequester = remember { FocusRequester() }
+    val tocVisibleItems = remember(tocChapters, tocCollapsedVolumes) {
+        visibleTocRows(tocChapters, tocCollapsedVolumes)
+    }
     // 分段选择器吸顶后额外下移 100dp（只在真正吸顶时生效，初始位置不多留空白）。
     val tabsStuck by remember(listState) {
         derivedStateOf { listState.firstVisibleItemIndex >= 2 }
@@ -358,6 +372,15 @@ private fun BookInfoScreenContent(
     )
     // 简介 / 目录 / 阅读记录 三合一的页内分段：0 简介、1 目录、2 阅读记录。
     var infoContentTab by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(infoContentTab, tocChapters, state.book?.durChapterIndex) {
+        if (infoContentTab != 1 || tocInitialScrollApplied || tocChapters.isEmpty()) return@LaunchedEffect
+        val current = state.book?.durChapterIndex ?: return@LaunchedEffect
+        val target = tocVisibleItems.indexOfFirst {
+            !it.chapter.isVolume && it.chapter.index == current
+        }
+        if (target >= 0) tocListState.scrollToItem(target)
+        tocInitialScrollApplied = true
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -456,7 +479,10 @@ private fun BookInfoScreenContent(
                                     },
                                 contentPadding = PaddingValues(
                                     top = paddingValues.calculateTopPadding() + 8.dp,
-                                    bottom = paddingValues.calculateBottomPadding() + 88.dp,
+                                    // 目录页内嵌列表自身有底部内边距；外层再留 88dp 会在列表下
+                                    // 形成一条大白块，看起来像把目录截断了。目录只留一点呼吸空间。
+                                    bottom = paddingValues.calculateBottomPadding() +
+                                        if (infoContentTab == 1) 12.dp else 88.dp,
                                 ),
                             ) {
                                 item {
@@ -576,6 +602,9 @@ private fun BookInfoScreenContent(
                                                 downloadingIndices = state.downloadingChapterIndices,
                                                 failedIndices = state.failedChapterIndices,
                                                 wordCounts = state.tocChapterWordCounts,
+                                                listState = tocListState,
+                                                collapsedVolumes = tocCollapsedVolumes,
+                                                onCollapsedVolumesChange = { tocCollapsedVolumes = it },
                                                 onChapterClick = { index ->
                                                     onIntent(BookInfoIntent.ChapterClick(index))
                                                 },
@@ -672,6 +701,70 @@ private fun BookInfoScreenContent(
                                         }
                                     }
                                 }
+                            }
+                            if (infoContentTab == 1) {
+                                AppFloatingActionButtonMenu(
+                                    expanded = tocFabExpanded,
+                                    onExpandedChange = { tocFabExpanded = it },
+                                    items = listOf(
+                                        FabMenuItem(
+                                            Icons.Default.MyLocation,
+                                            stringResource(R.string.locate_current_reading),
+                                        ) {
+                                            var lastVolume: Int? = null
+                                            var currentVolume: Int? = null
+                                            for (chapter in tocChapters) {
+                                                if (chapter.isVolume) lastVolume = chapter.index
+                                                if (!chapter.isVolume &&
+                                                    chapter.index == book.durChapterIndex
+                                                ) {
+                                                    currentVolume = lastVolume
+                                                    break
+                                                }
+                                            }
+                                            val expanded = currentVolume?.let {
+                                                tocCollapsedVolumes - it
+                                            } ?: tocCollapsedVolumes
+                                            tocCollapsedVolumes = expanded
+                                            val target = visibleTocRows(tocChapters, expanded)
+                                                .indexOfFirst {
+                                                    !it.chapter.isVolume &&
+                                                        it.chapter.index == book.durChapterIndex
+                                                }
+                                            if (target >= 0) {
+                                                scope.launch {
+                                                    tocListState.scrollToItem(target)
+                                                }
+                                            }
+                                        },
+                                        FabMenuItem(
+                                            Icons.Default.VerticalAlignTop,
+                                            stringResource(R.string.to_top),
+                                        ) {
+                                            scope.launch { tocListState.scrollToItem(0) }
+                                        },
+                                        FabMenuItem(
+                                            Icons.Default.VerticalAlignBottom,
+                                            stringResource(R.string.to_bottom),
+                                        ) {
+                                            scope.launch {
+                                                tocListState.scrollToItem(
+                                                    tocVisibleItems.lastIndex.coerceAtLeast(0)
+                                                )
+                                            }
+                                        },
+                                        FabMenuItem(
+                                            Icons.Default.Download,
+                                            stringResource(R.string.download_all),
+                                        ) {
+                                            onIntent(BookInfoIntent.DownloadAllChapters)
+                                        },
+                                    ),
+                                    focusRequester = tocFocusRequester,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(end = 14.dp, bottom = 8.dp),
+                                )
                             }
                         }
                     }
@@ -1967,6 +2060,9 @@ private fun BookInfoTocSection(
     downloadingIndices: Set<Int>,
     failedIndices: Set<Int>,
     wordCounts: Map<Int, String>,
+    listState: LazyListState,
+    collapsedVolumes: Set<Int>,
+    onCollapsedVolumesChange: (Set<Int>) -> Unit,
     onChapterClick: (Int) -> Unit,
     onDownloadChapter: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -1986,19 +2082,16 @@ private fun BookInfoTocSection(
         }
         return
     }
-    // 内嵌目录只占一段固定高度，避免把详情页拉成一条无限列表；打开时直接定位到当前章节。
-    val initialIndex = remember(chapters) {
-        chapters.indexOfFirst { it.index == currentIndex && !it.isVolume }
-            .coerceIn(0, chapters.lastIndex)
-    }
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
-    // 分卷折叠态：默认全展开，点分卷行切换；章节列表随折叠态过滤。
-    var collapsedVolumes by remember(chapters) { mutableStateOf(emptySet<Int>()) }
+    val expandText = stringResource(R.string.expand_volume)
+    val collapseText = stringResource(R.string.coll_volume)
     val visibleItems = remember(chapters, collapsedVolumes) {
         visibleTocRows(chapters, collapsedVolumes)
     }
-    val expandText = stringResource(R.string.expand_volume)
-    val collapseText = stringResource(R.string.coll_volume)
+    // 目录不再固定 600dp：按窗口高度减去吸顶选择器/分割线的占用，至少铺满当前可视区，
+    // 否则列表在 600dp 处被裁断，下面露出一大块页面底色。
+    val tocViewportHeight = with(LocalDensity.current) {
+        (LocalWindowInfo.current.containerSize.height.toDp() - 140.dp).coerceAtLeast(420.dp)
+    }
     Box(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -2016,8 +2109,7 @@ private fun BookInfoTocSection(
                 state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    // 参考阅读页目录 sheet 的密度：限高 600dp，行间距拉开一点。
-                    .heightIn(max = 600.dp),
+                    .height(tocViewportHeight),
                 contentPadding = PaddingValues(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
@@ -2037,11 +2129,13 @@ private fun BookInfoTocSection(
                                 .clickable(role = Role.Button) {
                                     // 点一次切换一次：已展开 -> 收纳（加入集合）；
                                     // 已收纳 -> 展开（移出集合）。此前两个分支写反，点击永远无效。
-                                    collapsedVolumes = if (collapsed) {
-                                        collapsedVolumes - chapter.index
-                                    } else {
-                                        collapsedVolumes + chapter.index
-                                    }
+                                    onCollapsedVolumesChange(
+                                        if (collapsed) {
+                                            collapsedVolumes - chapter.index
+                                        } else {
+                                            collapsedVolumes + chapter.index
+                                        }
+                                    )
                                 }
                                 .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -2379,7 +2473,7 @@ private fun parseBookInfoIntro(intro: String?): BookInfoIntroContent? {
         intro.startsWith("<useweb>", ignoreCase = true) -> {
             val lastIndex = intro.lastIndexOf("<")
             if (lastIndex < 8) {
-                BookInfoIntroContent.Plain(HtmlFormatter.formatDisplayText(intro))
+                BookInfoIntroContent.Plain(HtmlFormatter.formatDetailIntroText(intro))
             } else {
                 BookInfoIntroContent.Web(intro.substring(8, lastIndex))
             }
@@ -2388,7 +2482,7 @@ private fun parseBookInfoIntro(intro: String?): BookInfoIntroContent? {
         intro.startsWith("<usehtml>", ignoreCase = true) -> {
             val lastIndex = intro.lastIndexOf("<")
             if (lastIndex < 9) {
-                BookInfoIntroContent.Plain(HtmlFormatter.formatDisplayText(intro))
+                BookInfoIntroContent.Plain(HtmlFormatter.formatDetailIntroText(intro))
             } else {
                 BookInfoIntroContent.Html(intro.substring(9, lastIndex))
             }
@@ -2397,13 +2491,13 @@ private fun parseBookInfoIntro(intro: String?): BookInfoIntroContent? {
         intro.startsWith("<md>", ignoreCase = true) -> {
             val lastIndex = intro.lastIndexOf("<")
             if (lastIndex < 4) {
-                BookInfoIntroContent.Plain(HtmlFormatter.formatDisplayText(intro))
+                BookInfoIntroContent.Plain(HtmlFormatter.formatDetailIntroText(intro))
             } else {
                 BookInfoIntroContent.Markdown(intro.substring(4, lastIndex))
             }
         }
 
-        else -> BookInfoIntroContent.Plain(HtmlFormatter.formatDisplayText(intro))
+        else -> BookInfoIntroContent.Plain(HtmlFormatter.formatDetailIntroText(intro))
     }
 }
 

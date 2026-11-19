@@ -598,12 +598,10 @@ fun KindEditor(
         mochiLayout = MochiSheetLayout.Compact,
         startAction = {
             if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
-                MochiButton(
+                MochiBarIconButton(
                     onClick = { showTagLibrary = false },
-                    style = MochiButtonStyle.Text,
                     colors = MochiButtonDefaults.barColors(),
-                    contentPadding = MochiButtonDefaults.BarContentPadding,
-                    minHeight = MochiButtonDefaults.BarItemSize,
+                    contentKey = "tag_library_close",
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,

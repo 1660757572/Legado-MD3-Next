@@ -112,6 +112,31 @@ object HtmlFormatter {
     }
 
     /**
+     * 详情页纯文本简介：与 [formatDisplayText] 一样清掉脚本/样式/重复元信息，
+     * 但**不再自动补段首缩进**，并保留用户输入的换行。
+     *
+     * 编辑页允许用户自行决定首行缩进；此前详情页又把每行统一加上两个全角空格，
+     * 于是“编辑页去掉了缩进，详情页仍然缩进两格”，手动换行也会被重新排版掉。
+     */
+    fun formatDetailIntroText(html: String?): String {
+        if (html.isNullOrBlank()) return ""
+        val document = Jsoup.parseBodyFragment(html)
+        document.outputSettings().prettyPrint(false)
+        val body = document.body()
+        body.select("script, style, noscript").remove()
+        return format(body.html(), otherHtmlRegex, "")
+            .lineSequence()
+            // 详情页简介由用户/书源自己决定版式：不补缩进，也不裁掉行首的全角空格，
+            // 否则用户在编辑页手动排的首行缩进会被再次吃掉。
+            .map { it.trimEnd(*blankChars) }
+            .filterNot { metaLineRegex.matches(it) }
+            .map { it.replaceFirst(introLabelRegex, "").trimEnd(*blankChars) }
+            .joinToString("\n")
+            .trim(*blankChars)
+            .let { StringEscapeUtils.unescapeHtml4(it) }
+    }
+
+    /**
      * Returns reader content as text for character counting.
      *
      * Cached chapters can retain image tags for rendering; their tag names, attributes, and

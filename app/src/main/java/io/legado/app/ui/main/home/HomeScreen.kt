@@ -67,11 +67,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -878,26 +880,45 @@ private fun RandomBooksCarousel(
             }
             if (style == 1 && LegadoTheme.composeEngine == ComposeEngine.Mochi) {
                 // Mochi 轮播：整张封面做卡片，右上角再放一枚封面；作者在书名上方，左下角展示。
-                val mochiPagerState = rememberPagerState { books.size }
+                // 用足够长的有限页数模拟循环：MochiCarousel 的缩放/透明度依赖当前页偏移，
+                // 直接给 Int.MAX_VALUE 会让 Float 精度变粗，滑动和指示器都会跳。
+                val mochiPageCount = remember(books.size) {
+                    if (books.size <= 1) 1 else books.size * 1000
+                }
+                val mochiInitialPage = remember(mochiPageCount, books.size) {
+                    val middle = mochiPageCount / 2
+                    middle - middle % books.size
+                }
+                val mochiPagerState = rememberPagerState(initialPage = mochiInitialPage) {
+                    mochiPageCount
+                }
+                var mochiLastScrollAt by remember { mutableStateOf(0L) }
+                LaunchedEffect(mochiPagerState) {
+                    snapshotFlow { mochiPagerState.isScrollInProgress }
+                        .filter { it }
+                        .collect { mochiLastScrollAt = System.currentTimeMillis() }
+                }
                 LaunchedEffect(mochiPagerState, books.size, autoPlay) {
                     if (!autoPlay || books.size <= 1) return@LaunchedEffect
                     while (true) {
                         delay(CAROUSEL_INTERVAL_MILLIS)
-                        if (!mochiPagerState.isScrollInProgress) {
+                        if (!mochiPagerState.isScrollInProgress &&
+                            System.currentTimeMillis() - mochiLastScrollAt >= CAROUSEL_INTERVAL_MILLIS
+                        ) {
                             mochiPagerState.animateScrollToPage(
-                                (mochiPagerState.currentPage + 1) % books.size
+                                mochiPagerState.currentPage + 1
                             )
                         }
                     }
                 }
                 MochiCarousel(
-                    pageCount = books.size,
+                    pageCount = mochiPageCount,
                     height = 168.dp,
                     state = mochiPagerState,
                     showPageControl = true,
                     modifier = Modifier.fillMaxWidth(),
                 ) { page ->
-                    val book = books[page]
+                    val book = books[page % books.size]
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -915,25 +936,33 @@ private fun RandomBooksCarousel(
                             author = book.author,
                             path = book.coverPath,
                             sourceOrigin = book.origin,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                // 底图做一层约 80% 强度的模糊，文字与右上封面才不会被底图细节吃掉。
+                                .graphicsLayer {
+                                    scaleX = 1.12f
+                                    scaleY = 1.12f
+                                }
+                                .blur(20.dp),
                             coverModifier = Modifier.fillMaxSize(),
                         )
                         // 左下文字压暗，保证书名/作者在浅色封面上也清楚；两端再加一层很轻的横向渐隐。
+                        // 遮罩透明度在上一版基础上降低约 60%，只留必要的可读性压暗。
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
                                     Brush.verticalGradient(
                                         0.38f to Color.Transparent,
-                                        1f to Color.Black.copy(alpha = 0.82f),
+                                        1f to Color.Black.copy(alpha = 0.33f),
                                     )
                                 )
                                 .background(
                                     Brush.horizontalGradient(
-                                        0f to Color.Black.copy(alpha = 0.18f),
+                                        0f to Color.Black.copy(alpha = 0.07f),
                                         0.18f to Color.Transparent,
                                         0.82f to Color.Transparent,
-                                        1f to Color.Black.copy(alpha = 0.18f),
+                                        1f to Color.Black.copy(alpha = 0.07f),
                                     )
                                 ),
                         )
@@ -941,7 +970,7 @@ private fun RandomBooksCarousel(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(12.dp)
-                                .width(46.dp)
+                                .width(58.dp)
                                 .aspectRatio(5f / 7f)
                                 .clip(RoundedCornerShape(8.dp)),
                         ) {

@@ -107,6 +107,11 @@ object AppIcons {
     fun mochi(name: String, fallback: ImageVector): ImageVector =
         rememberMochiIonicon(name, MochiIconStyle.Filled) ?: fallback
 
+    /** 指定画法的 Mochi 图标；未选中的导航栏用 Outline。 */
+    @Composable
+    fun mochi(name: String, fallback: ImageVector, style: MochiIconStyle): ImageVector =
+        rememberMochiIonicon(name, style) ?: fallback
+
     /** 只按 Material 图标名做一次语义映射，避免每个调用点都传两套图标。 */
     private fun mochiNameFor(icon: ImageVector): String? =
         mochiNameByMaterial[icon.name.substringAfterLast('.')]
@@ -362,12 +367,17 @@ object AppIcons {
                 MainDestination.My -> CouiIcons.Filled.UserCircle
             }
 
-            ComposeEngine.Mochi -> when (destination) {
-                MainDestination.Home -> mochi("home", Icons.Default.Home)
-                MainDestination.Bookshelf -> mochi("library", Icons.AutoMirrored.Filled.LibraryBooks)
-                MainDestination.Explore -> mochi("compass", Icons.Default.Explore)
-                MainDestination.Rss -> mochi("newspaper", Icons.Default.RssFeed)
-                MainDestination.My -> mochi("person", Icons.Default.Person)
+            ComposeEngine.Mochi -> {
+                val style = if (selected) MochiIconStyle.Filled else MochiIconStyle.Outline
+                when (destination) {
+                    MainDestination.Home -> mochi("home", Icons.Default.Home, style)
+                    MainDestination.Bookshelf ->
+                        mochi("library", Icons.AutoMirrored.Filled.LibraryBooks, style)
+
+                    MainDestination.Explore -> mochi("compass", Icons.Default.Explore, style)
+                    MainDestination.Rss -> mochi("newspaper", Icons.Default.RssFeed, style)
+                    MainDestination.My -> mochi("person", Icons.Default.Person, style)
+                }
             }
 
             else -> when (destination) {

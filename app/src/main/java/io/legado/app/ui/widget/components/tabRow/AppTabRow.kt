@@ -192,7 +192,8 @@ private fun MochiCategoryChip(
             cs.primary
         } else {
             // 浅色用 High 才是可见的浅灰；Low 接近白色，放在封面上仍然发虚。
-            cs.surfaceContainerHigh
+            // 75% 不透明度：保留实色轮廓，又能透出一点背景，避免整块死灰。
+            cs.surfaceContainerHigh.copy(alpha = 0.75f)
         },
         label = "categoryChipContainer",
     )
