@@ -780,11 +780,10 @@
     <string name="clear_find_cache">清空发现缓存</string>
     <string name="edit_find">编辑发现</string>
     <string name="change_icon_summary">切换软件显示在桌面的图标</string>
-    <string name="change_icon_follow_dark_summary">如需更换图标，请关闭图标跟随深色模式</string>
-    <string name="icon_follow_dark">图标跟随深色模式</string>
-    <string name="icon_follow_dark_summary">深色模式使用黑色底图标，浅色模式使用白色底图标</string>
     <string name="category_chip_spacing">分类 Chip 间距</string>
     <string name="category_chip_spacing_summary">书架与发现页分类 Chip 之间的间距，调大后左右滑动更从容</string>
+    <string name="category_chip_scale">分类 Chip 尺寸</string>
+    <string name="category_chip_scale_summary">书架与发现页分类 Chip 的整体大小，按百分比缩放</string>
     <string name="bookshelf_badge_position">未读与更新角标位置</string>
     <string name="bookshelf_type_badge_position">书籍类型角标位置</string>
     <string name="show_source_categories">显示书源分类</string>
@@ -1806,6 +1805,8 @@
     <string name="book_info_tab_knowledge">知识</string>
     <string name="book_info_knowledge_empty">暂无人物或知识</string>
     <string name="home_carousel_autoplay">随机推荐自动轮播</string>
+    <string name="home_carousel_style">随机推荐样式</string>
+    <string name="home_carousel_style_classic">经典横排</string>
     <string name="navigation_animation_system">系统</string>
     <string name="cover_corner_page_summary">左上 %1$d · 右上 %2$d · 右下 %3$d · 左下 %4$d</string>
     <string name="cover_shadow_strength">投影强度 · %1$d</string>

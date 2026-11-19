@@ -810,11 +810,10 @@
     <string name="clear_find_cache">Clear Discovery cache</string>
     <string name="edit_find">Edit Discovery</string>
     <string name="change_icon_summary">Switch the software icon displayed on the desktop</string>
-    <string name="change_icon_follow_dark_summary">To change the icon, turn off "Icon follows dark mode"</string>
-    <string name="icon_follow_dark">Icon follows dark mode</string>
-    <string name="icon_follow_dark_summary">Use the black icon in dark mode and the white icon in light mode</string>
     <string name="category_chip_spacing">Category chip spacing</string>
     <string name="category_chip_spacing_summary">Gap between category chips on bookshelf and discovery; larger values make horizontal swiping easier</string>
+    <string name="category_chip_scale">Category chip size</string>
+    <string name="category_chip_scale_summary">Overall size of category chips on bookshelf and discovery</string>
     <string name="bookshelf_badge_position">Unread and update badge position</string>
     <string name="bookshelf_type_badge_position">Book type badge position</string>
     <string name="show_source_categories">Show source categories</string>
@@ -1865,6 +1864,8 @@
     <string name="book_info_tab_knowledge">Knowledge</string>
     <string name="book_info_knowledge_empty">No characters or knowledge yet</string>
     <string name="home_carousel_autoplay">Auto-play recommendations</string>
+    <string name="home_carousel_style">Recommendation style</string>
+    <string name="home_carousel_style_classic">Classic row</string>
     <string name="navigation_animation_system">System</string>
     <string name="cover_corner_page_summary">Top-left %1$d · Top-right %2$d · Bottom-right %3$d · Bottom-left %4$d</string>
     <string name="cover_shadow_strength">Shadow strength · %1$d</string>

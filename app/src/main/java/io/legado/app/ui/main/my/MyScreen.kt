@@ -69,6 +69,8 @@ import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
+import io.legado.app.utils.toastOnUi
+import io.legado.app.utils.longToastOnUi
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @SuppressLint("InlinedApi") // 仅 API 37+ 缺少权限时才发出该 effect，权限名常量会被内联
@@ -87,11 +89,7 @@ fun MyRouteScreen(
         if (granted) {
             viewModel.onIntent(MyIntent.StartWebService)
         } else {
-            Toast.makeText(
-                context,
-                R.string.web_service_local_network_permission_denied,
-                Toast.LENGTH_LONG
-            ).show()
+            context.longToastOnUi(R.string.web_service_local_network_permission_denied)
         }
     }
     LaunchedEffect(viewModel) {

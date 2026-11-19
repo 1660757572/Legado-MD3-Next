@@ -67,6 +67,9 @@ class HomeDashboardUseCase(
     fun observeCarouselAutoPlay(): Flow<Boolean> =
         gateway.observeCarouselAutoPlay()
 
+    fun observeCarouselStyle(): Flow<Int> =
+        gateway.observeCarouselStyle()
+
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String) {
         gateway.updateSelectedSourceSetUrl(sourceUrl)
     }
@@ -81,6 +84,10 @@ class HomeDashboardUseCase(
 
     suspend fun updateCarouselAutoPlay(enabled: Boolean) {
         gateway.updateCarouselAutoPlay(enabled)
+    }
+
+    suspend fun updateCarouselStyle(style: Int) {
+        gateway.updateCarouselStyle(style)
     }
 
     private fun currentDate(): Flow<String> = flow {

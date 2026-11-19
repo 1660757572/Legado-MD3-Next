@@ -76,6 +76,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
+import io.legado.app.utils.toastOnUi
 private const val BOOKMARK_TAB = 0
 private const val NOTE_TAB = 1
 private const val DETAIL_PAGE_COUNT = 2
@@ -100,17 +101,13 @@ fun AllBookmarkRouteScreen(
             val book = exportBook
             if (uri != null && book != null) {
                 viewModel.onIntent(AllBookmarkIntent.Export(uri, exportMarkdown, book))
-            Toast.makeText(context, context.getString(R.string.export_started), Toast.LENGTH_SHORT).show()
+                context.toastOnUi(context.getString(R.string.export_started))
         }
     }
     LaunchedEffect(viewModel) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
-                is AllBookmarkEffect.ShowMessage -> Toast.makeText(
-                    context,
-                    effect.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                is AllBookmarkEffect.ShowMessage -> context.toastOnUi(effect.message)
             }
         }
     }

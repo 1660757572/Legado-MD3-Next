@@ -147,6 +147,7 @@ private fun MochiChipTabRow(
     ) {
         val listState = rememberLazyListState()
         val chipSpacing = LocalAppUiConfiguration.current.appShell.categoryChipSpacing.dp
+        val chipScale = LocalAppUiConfiguration.current.appShell.categoryChipScale / 100f
         androidx.compose.foundation.lazy.LazyRow(
             state = listState,
             modifier = Modifier
@@ -161,6 +162,7 @@ private fun MochiChipTabRow(
                 MochiCategoryChip(
                     label = title,
                     selected = selectedTabIndex == index,
+                    scale = chipScale,
                     onClick = { onTabSelected(index) },
                 )
             }
@@ -180,11 +182,18 @@ private fun MochiChipTabRow(
 private fun MochiCategoryChip(
     label: String,
     selected: Boolean,
+    scale: Float,
     onClick: () -> Unit,
 ) {
     val cs = MochiTheme.colorScheme
     val container by animateColorAsState(
-        if (selected) cs.primary else cs.onSurfaceVariant.copy(alpha = if (cs.isDark) 0.18f else 0.10f),
+        // 未选中时用实色容器：放在封面背景上也足够清楚，不再依赖一层低透明度颜色。
+        if (selected) {
+            cs.primary
+        } else {
+            // 浅色用 High 才是可见的浅灰；Low 接近白色，放在封面上仍然发虚。
+            cs.surfaceContainerHigh
+        },
         label = "categoryChipContainer",
     )
     val content by animateColorAsState(
@@ -194,7 +203,7 @@ private fun MochiCategoryChip(
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .height(34.dp)
+            .height(34.dp * scale)
             .clip(MochiCapsule)
             .background(container)
             .clickable(
@@ -204,13 +213,16 @@ private fun MochiCategoryChip(
                 onClick = onClick,
             )
             .semantics { this.selected = selected }
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 14.dp * scale),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             maxLines = 1,
-            style = MochiTheme.textStyles.subhead.copy(fontWeight = FontWeight.Medium),
+            style = MochiTheme.textStyles.subhead.copy(
+                fontWeight = FontWeight.Medium,
+                fontSize = MochiTheme.textStyles.subhead.fontSize * scale,
+            ),
             color = content,
         )
     }

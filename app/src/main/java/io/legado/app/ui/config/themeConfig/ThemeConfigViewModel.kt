@@ -156,9 +156,11 @@ class ThemeConfigViewModel(
                 it.copy(defaultHomePage = intent.route)
             }
             is ThemeConfigIntent.SelectLauncherIcon -> selectLauncherIcon(intent.value)
-            is ThemeConfigIntent.SetLauncherIconFollowDark -> setLauncherIconFollowDark(intent.enabled)
             is ThemeConfigIntent.SetCategoryChipSpacing -> updateAppShell {
                 it.copy(categoryChipSpacing = intent.value.coerceIn(8, 24))
+            }
+            is ThemeConfigIntent.SetCategoryChipScale -> updateAppShell {
+                it.copy(categoryChipScale = intent.value.coerceIn(80, 120))
             }
             is ThemeConfigIntent.SelectNavigationIcon -> selectNavigationIcon(intent)
             is ThemeConfigIntent.RequestNavigationIcon -> _effects.tryEmit(
@@ -340,48 +342,13 @@ class ThemeConfigViewModel(
 
     private fun setThemeMode(value: String) {
         viewModelScope.launch {
-            val followDark = appShellSettingsGateway.currentSettings.launcherIconFollowDark
-            val icon = if (followDark) launcherIconForDark(themeMode = value) else null
-            appShellSettingsGateway.update {
-                it.copy(
-                    themeMode = value,
-                    launcherIcon = icon ?: it.launcherIcon,
-                )
-            }
+            appShellSettingsGateway.update { it.copy(themeMode = value) }
             _effects.tryEmit(ThemeConfigEffect.ApplyDayNight)
-            icon?.let { _effects.tryEmit(ThemeConfigEffect.ChangeLauncherIcon(it)) }
         }
-    }
-
-    private fun setLauncherIconFollowDark(enabled: Boolean) {
-        viewModelScope.launch {
-            val icon = if (enabled) {
-                launcherIconForDark(
-                    themeMode = appShellSettingsGateway.currentSettings.themeMode
-                )
-            } else {
-                null
-            }
-            appShellSettingsGateway.update {
-                it.copy(
-                    launcherIconFollowDark = enabled,
-                    launcherIcon = icon ?: it.launcherIcon,
-                )
-            }
-            icon?.let { _effects.tryEmit(ThemeConfigEffect.ChangeLauncherIcon(it)) }
-        }
-    }
-
-    private fun launcherIconForDark(themeMode: String): String = when (themeMode) {
-        "2" -> "ic_launcher"
-        "1" -> "launcherw"
-        else -> if (ThemeConfigStore.isNightTheme) "ic_launcher" else "launcherw"
     }
 
     private fun selectLauncherIcon(value: String) {
         viewModelScope.launch {
-            // 跟随深浅模式开启时图标由主题接管，忽略手动切换，避免状态互相覆盖。
-            if (appShellSettingsGateway.currentSettings.launcherIconFollowDark) return@launch
             appShellSettingsGateway.update { it.copy(launcherIcon = value) }
             _effects.tryEmit(ThemeConfigEffect.ChangeLauncherIcon(value))
         }

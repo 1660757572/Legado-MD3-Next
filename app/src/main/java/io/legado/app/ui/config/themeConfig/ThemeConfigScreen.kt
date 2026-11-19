@@ -343,27 +343,10 @@ fun ThemeConfigScreen(
                     SearchableSetting("theme.change_icon") {
                         ClickableSettingItem(
                             title = stringResource(R.string.change_icon),
-                            description = stringResource(
-                                if (appShell.launcherIconFollowDark) {
-                                    R.string.change_icon_follow_dark_summary
-                                } else {
-                                    R.string.change_icon_summary
-                                }
-                            ),
-                            enabled = !appShell.launcherIconFollowDark,
+                            description = stringResource(R.string.change_icon_summary),
                             onClick = {
                                 onIntent(ThemeConfigIntent.ShowSheet(ThemeConfigSheet.LauncherIcon))
                             }
-                        )
-                    }
-                    SearchableSetting("theme.icon_follow_dark") {
-                        SwitchSettingItem(
-                            title = stringResource(R.string.icon_follow_dark),
-                            description = stringResource(R.string.icon_follow_dark_summary),
-                            checked = appShell.launcherIconFollowDark,
-                            onCheckedChange = {
-                                onIntent(ThemeConfigIntent.SetLauncherIconFollowDark(it))
-                            },
                         )
                     }
                     SearchableSetting("theme.category_chip_spacing") {
@@ -377,6 +360,20 @@ fun ThemeConfigScreen(
                             valueLabel = { "${it.toInt()} dp" },
                             onValueChange = { value ->
                                 onIntent(ThemeConfigIntent.SetCategoryChipSpacing(value.toInt()))
+                            },
+                        )
+                    }
+                    SearchableSetting("theme.category_chip_scale") {
+                        SliderSettingItem(
+                            title = stringResource(R.string.category_chip_scale),
+                            description = stringResource(R.string.category_chip_scale_summary),
+                            value = appShell.categoryChipScale.toFloat(),
+                            defaultValue = 100f,
+                            valueRange = 80f..120f,
+                            steps = 3,
+                            valueLabel = { "${it.toInt()}%" },
+                            onValueChange = { value ->
+                                onIntent(ThemeConfigIntent.SetCategoryChipScale(value.toInt()))
                             },
                         )
                     }

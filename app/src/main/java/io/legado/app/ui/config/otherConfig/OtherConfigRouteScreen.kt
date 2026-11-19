@@ -24,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
+import io.legado.app.utils.toastOnUi
 @Composable
 fun OtherConfigRouteScreen(
     onBackClick: () -> Unit,
@@ -74,9 +75,9 @@ fun OtherConfigRouteScreen(
     LaunchedEffect(pendingMessage?.id, context) {
         val message = pendingMessage ?: return@LaunchedEffect
         if (message.resId != null) {
-            Toast.makeText(context, message.resId, Toast.LENGTH_SHORT).show()
+            context.toastOnUi(message.resId)
         } else {
-            Toast.makeText(context, message.text.orEmpty(), Toast.LENGTH_SHORT).show()
+            context.toastOnUi(message.text.orEmpty())
         }
         viewModel.onIntent(OtherConfigIntent.MessageShown(message.id))
     }

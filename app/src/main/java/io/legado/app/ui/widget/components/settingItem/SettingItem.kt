@@ -52,6 +52,7 @@ import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.widget.components.LocalMochiSettingsGroup
 import io.legado.app.ui.widget.components.LocalCouiSettingsGroup
 import io.legado.app.ui.widget.components.card.SettingCard
+import io.legado.app.ui.widget.components.icon.AppIcons
 import io.legado.app.ui.widget.components.menu.AppChoiceDropdown
 import io.legado.app.ui.widget.components.menu.AppChoiceOption
 import io.legado.app.ui.widget.components.text.AppText
@@ -179,7 +180,9 @@ fun SettingItem(
             if (painter != null) {
                 Icon(painter = painter, contentDescription = null, tint = tint)
             } else if (imageVector != null) {
-                Icon(imageVector = imageVector, contentDescription = null, tint = tint)
+                // Mochi 主题下统一替换成同名语义的 Ionicons filled；没有映射时保留原图。
+                val vector = AppIcons.leadingOrNull(imageVector) ?: imageVector
+                Icon(imageVector = vector, contentDescription = null, tint = tint)
             }
         }
     } else null

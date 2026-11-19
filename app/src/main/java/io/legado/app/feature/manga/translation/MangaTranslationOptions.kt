@@ -18,6 +18,7 @@ import io.legado.app.ui.widget.components.card.InfoCard
 import io.legado.app.ui.widget.components.card.InfoNote
 import io.legado.app.ui.widget.components.icon.AppIcons
 
+import io.legado.app.utils.toastOnUi
 @Composable
 internal fun MangaTranslationOptions(
     state: MangaTranslationUiState,
@@ -57,7 +58,7 @@ internal fun MangaTranslationOptions(
     val context = LocalContext.current
     val comicOnlyHint = stringResource(R.string.manga_comic_only_hint)
     val notifyComicOnly: (String) -> Unit = remember(context, comicOnlyHint) {
-        { Toast.makeText(context, comicOnlyHint, Toast.LENGTH_SHORT).show() }
+        { context.toastOnUi(comicOnlyHint) }
     }
     MarkdownDialog(
         show = relationHelp,

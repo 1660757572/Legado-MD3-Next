@@ -21,6 +21,8 @@ data class HomeUiState(
     val carouselBooks: ImmutableList<HomeCarouselBookUi> = persistentListOf(),
     /** 「随机推荐」是否自动轮播；关闭后只保留手动横滑。 */
     val carouselAutoPlay: Boolean = true,
+    /** 「随机推荐」样式：0 = 经典横排，1 = Mochi 轮播。 */
+    val carouselStyle: Int = 0,
     val selectedSourceSetUrl: String? = null,
     /** 顺序即首页渲染顺序；不在列表里表示该组件已关闭。 */
     val visibleSections: ImmutableList<HomeDashboardSection> =
@@ -79,6 +81,7 @@ sealed interface HomeIntent {
 
     data class SetHomepageModulesEnabled(val enabled: Boolean) : HomeIntent
     data class SetCarouselAutoPlay(val enabled: Boolean) : HomeIntent
+    data class SetCarouselStyle(val style: Int) : HomeIntent
     data object ReadingGoalClick : HomeIntent
     data class UpdateReadingGoal(val minutes: Int) : HomeIntent
     data object BackupClick : HomeIntent

@@ -102,6 +102,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -154,7 +156,6 @@ import io.legado.app.ui.theme.rememberImageSeedColor
 import io.legado.app.ui.theme.rememberThemeOverride
 import io.legado.app.ui.theme.responsiveHazeEffectFixedStyle
 import io.legado.app.ui.theme.MiuixBlurredTopBar
-import io.legado.app.ui.widget.components.AppFloatingActionButtonMenu
 import io.legado.app.ui.widget.components.FabMenuItem
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.AppTextField
@@ -429,19 +430,30 @@ private fun BookInfoScreenContent(
                         )
                         // 下拉刷新手势会和越界回弹抢事件，刷新入口只留菜单里的「刷新」。
                         Box(modifier = Modifier.fillMaxSize()) {
+                            val pageSurface = LegadoTheme.colorScheme.surface
                             LazyColumn(
                                 state = listState,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    // 阅读记录/知识页是独立信息页，用实底遮住后面的封面背景；
-                                    // 简介/目录仍保留透视，避免详情页整体失去背景层次。
-                                    .then(
-                                        if (infoContentTab >= 2) {
-                                            Modifier.background(LegadoTheme.colorScheme.surface)
-                                        } else {
-                                            Modifier
+                                    // 只在分段选择器下方铺实底：上方封面/头部保持透明，
+                                    // 下方简介、目录、阅读记录、知识都不再透出封面背景。
+                                    // 偏移取自列表布局信息，吸顶后会自动跟随选择器底边。
+                                    .drawBehind {
+                                        val tabs = listState.layoutInfo.visibleItemsInfo
+                                            .firstOrNull { it.key == "book_info_tabs" }
+                                            ?: return@drawBehind
+                                        val top = (tabs.offset + tabs.size).toFloat()
+                                        if (top < size.height) {
+                                            drawRect(
+                                                color = pageSurface,
+                                                topLeft = Offset(0f, top),
+                                                size = androidx.compose.ui.geometry.Size(
+                                                    size.width,
+                                                    size.height - top,
+                                                ),
+                                            )
                                         }
-                                    ),
+                                    },
                                 contentPadding = PaddingValues(
                                     top = paddingValues.calculateTopPadding() + 8.dp,
                                     bottom = paddingValues.calculateBottomPadding() + 88.dp,
@@ -451,13 +463,7 @@ private fun BookInfoScreenContent(
                                     BookInfoHeader(
                                         book = book,
                                         highlightedTags = state.highlightedTags,
-                                        kindLabels = if (
-                                            LocalAppUiConfiguration.current.appShell.bookInfoShowSourceTags
-                                        ) {
-                                            state.kindLabels
-                                        } else {
-                                            emptyList()
-                                        },
+                                        kindLabels = state.kindLabels,
                                         groupNames = state.groupNames.takeIf { state.showGroupTag },
                                         onKindClick = onOpenExplore,
                                         onCoverClick = { onIntent(BookInfoIntent.CoverClick) },
@@ -547,6 +553,17 @@ private fun BookInfoScreenContent(
                                             color = LegadoTheme.colorScheme.outlineVariant
                                                 .copy(alpha = 0.6f),
                                         )
+                                        if (infoContentTab == 2) {
+                                            // 总阅读时间和分段选择器一起吸顶，不再随下方时间线滚走。
+                                            BookReadRecordSummary(
+                                                totalReadTime = state.readRecordTotalTime,
+                                                modifier = Modifier.padding(
+                                                    start = 16.dp,
+                                                    end = 16.dp,
+                                                    bottom = 12.dp,
+                                                ),
+                                            )
+                                        }
                                     }
                                 }
                                 item {
@@ -565,15 +582,13 @@ private fun BookInfoScreenContent(
                                                 onDownloadChapter = { index ->
                                                     onIntent(BookInfoIntent.DownloadChapter(index))
                                                 },
-                                                onDownloadAll = {
-                                                    onIntent(BookInfoIntent.DownloadAllChapters)
-                                                },
                                             )
 
                                             2 -> BookReadRecordContent(
                                                 totalReadTime = state.readRecordTotalTime,
                                                 timelineDays = state.readRecordTimelineDays,
                                                 modifier = Modifier.padding(horizontal = 16.dp),
+                                                showSummary = false,
                                             )
 
                                             // 知识（人物 / 词条 / 事件）单独一页，和简介分开。
@@ -1954,7 +1969,6 @@ private fun BookInfoTocSection(
     wordCounts: Map<Int, String>,
     onChapterClick: (Int) -> Unit,
     onDownloadChapter: (Int) -> Unit,
-    onDownloadAll: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (chapters.isEmpty()) {
@@ -1983,43 +1997,8 @@ private fun BookInfoTocSection(
     val visibleItems = remember(chapters, collapsedVolumes) {
         visibleTocRows(chapters, collapsedVolumes)
     }
-    val scope = rememberCoroutineScope()
-    var fabExpanded by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
-    val locateText = stringResource(R.string.locate_current_reading)
-    val toTopText = stringResource(R.string.to_top)
-    val toBottomText = stringResource(R.string.to_bottom)
-    val downloadAllText = stringResource(R.string.download_all)
     val expandText = stringResource(R.string.expand_volume)
     val collapseText = stringResource(R.string.coll_volume)
-    // 目录页右下浮动按钮：定位当前 / 移至顶部 / 移至底部 / 一键缓存。
-    val fabItems = listOf(
-        FabMenuItem(Icons.Default.MyLocation, locateText) {
-            var lastVolume: Int? = null
-            var currentVolume: Int? = null
-            for (chapter in chapters) {
-                if (chapter.isVolume) lastVolume = chapter.index
-                if (!chapter.isVolume && chapter.index == currentIndex) {
-                    currentVolume = lastVolume
-                    break
-                }
-            }
-            val expandedVolumes = currentVolume?.let { collapsedVolumes - it } ?: collapsedVolumes
-            collapsedVolumes = expandedVolumes
-            val target = visibleTocRows(chapters, expandedVolumes)
-                .indexOfFirst { !it.chapter.isVolume && it.chapter.index == currentIndex }
-            if (target >= 0) scope.launch { listState.scrollToItem(target) }
-        },
-        FabMenuItem(Icons.Default.VerticalAlignTop, toTopText) {
-            scope.launch { listState.scrollToItem(0) }
-        },
-        FabMenuItem(Icons.Default.VerticalAlignBottom, toBottomText) {
-            scope.launch { listState.scrollToItem(visibleItems.lastIndex.coerceAtLeast(0)) }
-        },
-        FabMenuItem(Icons.Default.Download, downloadAllText) {
-            onDownloadAll()
-        },
-    )
     Box(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -2135,15 +2114,6 @@ private fun BookInfoTocSection(
                 }
             }
         }
-        AppFloatingActionButtonMenu(
-            expanded = fabExpanded,
-            onExpandedChange = { fabExpanded = it },
-            items = fabItems,
-            focusRequester = focusRequester,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 14.dp, bottom = 6.dp),
-        )
     }
 }
 

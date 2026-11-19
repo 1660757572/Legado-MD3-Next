@@ -89,6 +89,7 @@ import kotlinx.collections.immutable.toImmutableList
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import ui.feice.mochi.basic.MochiButton
+import ui.feice.mochi.basic.MochiBarIconButton
 import ui.feice.mochi.basic.MochiButtonDefaults
 import ui.feice.mochi.basic.MochiButtonStyle
 import ui.feice.mochi.basic.MochiChip
@@ -621,17 +622,15 @@ fun KindEditor(
         },
         endAction = {
             if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
-                MochiButton(
+                MochiBarIconButton(
                     onClick = { showTagLibrary = false },
-                    style = MochiButtonStyle.Text,
-                    colors = MochiButtonDefaults.barColors(),
-                    contentPadding = MochiButtonDefaults.BarContentPadding,
-                    minHeight = MochiButtonDefaults.BarItemSize,
+                    colors = MochiButtonDefaults.colors(MochiButtonStyle.Filled),
+                    contentKey = "tag_library_confirm",
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = stringResource(R.string.confirm),
-                        tint = MochiTheme.colorScheme.onSurface,
+                        tint = MochiTheme.colorScheme.onPrimary,
                     )
                 }
             } else {

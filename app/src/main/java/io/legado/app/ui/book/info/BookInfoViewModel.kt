@@ -53,6 +53,7 @@ import io.legado.app.exception.NoBooksDirException
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.addType
+import io.legado.app.help.book.getCustomTagList
 import io.legado.app.help.book.getDisplayTagList
 import io.legado.app.help.book.getExportFileName
 import io.legado.app.help.book.isLocal
@@ -1426,7 +1427,13 @@ class BookInfoViewModel(
             if (book.kind != kindBefore) {
                 bookRepository.update(book)
             }
-            val finalKinds = book.getDisplayTagList()
+            // 关闭「显示书源分类」只隐藏书源带来的 kind，自定义标签仍要展示；
+            // 这个开关按书存在 ReadConfig 里，不再读全局偏好。
+            val finalKinds = if (!book.config.hideSourceTags) {
+                book.getDisplayTagList()
+            } else {
+                book.getCustomTagList()
+            }
             val enabledRules = highlightTagRuleRepository.getEnabled()
             val (highlighted, regular) = parseHighlightedTags(finalKinds, enabledRules)
             HighlightMeta(highlighted, regular, normalizedGroupNames, hasCustomGroup)
@@ -1973,6 +1980,7 @@ class BookInfoViewModel(
                 characters = currentCharacters.toImmutableList(),
                 highlightedTags = currentHighlightedTags,
                 kindLabels = currentKindLabels,
+                showSourceTags = !(currentBook?.config?.hideSourceTags ?: false),
                 groupNames = currentGroupNames,
                 hasCustomGroup = currentHasCustomGroup,
                 readRecordTotalTime = currentReadRecordTotalTime,

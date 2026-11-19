@@ -127,6 +127,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import io.legado.app.utils.toastOnUi
 enum class ReaderBookSheetTab {
     Information,
     Toc,
@@ -185,7 +186,7 @@ fun ReaderBookSheetRoute(
         viewModel.effects.collectLatest { effect ->
             when (effect) {
                 is TocEffect.ShowMessage ->
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                    context.toastOnUi(effect.message)
             }
         }
     }

@@ -125,9 +125,17 @@ class HomeViewModel(
         carouselBooks,
         homeDashboardUseCase.observeHomepageModulesEnabled(),
         homeDashboardUseCase.observeCarouselAutoPlay(),
-    ) { books, modulesEnabled, autoPlay ->
-        Triple(books, modulesEnabled, autoPlay)
+        homeDashboardUseCase.observeCarouselStyle(),
+    ) { books, modulesEnabled, autoPlay, style ->
+        CarouselConfig(books, modulesEnabled, autoPlay, style)
     }
+
+    private data class CarouselConfig(
+        val books: kotlinx.collections.immutable.ImmutableList<HomeCarouselBookUi>,
+        val modulesEnabled: Boolean,
+        val autoPlay: Boolean,
+        val style: Int,
+    )
 
     val uiState = combine(
         dashboardData,
@@ -137,7 +145,7 @@ class HomeViewModel(
         carouselData,
     ) { dashboardData, backup, dialog, sheet, carousel ->
         val (dashboard, selectedSourceUrl, visibleSections) = dashboardData
-        val (carousel, modulesEnabled, carouselAutoPlay) = carousel
+        val carouselBooks = carousel.books
         HomeUiState(
             totalReadBooks = dashboard.totalReadBooks,
             totalReadTimeMillis = dashboard.totalReadTimeMillis,
@@ -149,11 +157,12 @@ class HomeViewModel(
                 .take(6)
                 .map { it.toUi() }
                 .toImmutableList(),
-            carouselBooks = carousel,
-            carouselAutoPlay = carouselAutoPlay,
+            carouselBooks = carouselBooks,
+            carouselAutoPlay = carousel.autoPlay,
+            carouselStyle = carousel.style,
             selectedSourceSetUrl = selectedSourceUrl,
             visibleSections = visibleSections.toImmutableList(),
-            homepageModulesEnabled = modulesEnabled,
+            homepageModulesEnabled = carousel.modulesEnabled,
             latestBackup = backup.latest?.toUi(),
             isBackupLoading = backup.isLoading,
             isBackupLoadError = backup.isLoadError,
@@ -204,6 +213,11 @@ class HomeViewModel(
             is HomeIntent.SetCarouselAutoPlay -> {
                 viewModelScope.launch {
                     homeDashboardUseCase.updateCarouselAutoPlay(intent.enabled)
+                }
+            }
+            is HomeIntent.SetCarouselStyle -> {
+                viewModelScope.launch {
+                    homeDashboardUseCase.updateCarouselStyle(intent.style)
                 }
             }
             HomeIntent.ReadingGoalClick -> {

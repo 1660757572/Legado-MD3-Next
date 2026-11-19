@@ -495,6 +495,11 @@ data class Book(
 
         var fixedType: Boolean = false, // 固定书籍类型,不随书源更新
 
+        // 详情页是否展示书源提供的分类标签；用户自定义标签始终保留。按书保存。
+        // 用「隐藏」而不是「显示」存储：老书 readConfig JSON 里没有该字段时，
+        // Gson 反序列化得到 false，正好等于默认展示书源分类。
+        var hideSourceTags: Boolean = false,
+
         var translationMode: Boolean = false, // 是否启用翻译阅读模式
 
         var openCredits: Int = 0,    // 音频片头（秒）

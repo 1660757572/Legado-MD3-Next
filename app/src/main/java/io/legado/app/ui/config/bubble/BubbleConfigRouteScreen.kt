@@ -15,6 +15,7 @@ import io.legado.app.help.config.BubblePackageManager
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
+import io.legado.app.utils.toastOnUi
 @Composable
 fun BubbleConfigRouteScreen(
     onBackClick: () -> Unit,
@@ -45,7 +46,7 @@ fun BubbleConfigRouteScreen(
                 is BubbleConfigEffect.Message -> effect.text
                 is BubbleConfigEffect.Exported -> effect.message
             }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            context.toastOnUi(message)
         }
     }
 

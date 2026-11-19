@@ -65,8 +65,11 @@ fun AppIcon(
 ) {
     if (imageVector == null) return
 
+    // 所有走 AppIcon 的 Material 图标在 Mochi 主题下统一换成 filled Ionicons；
+    // 映射表没有的图标仍保留原图，调用方不需要逐个判断引擎。
+    val resolved = AppIcons.mochiOrNull(imageVector) ?: imageVector
     AppIcon(
-        painter = rememberVectorPainter(imageVector),
+        painter = rememberVectorPainter(resolved),
         contentDescription = contentDescription,
         modifier = modifier,
         tint = tint,

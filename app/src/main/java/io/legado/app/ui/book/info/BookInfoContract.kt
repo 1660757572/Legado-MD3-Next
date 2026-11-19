@@ -43,6 +43,8 @@ data class BookInfoUiState(
     val webFiles: List<BookInfoWebFile> = emptyList(),
     val highlightedTags: List<HighlightedTag> = emptyList(),
     val kindLabels: List<String> = emptyList(),
+    /** 本书是否展示书源提供的分类标签；自定义标签不受影响。 */
+    val showSourceTags: Boolean = true,
     val groupNames: String? = null,
     val hasCustomGroup: Boolean = false,
     val readRecordTotalTime: Long = 0L,

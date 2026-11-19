@@ -71,6 +71,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -80,6 +81,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import ui.feice.mochi.basic.MochiCarousel
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -105,6 +107,7 @@ import io.legado.app.ui.main.homepage.HomepageModuleFeed
 import io.legado.app.ui.main.homepage.HomepageModuleManageSheet
 import io.legado.app.ui.main.homepage.HomepageUiState
 import io.legado.app.ui.main.homepage.HomepageViewModel
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LocalBottomOverlayPadding
 import io.legado.app.ui.widget.components.AppScaffold
@@ -121,6 +124,8 @@ import io.legado.app.ui.widget.components.image.cover.BookshelfCover
 import io.legado.app.ui.widget.components.menu.AppAction
 import io.legado.app.ui.widget.components.menu.AppActionGroup
 import io.legado.app.ui.widget.components.menu.AppActionMenu
+import io.legado.app.ui.widget.components.menu.AppChoiceDropdown
+import io.legado.app.ui.widget.components.menu.AppChoiceOption
 import io.legado.app.ui.widget.components.progressIndicator.AppContainedLoadingIndicator
 import io.legado.app.ui.widget.components.settingItem.TinySwitchSettingItem
 import io.legado.app.ui.widget.components.text.AppText
@@ -667,6 +672,7 @@ fun HomeScreen(
             sections = state.visibleSections,
             homepageModulesEnabled = state.homepageModulesEnabled,
             carouselAutoPlay = state.carouselAutoPlay,
+            carouselStyle = state.carouselStyle,
             onIntent = onIntent,
         )
         AppAlertDialog(
@@ -725,6 +731,7 @@ private fun HomeDashboardContent(
                     RandomBooksCarousel(
                         books = state.carouselBooks,
                         autoPlay = state.carouselAutoPlay,
+                        style = state.carouselStyle,
                         // 轮播只做发现入口：点书进详情页，不直接跳阅读
                         onBookClick = onOpenBookInfo,
                     )
@@ -814,6 +821,7 @@ private fun StatisticCardsRow(
 private fun RandomBooksCarousel(
     books: ImmutableList<HomeCarouselBookUi>,
     autoPlay: Boolean,
+    style: Int,
     onBookClick: (HomeCarouselBookUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -868,6 +876,108 @@ private fun RandomBooksCarousel(
                     style = LegadoTheme.typography.titleMediumEmphasized,
                 )
             }
+            if (style == 1 && LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+                // Mochi 轮播：整张封面做卡片，右上角再放一枚封面；作者在书名上方，左下角展示。
+                val mochiPagerState = rememberPagerState { books.size }
+                LaunchedEffect(mochiPagerState, books.size, autoPlay) {
+                    if (!autoPlay || books.size <= 1) return@LaunchedEffect
+                    while (true) {
+                        delay(CAROUSEL_INTERVAL_MILLIS)
+                        if (!mochiPagerState.isScrollInProgress) {
+                            mochiPagerState.animateScrollToPage(
+                                (mochiPagerState.currentPage + 1) % books.size
+                            )
+                        }
+                    }
+                }
+                MochiCarousel(
+                    pageCount = books.size,
+                    height = 168.dp,
+                    state = mochiPagerState,
+                    showPageControl = true,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { page ->
+                    val book = books[page]
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                role = Role.Button,
+                                onClick = { onBookClick(book) },
+                            )
+                            .semantics {
+                                contentDescription = bookAccessibilityLabel(book.name, book.author)
+                                role = Role.Button
+                            },
+                    ) {
+                        BookshelfCover(
+                            name = book.name,
+                            author = book.author,
+                            path = book.coverPath,
+                            sourceOrigin = book.origin,
+                            modifier = Modifier.fillMaxSize(),
+                            coverModifier = Modifier.fillMaxSize(),
+                        )
+                        // 左下文字压暗，保证书名/作者在浅色封面上也清楚；两端再加一层很轻的横向渐隐。
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        0.38f to Color.Transparent,
+                                        1f to Color.Black.copy(alpha = 0.82f),
+                                    )
+                                )
+                                .background(
+                                    Brush.horizontalGradient(
+                                        0f to Color.Black.copy(alpha = 0.18f),
+                                        0.18f to Color.Transparent,
+                                        0.82f to Color.Transparent,
+                                        1f to Color.Black.copy(alpha = 0.18f),
+                                    )
+                                ),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
+                                .width(46.dp)
+                                .aspectRatio(5f / 7f)
+                                .clip(RoundedCornerShape(8.dp)),
+                        ) {
+                            BookshelfCover(
+                                name = book.name,
+                                author = book.author,
+                                path = book.coverPath,
+                                sourceOrigin = book.origin,
+                                modifier = Modifier.fillMaxSize(),
+                                coverModifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                        ) {
+                            AppText(
+                                text = book.author,
+                                style = LegadoTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.82f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            AppText(
+                                text = book.name.wrapBookTitleAfterTenChars(),
+                                style = LegadoTheme.typography.titleMediumEmphasized,
+                                color = Color.White,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            } else {
             HorizontalPager(
                 state = pagerState,
                 // 页数有限，到边界后平台 stretch 过冲会在松手时反向回弹；轮播不需要越界反馈。
@@ -951,6 +1061,7 @@ private fun RandomBooksCarousel(
                         )
                     }
                 }
+            }
             }
         }
     }
@@ -1516,10 +1627,12 @@ private fun HomeDashboardSettingsSheet(
     sections: List<HomeDashboardSection>,
     homepageModulesEnabled: Boolean,
     carouselAutoPlay: Boolean,
+    carouselStyle: Int,
     onSectionVisibilityChanged: (HomeDashboardSection, Boolean) -> Unit,
     onSectionMove: (HomeDashboardSection, Int) -> Unit,
     onHomepageModulesEnabledChanged: (Boolean) -> Unit,
     onCarouselAutoPlayChanged: (Boolean) -> Unit,
+    onCarouselStyleChanged: (Int) -> Unit,
 ) {
     if (!show) return
     // 开启的组件按当前顺序排在前面，关闭的组件按默认顺序排在后面。
@@ -1581,6 +1694,38 @@ private fun HomeDashboardSettingsSheet(
                         checked = carouselAutoPlay,
                         onCheckedChange = onCarouselAutoPlayChanged,
                     )
+                    val styleOptions = remember {
+                        persistentListOf(
+                            AppChoiceOption("0", "经典横排"),
+                            AppChoiceOption("1", "Mochi 轮播"),
+                        )
+                    }
+                    AppChoiceDropdown(
+                        options = styleOptions,
+                        selectedId = carouselStyle.toString(),
+                        onSelect = { id -> onCarouselStyleChanged(id.toIntOrNull() ?: 0) },
+                        title = stringResource(R.string.home_carousel_style),
+                        modifier = Modifier.fillMaxWidth(),
+                        compact = true,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppText(
+                                text = stringResource(R.string.home_carousel_style),
+                                style = LegadoTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
+                            )
+                            AppText(
+                                text = if (carouselStyle == 1) "Mochi" else stringResource(R.string.home_carousel_style_classic),
+                                style = LegadoTheme.typography.bodyMedium,
+                                color = LegadoTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
             }
             // 首页模块是独立的整屏区块，固定在组件区之后，所以只有开关、没有排序箭头。
@@ -1657,6 +1802,7 @@ private fun HomeSheets(
     sections: List<HomeDashboardSection>,
     homepageModulesEnabled: Boolean,
     carouselAutoPlay: Boolean,
+    carouselStyle: Int,
     onIntent: (HomeIntent) -> Unit,
 ) {
     HomeDashboardSettingsSheet(
@@ -1665,6 +1811,7 @@ private fun HomeSheets(
         sections = sections,
         homepageModulesEnabled = homepageModulesEnabled,
         carouselAutoPlay = carouselAutoPlay,
+        carouselStyle = carouselStyle,
         onSectionVisibilityChanged = { section, visible ->
             onIntent(HomeIntent.SetSectionVisible(section, visible))
         },
@@ -1676,6 +1823,9 @@ private fun HomeSheets(
         },
         onCarouselAutoPlayChanged = { enabled ->
             onIntent(HomeIntent.SetCarouselAutoPlay(enabled))
+        },
+        onCarouselStyleChanged = { style ->
+            onIntent(HomeIntent.SetCarouselStyle(style))
         },
     )
     BackupOptionSheet(

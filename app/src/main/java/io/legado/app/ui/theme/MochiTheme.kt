@@ -6,12 +6,16 @@ import androidx.compose.material3.Typography
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextMotion
+import ui.feice.mochi.basic.MochiToastHost
+import ui.feice.mochi.basic.rememberMochiToastState
+import ui.feice.mochi.effect.overscroll.MochiOverscrollSpec
 import ui.feice.mochi.effect.overscroll.ProvideMochiOverscroll
 import ui.feice.mochi.theme.MochiColorScheme
 import ui.feice.mochi.theme.MochiTextStyles
@@ -33,6 +37,14 @@ internal fun ProvideMochiTheme(
     val registry = LocalMochiBackdropRegistry.current ?: remember { MochiBackdropRegistry() }
     val colors = remember(colorScheme, isDark) { colorScheme.toMochiColorScheme(isDark) }
     val textStyles = remember(typography) { typography.toMochiTextStyles() }
+    // 默认 0.65 的阻力在分类栏/分页器上拉出的越界太远，松手后的回弹也很抢眼；
+    // 调到 0.36 后手指只能带出很小一段位移，滚动到头的感觉更接近 Mochi 官方。
+    val overscrollSpec = remember { MochiOverscrollSpec(rubberBand = 0.36f) }
+    val toastState = rememberMochiToastState()
+    DisposableEffect(toastState) {
+        MochiToastBridge.attach(toastState)
+        onDispose { MochiToastBridge.detach(toastState) }
+    }
     MochiTheme(
         colors = colors,
         textStyles = textStyles,
@@ -50,7 +62,10 @@ internal fun ProvideMochiTheme(
         ),
         content = {
             CompositionLocalProvider(LocalMochiBackdropRegistry provides registry) {
-                ProvideMochiOverscroll(content = content)
+                ProvideMochiOverscroll(spec = overscrollSpec) {
+                    content()
+                    MochiToastHost(toastState)
+                }
             }
         },
     )

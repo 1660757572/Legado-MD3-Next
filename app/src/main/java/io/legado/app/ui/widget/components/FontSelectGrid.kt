@@ -62,7 +62,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
-private val fontGridHeight = 360.dp
+private val fontEmptyHeight = 180.dp
 
 enum class FontSort(@param:StringRes val labelRes: Int) {
     NameAsc(R.string.sort_name_asc),
@@ -209,7 +209,7 @@ fun FontSelectGrid(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(fontGridHeight),
+                    .height(fontEmptyHeight),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -218,7 +218,7 @@ fun FontSelectGrid(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(fontGridHeight),
+                    .height(fontEmptyHeight),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -228,19 +228,31 @@ fun FontSelectGrid(
                 )
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            // 面板自带纵向滚动（MochiSheetContent）；这里再放一个固定高度的 LazyVerticalGrid
+            // 会形成嵌套滚动，手势被网格吃掉，面板拉不上去、底部字体永远露不出来。
+            // 字体数量有限，直接用非懒加载的两列行布局，把完整高度交给外层面板测量和滚动。
+            Column(
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.height(fontGridHeight),
             ) {
-                items(filteredItems, key = { it.name }) { item ->
-                    FontItem(
-                        item = item,
-                        isSelected = item.name == selectedFontName,
-                        onClick = { onSelectFont(item) },
-                    )
+                filteredItems.chunked(2).forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        rowItems.forEach { item ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                FontItem(
+                                    item = item,
+                                    isSelected = item.name == selectedFontName,
+                                    onClick = { onSelectFont(item) },
+                                )
+                            }
+                        }
+                        if (rowItems.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }

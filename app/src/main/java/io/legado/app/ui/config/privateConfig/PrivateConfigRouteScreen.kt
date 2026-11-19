@@ -66,11 +66,7 @@ fun PrivateConfigRouteScreen(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
-                        Toast.makeText(
-                            context,
-                            R.string.permission_not_required,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context.toastOnUi(R.string.permission_not_required)
                     }
                 }
 
@@ -81,11 +77,7 @@ fun PrivateConfigRouteScreen(
                 PrivateConfigEffect.RequestBiometricEnvelope -> {
                     val activity = context.findFragmentActivity()
                     if (activity == null) {
-                        Toast.makeText(
-                            context,
-                            R.string.private_biometric_unavailable,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context.toastOnUi(R.string.private_biometric_unavailable)
                     } else {
                         BiometricEnvelopeWriter.launch(
                             activity = activity,
@@ -98,11 +90,7 @@ fun PrivateConfigRouteScreen(
                                 )
                             },
                             onError = {
-                                Toast.makeText(
-                                    context,
-                                    R.string.private_biometric_unavailable,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.toastOnUi(R.string.private_biometric_unavailable)
                             },
                             // 用户主动放弃：开关保持关闭，不需要额外提示
                             onCancel = {},

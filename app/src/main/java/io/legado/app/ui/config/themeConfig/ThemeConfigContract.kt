@@ -81,8 +81,8 @@ sealed interface ThemeConfigIntent {
     data class SetMainNavigationOrder(val routes: String) : ThemeConfigIntent
     data class SetDefaultHomePage(val route: String) : ThemeConfigIntent
     data class SelectLauncherIcon(val value: String) : ThemeConfigIntent
-    data class SetLauncherIconFollowDark(val enabled: Boolean) : ThemeConfigIntent
     data class SetCategoryChipSpacing(val value: Int) : ThemeConfigIntent
+    data class SetCategoryChipScale(val value: Int) : ThemeConfigIntent
     data class SelectNavigationIcon(val destination: String, val path: String) : ThemeConfigIntent
     data class RequestNavigationIcon(val destination: String) : ThemeConfigIntent
     data class RequestBackgroundImage(val dark: Boolean) : ThemeConfigIntent

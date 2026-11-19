@@ -9,6 +9,7 @@ import io.legado.app.lib.theme.ThemeStore
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
+import io.legado.app.utils.toastOnUi
 @Composable
 fun CustomThemeRouteScreen(
     onBackClick: () -> Unit,
@@ -24,7 +25,7 @@ fun CustomThemeRouteScreen(
                     ThemeStore.editTheme(context).primaryColor(effect.color).apply()
                 }
                 is CustomThemeEffect.SettingsUpdateFailed -> {
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                    context.toastOnUi(effect.message)
                 }
             }
         }

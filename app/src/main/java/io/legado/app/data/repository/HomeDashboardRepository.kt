@@ -100,6 +100,13 @@ class HomeDashboardRepository(
         localPreferencesRepository.putBoolean(CAROUSEL_AUTOPLAY_KEY, enabled)
     }
 
+    override fun observeCarouselStyle(): Flow<Int> =
+        localPreferencesRepository.getInt(CAROUSEL_STYLE_KEY, 0)
+
+    override suspend fun updateCarouselStyle(style: Int) {
+        localPreferencesRepository.putInt(CAROUSEL_STYLE_KEY, style.coerceIn(0, 1))
+    }
+
     override suspend fun updateDailyGoal(minutes: Int) {
         localPreferencesRepository.updatePreference(
             LocalPreferencesKeys.DAILY_READING_GOAL_MINUTES,
@@ -151,5 +158,8 @@ class HomeDashboardRepository(
     private companion object {
         /** 随机推荐是否自动轮播；用普通 String key 读写，避免再引入一条旧偏好调用。 */
         const val CAROUSEL_AUTOPLAY_KEY = "home_carousel_autoplay"
+
+        /** 随机推荐卡片样式；0 = 经典横排，1 = Mochi 轮播。 */
+        const val CAROUSEL_STYLE_KEY = "home_carousel_style"
     }
 }

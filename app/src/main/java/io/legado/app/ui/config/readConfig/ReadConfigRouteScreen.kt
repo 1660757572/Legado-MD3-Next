@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
+import io.legado.app.utils.toastOnUi
 @Composable
 fun ReadConfigRouteScreen(
     onBackClick: () -> Unit,
@@ -21,7 +22,7 @@ fun ReadConfigRouteScreen(
         viewModel.effects.collectLatest { effect ->
             when (effect) {
                 is ReadConfigEffect.SettingsUpdateFailed -> {
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                    context.toastOnUi(effect.message)
                 }
             }
         }

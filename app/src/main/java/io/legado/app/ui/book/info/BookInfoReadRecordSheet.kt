@@ -58,6 +58,44 @@ fun BookReadRecordSheet(
     }
 }
 
+/** 阅读记录顶部的总阅读时间卡片；详情页把它和分段选择器一起吸顶。 */
+@Composable
+fun BookReadRecordSummary(
+    totalReadTime: Long,
+    modifier: Modifier = Modifier,
+) {
+    GlassCard(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = LegadoTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Timeline,
+                contentDescription = null,
+                tint = LegadoTheme.colorScheme.primary,
+            )
+            Column {
+                AppText(
+                    text = stringResource(R.string.all_read_time),
+                    style = LegadoTheme.typography.labelMedium,
+                    color = LegadoTheme.colorScheme.primary,
+                )
+                AppText(
+                    text = formatReadDuration(totalReadTime),
+                    style = LegadoTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
 /**
  * 阅读记录正文：详情页内嵌分段与独立 Sheet 共用同一份渲染。
  */
@@ -66,39 +104,13 @@ fun BookReadRecordContent(
     totalReadTime: Long,
     timelineDays: List<ReadRecordTimelineDay>,
     modifier: Modifier = Modifier,
+    showSummary: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = LegadoTheme.colorScheme.surfaceContainerLow
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Timeline,
-                    contentDescription = null,
-                    tint = LegadoTheme.colorScheme.primary
-                )
-                Column {
-                    AppText(
-                        text = stringResource(R.string.all_read_time),
-                        style = LegadoTheme.typography.labelMedium,
-                        color = LegadoTheme.colorScheme.primary
-                    )
-                    AppText(
-                        text = formatReadDuration(totalReadTime),
-                        style = LegadoTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+        if (showSummary) {
+            BookReadRecordSummary(totalReadTime = totalReadTime)
+            Spacer(modifier = Modifier.height(12.dp))
         }
-        Spacer(modifier = Modifier.height(12.dp))
         if (timelineDays.isEmpty()) {
             Box(
                 modifier = Modifier

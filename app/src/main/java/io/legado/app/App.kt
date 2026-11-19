@@ -139,12 +139,6 @@ class App : Application(), SingletonImageLoader.Factory {
             get<AppLocaleGateway>().migrateLegacyLanguage(legacyLanguage)
         }
         applyDayNightInit(this)
-        // 跟随深浅模式时，应用启动也要把启动器图标切到当前模式对应的那一张。
-        if (get<AppShellSettingsGateway>().currentSettings.launcherIconFollowDark) {
-            LauncherIconHelp.changeIcon(
-                if (ThemeConfigStore.isNightTheme) "ic_launcher" else "launcherw"
-            )
-        }
         if (getPrefString("app_theme", "0") == "12") {
             if (themeGateway.currentSettings.customMode == "accent")
                 setTheme(R.style.ThemeOverlay_WhiteBackground)

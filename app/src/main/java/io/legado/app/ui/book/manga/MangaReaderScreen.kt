@@ -144,6 +144,7 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
+import io.legado.app.utils.toastOnUi
 private val LocalReaderViewportSize = staticCompositionLocalOf { IntSize.Zero }
 private val LocalReaderViewportOrigin = staticCompositionLocalOf { Offset.Zero }
 private val LocalMangaRatioUpdate = staticCompositionLocalOf<((String, Float) -> Unit)?> { null }
@@ -289,11 +290,7 @@ fun MangaReaderScreen(
     LaunchedEffect(pendingMessage?.id, context, lifecycleOwner) {
         val message = pendingMessage ?: return@LaunchedEffect
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            Toast.makeText(
-                context,
-                message.content.resolve(context),
-                Toast.LENGTH_SHORT,
-            ).show()
+            context.toastOnUi(message.content.resolve(context))
             onIntent(MangaReaderIntent.MessageShown(message.id))
         }
     }

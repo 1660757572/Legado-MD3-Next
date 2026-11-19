@@ -171,6 +171,11 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.directories.add("$projectDir/schemas")
+        // Mochi 的 Ionicons 图标库与 mochi-compose 分开发布，本地 Maven 只有后者。
+        // 这里直接把子模块的图标源码/资源并进 app，避免再维护一份 Maven 产物。
+        getByName("main").java.srcDir("../modules/mochi/mochi-icons/src/main/java")
+        getByName("main").kotlin.srcDir("../modules/mochi/mochi-icons/src/main/java")
+        getByName("main").assets.srcDir("../modules/mochi/mochi-icons/src/main/assets")
     }
 
     lint {

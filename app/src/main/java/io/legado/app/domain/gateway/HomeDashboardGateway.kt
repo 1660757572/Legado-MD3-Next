@@ -25,6 +25,9 @@ interface HomeDashboardGateway {
     /** 首页「随机推荐」是否自动轮播。 */
     fun observeCarouselAutoPlay(): Flow<Boolean>
 
+    /** 首页「随机推荐」的卡片样式：0 = 经典横排，1 = Mochi 轮播。 */
+    fun observeCarouselStyle(): Flow<Int>
+
     suspend fun updateDailyGoal(minutes: Int)
 
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String)
@@ -34,4 +37,6 @@ interface HomeDashboardGateway {
     suspend fun updateHomepageModulesEnabled(enabled: Boolean)
 
     suspend fun updateCarouselAutoPlay(enabled: Boolean)
+
+    suspend fun updateCarouselStyle(style: Int)
 }

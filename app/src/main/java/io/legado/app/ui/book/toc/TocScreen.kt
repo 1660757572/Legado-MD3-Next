@@ -132,6 +132,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import io.legado.app.utils.toastOnUi
 /** 卷管理菜单的稳定 ID：两条整卷命令 + 每个卷一条跳转项。 */
 private enum class VolumeMenuAction(val id: String) {
     ExpandAll("expand_all_volumes"),
@@ -210,7 +211,7 @@ fun TocRouteScreen(
         viewModel.effects.collectLatest { effect ->
             when (effect) {
                 is TocEffect.ShowMessage ->
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                    context.toastOnUi(effect.message)
             }
         }
     }

@@ -33,14 +33,12 @@ data class AppShellSettings(
     val navIconRssSelected: String = "",
     val navIconMySelected: String = "",
     val launcherIcon: String = "ic_launcher",
-    /** 图标跟随深浅模式：深色用黑底图标，浅色用白底图标；开启时禁止手动切换。 */
-    val launcherIconFollowDark: Boolean = false,
     val navigationAnimationStyle: NavigationAnimationStyle = NavigationAnimationStyle.Default,
     val textAnimationLevel: TextAnimationLevel = TextAnimationLevel.Slide,
     /** Mochi 分类 chip 之间以及内容左右的间距，单位 dp。 */
     val categoryChipSpacing: Int = 12,
-    /** 书籍详情页是否展示书源分类标签；关闭后编辑页也只显示用户自己添加的标签。 */
-    val bookInfoShowSourceTags: Boolean = true,
+    /** Mochi 分类 chip 的整体尺寸百分比；80–120，默认 100。 */
+    val categoryChipScale: Int = 100,
 )
 
 enum class TextAnimationLevel(val storedValue: String) {

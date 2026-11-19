@@ -84,7 +84,7 @@ class BookInfoEditViewModel(
                     originalKindList = customTags,
                     selectedType = selectedType,
                     fixedType = it.config.fixedType,
-                    showSourceKinds = appShellSettingsGateway.currentSettings.bookInfoShowSourceTags,
+                    showSourceKinds = !it.config.hideSourceTags,
                     book = it
                 )
             }
@@ -127,11 +127,14 @@ class BookInfoEditViewModel(
         _uiState.value = _uiState.value.copy(fixedType = fixed)
     }
 
-    /** 书源分类标签是全局展示偏好：立即落盘，详情页和下次进入编辑页都读取同一份状态。 */
+    /** 书源分类标签是单本书的展示偏好：写进该书的 ReadConfig，立即落库，其他书不受影响。 */
     fun onShowSourceKindsChange(show: Boolean) {
         _uiState.value = _uiState.value.copy(showSourceKinds = show)
         execute {
-            appShellSettingsGateway.update { it.copy(bookInfoShowSourceTags = show) }
+            book?.let { current ->
+                current.config.hideSourceTags = !show
+                bookRepository.update(current)
+            }
         }
     }
 

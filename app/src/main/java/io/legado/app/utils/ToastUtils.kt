@@ -8,6 +8,9 @@ import androidx.fragment.app.Fragment
 import io.legado.app.BuildConfig
 import io.legado.app.databinding.ViewToastBinding
 import io.legado.app.domain.gateway.OtherSettingsGateway
+import io.legado.app.ui.theme.ComposeEngine
+import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.MochiToastBridge
 import org.koin.core.context.GlobalContext
 import splitties.systemservices.layoutInflater
 
@@ -25,6 +28,9 @@ fun Context.toastOnUi(message: Int, duration: Int = Toast.LENGTH_SHORT) {
 fun Context.toastOnUi(message: CharSequence?, duration: Int = Toast.LENGTH_SHORT) {
     runOnUI {
         kotlin.runCatching {
+            if (message != null && showMochiToast(message, duration == Toast.LENGTH_LONG)) {
+                return@runOnUI
+            }
             toast?.cancel()
             toast = Toast.makeText(this, message, duration)
             toast?.show()
@@ -32,9 +38,14 @@ fun Context.toastOnUi(message: CharSequence?, duration: Int = Toast.LENGTH_SHORT
     }
 }
 
+/** Mochi 主题下把提示交给页面根部的 MochiToastHost；没有宿主时返回 false。 */
+private fun Context.showMochiToast(message: CharSequence, long: Boolean): Boolean =
+    MochiToastBridge.show(message, long)
+
 fun Context.toastOnUiLegacy(message: CharSequence) {
     runOnUI {
         kotlin.runCatching {
+            if (showMochiToast(message, false)) return@runOnUI
             if (toastLegacy == null || BuildConfig.DEBUG || otherSettingsGateway.currentSettings.recordLog) {
                 toastLegacy = Toast.makeText(this, message, Toast.LENGTH_SHORT)
             } else {
@@ -57,6 +68,7 @@ fun Context.longToastOnUi(message: CharSequence?) {
 fun Context.longToastOnUiLegacy(message: CharSequence) {
     runOnUI {
         kotlin.runCatching {
+            if (showMochiToast(message, true)) return@runOnUI
             if (toastLegacy == null || BuildConfig.DEBUG || otherSettingsGateway.currentSettings.recordLog) {
                 toastLegacy = Toast.makeText(this, message, Toast.LENGTH_LONG)
             } else {
