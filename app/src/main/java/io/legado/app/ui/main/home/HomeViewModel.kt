@@ -16,6 +16,8 @@ import io.legado.app.domain.usecase.BackupRestoreUseCase
 import io.legado.app.domain.usecase.HomeDashboardUseCase
 import io.legado.app.domain.usecase.WebDavBackupUseCase
 import io.legado.app.utils.isContentScheme
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -77,7 +79,7 @@ class HomeViewModel(
      *
      * 只抽「未读」书：私密书不出现在任何列表里，读完的书（未读章节数为 0）也没有再推的必要。
      */
-    private val carouselBooks = combine(
+    private val carouselCandidates = combine(
         bookRepository.getAllBooks(),
         privateContentGateway.flowPrivateBookUrls(),
         privateGroupMaskFlow,
@@ -89,18 +91,42 @@ class HomeViewModel(
                 privateBookUrls = privateBookUrls,
                 privateGroupMask = privateGroupMask,
             ) && book.getUnreadChapterNum() > 0
-        }.shuffled()
-            .take(CAROUSEL_BOOK_LIMIT)
-            .map { it.toCarouselUi() }
-            .toImmutableList()
+        }
     }
+
+    /**
+     * 抽签结果按「书架可推荐内容的指纹」缓存：只有书单本身变了（增删、换封面、未读章节数变化）
+     * 才重新洗牌。阅读进度之类的其它 Book 字段更新也会让 Room 重新发射同一批书，如果每次都洗牌，
+     * 轮播会停在第一页却不停换内容（启用自动轮播时更明显）。
+     */
+    private var carouselSignature: String? = null
+    private var carouselSnapshot: ImmutableList<HomeCarouselBookUi> = persistentListOf()
+
+    private val carouselBooks = carouselCandidates
+        .map { eligible ->
+            val signature = eligible.joinToString("|") { book ->
+                "${book.bookUrl}#${book.name}#${book.getDisplayCover()}#${book.getUnreadChapterNum()}"
+            }
+            if (signature == carouselSignature) {
+                carouselSnapshot
+            } else {
+                carouselSignature = signature
+                carouselSnapshot = eligible.shuffled()
+                    .take(CAROUSEL_BOOK_LIMIT)
+                    .map { it.toCarouselUi() }
+                    .toImmutableList()
+                carouselSnapshot
+            }
+        }
+        .distinctUntilChanged()
 
     /** 轮播数据与「首页模块」开关同属首页组件配置，一起进 UI 状态。 */
     private val carouselData = combine(
         carouselBooks,
         homeDashboardUseCase.observeHomepageModulesEnabled(),
-    ) { books, modulesEnabled ->
-        books to modulesEnabled
+        homeDashboardUseCase.observeCarouselAutoPlay(),
+    ) { books, modulesEnabled, autoPlay ->
+        Triple(books, modulesEnabled, autoPlay)
     }
 
     val uiState = combine(
@@ -111,7 +137,7 @@ class HomeViewModel(
         carouselData,
     ) { dashboardData, backup, dialog, sheet, carousel ->
         val (dashboard, selectedSourceUrl, visibleSections) = dashboardData
-        val (carousel, modulesEnabled) = carousel
+        val (carousel, modulesEnabled, carouselAutoPlay) = carousel
         HomeUiState(
             totalReadBooks = dashboard.totalReadBooks,
             totalReadTimeMillis = dashboard.totalReadTimeMillis,
@@ -124,6 +150,7 @@ class HomeViewModel(
                 .map { it.toUi() }
                 .toImmutableList(),
             carouselBooks = carousel,
+            carouselAutoPlay = carouselAutoPlay,
             selectedSourceSetUrl = selectedSourceUrl,
             visibleSections = visibleSections.toImmutableList(),
             homepageModulesEnabled = modulesEnabled,
@@ -172,6 +199,11 @@ class HomeViewModel(
             is HomeIntent.SetHomepageModulesEnabled -> {
                 viewModelScope.launch {
                     homeDashboardUseCase.updateHomepageModulesEnabled(intent.enabled)
+                }
+            }
+            is HomeIntent.SetCarouselAutoPlay -> {
+                viewModelScope.launch {
+                    homeDashboardUseCase.updateCarouselAutoPlay(intent.enabled)
                 }
             }
             HomeIntent.ReadingGoalClick -> {

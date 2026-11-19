@@ -10,6 +10,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
@@ -81,6 +82,36 @@ internal fun AnimatedContentTransitionScope<Scene<NavKey>>.navigationPreset(
         } else {
             mochiBackTransform(direction, swipeEdge)
         }
+
+        NavigationAnimationStyle.System -> systemBackTransform(forward, direction, swipeEdge)
+    }
+}
+
+/**
+ * 「跟随系统」预测性返回的近似实现。
+ *
+ * Navigation 3 的 NavDisplay 没有读取系统预测性返回动画的入口，真正的系统动画只对
+ * Activity/Fragment 生效；这里按 AOSP 的观感复刻：返回手势时上一页从左侧轻微滑入，
+ * 当前页向右滑出四分一屏并淡出，不做缩放/圆角，以贴近系统默认行为。
+ */
+private fun systemBackTransform(
+    forward: Boolean,
+    direction: Int,
+    swipeEdge: Int?,
+): ContentTransform {
+    val motion = if (swipeEdge != null) {
+        tween<IntOffset>(durationMillis = 300, easing = LinearEasing)
+    } else {
+        tween(durationMillis = 260, easing = FastOutSlowInEasing)
+    }
+    return if (forward) {
+        slideInHorizontally(motion) { width -> direction * width / 3 } togetherWith
+            slideOutHorizontally(motion) { width -> -direction * width / 3 }
+    } else {
+        (slideInHorizontally(motion) { width -> -direction * width / 3 } +
+            fadeIn(tween(220, easing = FastOutSlowInEasing))) togetherWith
+            (slideOutHorizontally(motion) { width -> direction * width / 4 } +
+                fadeOut(tween(220, easing = FastOutSlowInEasing)))
     }
 }
 
@@ -172,6 +203,8 @@ internal data class NavigationPageScene(
             NavigationAnimationStyle.Scale -> Modifier.fillMaxSize().scalePageCorners()
             // Mochi 预测性返回：退场页缩小并收圆角，同侧的玻璃投影/裁剪沿用 sidePush 的表面。
             NavigationAnimationStyle.Mochi -> Modifier.fillMaxSize().sidePushSurface(displayLeft)
+            // 系统样式：不做额外表面处理，交给系统观感的滑入滑出。
+            NavigationAnimationStyle.System -> Modifier
         }
         Box(modifier, propagateMinConstraints = true) { scene.content() }
     }

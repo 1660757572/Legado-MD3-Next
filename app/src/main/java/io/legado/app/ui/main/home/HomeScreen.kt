@@ -137,6 +137,7 @@ import io.legado.app.utils.takePersistablePermissionSafely
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.DateFormat
@@ -665,6 +666,7 @@ fun HomeScreen(
             sheet = state.activeSheet,
             sections = state.visibleSections,
             homepageModulesEnabled = state.homepageModulesEnabled,
+            carouselAutoPlay = state.carouselAutoPlay,
             onIntent = onIntent,
         )
         AppAlertDialog(
@@ -722,6 +724,7 @@ private fun HomeDashboardContent(
                 HomeDashboardSection.BookCarousel -> if (state.carouselBooks.isNotEmpty()) {
                     RandomBooksCarousel(
                         books = state.carouselBooks,
+                        autoPlay = state.carouselAutoPlay,
                         // 轮播只做发现入口：点书进详情页，不直接跳阅读
                         onBookClick = onOpenBookInfo,
                     )
@@ -810,17 +813,35 @@ private fun StatisticCardsRow(
 @Composable
 private fun RandomBooksCarousel(
     books: ImmutableList<HomeCarouselBookUi>,
+    autoPlay: Boolean,
     onBookClick: (HomeCarouselBookUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (books.isEmpty()) return
-    val pagerState = rememberPagerState(pageCount = { books.size })
-    LaunchedEffect(pagerState, books.size) {
-        if (books.size <= 1) return@LaunchedEffect
+    // 无限循环：页数设为极大值，用 page % books.size 映射回真实书目，
+    // 首尾可直接继续滑动，自动轮播也不再回到第一页。
+    val loopPageCount = Int.MAX_VALUE
+    val initialPage = remember(books.size) {
+        val middle = loopPageCount / 2
+        middle - middle % books.size
+    }
+    val pagerState = rememberPagerState(initialPage = initialPage) { loopPageCount }
+    // 记录最后一次滑动（含手动拖动和自动翻页）的结束时间，计时从松手后重新开始，
+    // 避免用户刚滑完、旧的自动播放计时就到点，看起来像被弹回原位。
+    var lastScrollAt by remember { mutableStateOf(0L) }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .filter { it }
+            .collect { lastScrollAt = System.currentTimeMillis() }
+    }
+    LaunchedEffect(pagerState, books.size, autoPlay) {
+        if (!autoPlay || books.size <= 1) return@LaunchedEffect
         while (true) {
             delay(CAROUSEL_INTERVAL_MILLIS)
-            if (!pagerState.isScrollInProgress) {
-                val next = (pagerState.currentPage + 1) % books.size
+            if (!pagerState.isScrollInProgress &&
+                System.currentTimeMillis() - lastScrollAt >= CAROUSEL_INTERVAL_MILLIS
+            ) {
+                val next = pagerState.currentPage + 1
                 pagerState.animateScrollToPage(next)
             }
         }
@@ -849,11 +870,13 @@ private fun RandomBooksCarousel(
             }
             HorizontalPager(
                 state = pagerState,
+                // 页数有限，到边界后平台 stretch 过冲会在松手时反向回弹；轮播不需要越界反馈。
+                overscrollEffect = null,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 pageSpacing = 12.dp,
             ) { page ->
-                val book = books[page]
+                val book = books[page % books.size]
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -909,8 +932,9 @@ private fun RandomBooksCarousel(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
+                    val currentBookIndex = pagerState.currentPage % books.size
                     books.indices.forEach { index ->
-                        val selected = pagerState.currentPage == index
+                        val selected = currentBookIndex == index
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 3.dp)
@@ -1068,8 +1092,9 @@ private fun RecentBookCard(
                             path = book.coverPath,
                             sourceOrigin = book.origin,
                             modifier = Modifier
-                                .width(56.dp)
-                                .aspectRatio(5f / 7f),
+                                .width(72.dp)
+                                .aspectRatio(5f / 7f)
+                                .clip(RoundedCornerShape(10.dp)),
                             coverModifier = Modifier.fillMaxSize(),
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
@@ -1482,9 +1507,11 @@ private fun HomeDashboardSettingsSheet(
     onDismissRequest: () -> Unit,
     sections: List<HomeDashboardSection>,
     homepageModulesEnabled: Boolean,
+    carouselAutoPlay: Boolean,
     onSectionVisibilityChanged: (HomeDashboardSection, Boolean) -> Unit,
     onSectionMove: (HomeDashboardSection, Int) -> Unit,
     onHomepageModulesEnabledChanged: (Boolean) -> Unit,
+    onCarouselAutoPlayChanged: (Boolean) -> Unit,
 ) {
     if (!show) return
     // 开启的组件按当前顺序排在前面，关闭的组件按默认顺序排在后面。
@@ -1538,6 +1565,14 @@ private fun HomeDashboardSettingsSheet(
                             )
                         }
                     }
+                }
+                // 随机推荐开着时给出自动轮播开关，关掉后只保留手动横滑。
+                if (visible && section == HomeDashboardSection.BookCarousel) {
+                    TinySwitchSettingItem(
+                        title = stringResource(R.string.home_carousel_autoplay),
+                        checked = carouselAutoPlay,
+                        onCheckedChange = onCarouselAutoPlayChanged,
+                    )
                 }
             }
             // 首页模块是独立的整屏区块，固定在组件区之后，所以只有开关、没有排序箭头。
@@ -1613,6 +1648,7 @@ private fun HomeSheets(
     sheet: HomeSheet?,
     sections: List<HomeDashboardSection>,
     homepageModulesEnabled: Boolean,
+    carouselAutoPlay: Boolean,
     onIntent: (HomeIntent) -> Unit,
 ) {
     HomeDashboardSettingsSheet(
@@ -1620,6 +1656,7 @@ private fun HomeSheets(
         onDismissRequest = { onIntent(HomeIntent.DismissSheet) },
         sections = sections,
         homepageModulesEnabled = homepageModulesEnabled,
+        carouselAutoPlay = carouselAutoPlay,
         onSectionVisibilityChanged = { section, visible ->
             onIntent(HomeIntent.SetSectionVisible(section, visible))
         },
@@ -1628,6 +1665,9 @@ private fun HomeSheets(
         },
         onHomepageModulesEnabledChanged = { enabled ->
             onIntent(HomeIntent.SetHomepageModulesEnabled(enabled))
+        },
+        onCarouselAutoPlayChanged = { enabled ->
+            onIntent(HomeIntent.SetCarouselAutoPlay(enabled))
         },
     )
     BackupOptionSheet(

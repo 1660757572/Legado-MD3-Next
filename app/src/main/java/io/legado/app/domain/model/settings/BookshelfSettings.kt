@@ -45,12 +45,18 @@ data class BookshelfSettings(
     val bookshelfTitleCenter: Boolean = true,
     val bookshelfTitleMaxLines: Int = 2,
     val bookshelfCoverShadow: Boolean = false,
+    /** 封面投影强度（0–100），越大越深、扩散越广。 */
+    val bookshelfCoverShadowStrength: Int = 40,
     val bookshelfCardColor: Int = 0,
     val bookshelfCardColorDark: Int = 0,
     val bookshelfGroupListStyle: Int = 0,
     val bookshelfGroupCoverCount: Int = 4,
     val bookshelfListCoverWidth: Int = 84,
     val bookshelfGridCoverWidth: Int = 120,
+    /** 未读/更新角标位置：0 右上、1 左上、2 右下、3 左下。 */
+    val bookshelfBadgePosition: Int = 0,
+    /** 书籍类型角标位置，取值同 [bookshelfBadgePosition]。 */
+    val bookshelfTypeBadgePosition: Int = 3,
     /** 网格固定列数；关闭后列数由 [bookshelfGridCoverWidth] 推出（两者至少开一个）。 */
     val bookshelfGridFixedColumns: Boolean = true,
     /** 网格固定封面宽度；关闭后封面铺满列宽（两者至少开一个）。 */
@@ -61,6 +67,8 @@ data class BookshelfSettings(
     val bookshelfCoverCornerBottomEnd: Int = 4,
     val bookshelfCoverCornerBottomStart: Int = 4,
     val bookshelfSearchActionDirectToSearch: Boolean = true,
+    /** 弹出搜索框时是否同时拉起输入法键盘。 */
+    val bookshelfSearchShowKeyboard: Boolean = true,
     val autoRefreshBook: Boolean = false,
     val saveTabPosition: Long = BookGroup.IdAll,
 )

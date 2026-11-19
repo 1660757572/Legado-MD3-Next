@@ -47,11 +47,18 @@ import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import io.legado.app.domain.gateway.BookshelfSettingsGateway
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -100,6 +107,7 @@ fun ThemeConfigScreen(
     onBackClick: () -> Unit,
     onNavigateToCustomTheme: () -> Unit,
     onNavigateToThemeManage: () -> Unit,
+    onNavigateToCoverCorner: () -> Unit,
 ) {
     val appShell = state.appShell
     val theme = state.theme
@@ -335,10 +343,41 @@ fun ThemeConfigScreen(
                     SearchableSetting("theme.change_icon") {
                         ClickableSettingItem(
                             title = stringResource(R.string.change_icon),
-                            description = stringResource(R.string.change_icon_summary),
+                            description = stringResource(
+                                if (appShell.launcherIconFollowDark) {
+                                    R.string.change_icon_follow_dark_summary
+                                } else {
+                                    R.string.change_icon_summary
+                                }
+                            ),
+                            enabled = !appShell.launcherIconFollowDark,
                             onClick = {
                                 onIntent(ThemeConfigIntent.ShowSheet(ThemeConfigSheet.LauncherIcon))
                             }
+                        )
+                    }
+                    SearchableSetting("theme.icon_follow_dark") {
+                        SwitchSettingItem(
+                            title = stringResource(R.string.icon_follow_dark),
+                            description = stringResource(R.string.icon_follow_dark_summary),
+                            checked = appShell.launcherIconFollowDark,
+                            onCheckedChange = {
+                                onIntent(ThemeConfigIntent.SetLauncherIconFollowDark(it))
+                            },
+                        )
+                    }
+                    SearchableSetting("theme.category_chip_spacing") {
+                        SliderSettingItem(
+                            title = stringResource(R.string.category_chip_spacing),
+                            description = stringResource(R.string.category_chip_spacing_summary),
+                            value = appShell.categoryChipSpacing.toFloat(),
+                            defaultValue = 12f,
+                            valueRange = 8f..24f,
+                            steps = 7,
+                            valueLabel = { "${it.toInt()} dp" },
+                            onValueChange = { value ->
+                                onIntent(ThemeConfigIntent.SetCategoryChipSpacing(value.toInt()))
+                            },
                         )
                     }
                     SearchableSetting("theme.navigation_animation") {
@@ -352,6 +391,7 @@ fun ThemeConfigScreen(
                                     NavigationAnimationStyle.Miuix -> "Miuix"
                                     NavigationAnimationStyle.Scale -> stringResource(R.string.navigation_animation_scale)
                                     NavigationAnimationStyle.Mochi -> "Mochi"
+                                    NavigationAnimationStyle.System -> stringResource(R.string.navigation_animation_system)
                                 }
                             }.toTypedArray(),
                             entryValues = styles.map { it.storedValue }.toTypedArray(),
@@ -575,60 +615,18 @@ fun ThemeConfigScreen(
                             }
                         )
                     }
-                    SearchableSetting("theme.book_info_cover_corner_top_start") {
-                        SliderSettingItem(
-                            title = stringResource(
-                                R.string.book_info_cover_corner,
-                                stringResource(R.string.corner_top_start),
+                    // 封面圆角统一入口：四角设置与示意图都在二级页里，书架与详情页共用同一份值。
+                    SearchableSetting("theme.book_info_cover_corner") {
+                        ClickableSettingItem(
+                            title = stringResource(R.string.cover_corner_page_title),
+                            description = stringResource(
+                                R.string.cover_corner_page_summary,
+                                theme.bookInfoCoverCornerTopStart,
+                                theme.bookInfoCoverCornerTopEnd,
+                                theme.bookInfoCoverCornerBottomEnd,
+                                theme.bookInfoCoverCornerBottomStart,
                             ),
-                            value = theme.bookInfoCoverCornerTopStart.toFloat(),
-                            defaultValue = 4f,
-                            valueRange = 0f..48f,
-                            onValueChange = { value ->
-                                updateTheme { it.copy(bookInfoCoverCornerTopStart = value.toInt()) }
-                            },
-                        )
-                    }
-                    SearchableSetting("theme.book_info_cover_corner_top_end") {
-                        SliderSettingItem(
-                            title = stringResource(
-                                R.string.book_info_cover_corner,
-                                stringResource(R.string.corner_top_end),
-                            ),
-                            value = theme.bookInfoCoverCornerTopEnd.toFloat(),
-                            defaultValue = 4f,
-                            valueRange = 0f..48f,
-                            onValueChange = { value ->
-                                updateTheme { it.copy(bookInfoCoverCornerTopEnd = value.toInt()) }
-                            },
-                        )
-                    }
-                    SearchableSetting("theme.book_info_cover_corner_bottom_end") {
-                        SliderSettingItem(
-                            title = stringResource(
-                                R.string.book_info_cover_corner,
-                                stringResource(R.string.corner_bottom_end),
-                            ),
-                            value = theme.bookInfoCoverCornerBottomEnd.toFloat(),
-                            defaultValue = 4f,
-                            valueRange = 0f..48f,
-                            onValueChange = { value ->
-                                updateTheme { it.copy(bookInfoCoverCornerBottomEnd = value.toInt()) }
-                            },
-                        )
-                    }
-                    SearchableSetting("theme.book_info_cover_corner_bottom_start") {
-                        SliderSettingItem(
-                            title = stringResource(
-                                R.string.book_info_cover_corner,
-                                stringResource(R.string.corner_bottom_start),
-                            ),
-                            value = theme.bookInfoCoverCornerBottomStart.toFloat(),
-                            defaultValue = 4f,
-                            valueRange = 0f..48f,
-                            onValueChange = { value ->
-                                updateTheme { it.copy(bookInfoCoverCornerBottomStart = value.toInt()) }
-                            },
+                            onClick = onNavigateToCoverCorner
                         )
                     }
                     SearchableSetting("theme.book_info_backdrop_overlay") {
@@ -1672,4 +1670,172 @@ private fun getThemeColors(
         onSurface = colorScheme.onSurface,
         onSurfaceVariant = colorScheme.onSurfaceVariant
     )
+}
+
+/**
+ * 「外观设置 → 封面圆角」二级页。
+ *
+ * 书架封面与详情页封面共用同一份四角圆角：本页写入时同时落到 ThemeSettings（详情页消费）
+ * 与 BookshelfSettings（书架消费），避免两处各自维护一套数值。
+ */
+@Composable
+internal fun CoverCornerSettingsPage(
+    theme: ThemeSettings,
+    onUpdateTheme: ((ThemeSettings) -> ThemeSettings) -> Unit,
+    onBackClick: () -> Unit,
+) {
+    val bookshelfGateway: BookshelfSettingsGateway = koinInject()
+    val scope = rememberCoroutineScope()
+    val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
+
+    fun applyCorners(topStart: Int, topEnd: Int, bottomEnd: Int, bottomStart: Int) {
+        onUpdateTheme {
+            it.copy(
+                bookInfoCoverCornerTopStart = topStart,
+                bookInfoCoverCornerTopEnd = topEnd,
+                bookInfoCoverCornerBottomEnd = bottomEnd,
+                bookInfoCoverCornerBottomStart = bottomStart,
+            )
+        }
+        // 书架侧同步同一份数值，两处封面圆角才会真正一致。
+        scope.launch {
+            bookshelfGateway.update {
+                it.copy(
+                    bookshelfCoverCornerTopStart = topStart,
+                    bookshelfCoverCornerTopEnd = topEnd,
+                    bookshelfCoverCornerBottomEnd = bottomEnd,
+                    bookshelfCoverCornerBottomStart = bottomStart,
+                )
+            }
+        }
+    }
+
+    val topStart = theme.bookInfoCoverCornerTopStart
+    val topEnd = theme.bookInfoCoverCornerTopEnd
+    val bottomEnd = theme.bookInfoCoverCornerBottomEnd
+    val bottomStart = theme.bookInfoCoverCornerBottomStart
+
+    AppScaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            GlassMediumFlexibleTopAppBar(
+                title = stringResource(R.string.cover_corner_page_title),
+                scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    TopBarNavigationButton(onClick = onBackClick)
+                }
+            )
+        }
+    ) { paddingValues ->
+        SearchableSettingsList(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = adaptiveContentPadding(
+                top = paddingValues.calculateTopPadding(),
+                bottom = 120.dp
+            )
+        ) {
+            item {
+                // 示意图：实时反映四个角的当前半径，改滑杆能立刻看出效果。
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 108.dp, height = 150.dp)
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = topStart.dp,
+                                    topEnd = topEnd.dp,
+                                    bottomEnd = bottomEnd.dp,
+                                    bottomStart = bottomStart.dp,
+                                )
+                            )
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        LegadoTheme.colorScheme.primaryContainer,
+                                        LegadoTheme.colorScheme.secondaryContainer,
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppText(
+                            text = stringResource(R.string.cover_corner_preview),
+                            style = LegadoTheme.typography.labelMedium,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    AppText(
+                        text = stringResource(
+                            R.string.cover_corner_preview_summary,
+                            topStart, topEnd, bottomEnd, bottomStart,
+                        ),
+                        style = LegadoTheme.typography.labelSmall,
+                        color = LegadoTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            item {
+                SliderSettingItem(
+                    title = stringResource(
+                        R.string.book_info_cover_corner,
+                        stringResource(R.string.corner_top_start),
+                    ),
+                    value = topStart.toFloat(),
+                    defaultValue = 4f,
+                    valueRange = 0f..48f,
+                    onValueChange = { value ->
+                        applyCorners(value.toInt(), topEnd, bottomEnd, bottomStart)
+                    },
+                )
+            }
+            item {
+                SliderSettingItem(
+                    title = stringResource(
+                        R.string.book_info_cover_corner,
+                        stringResource(R.string.corner_top_end),
+                    ),
+                    value = topEnd.toFloat(),
+                    defaultValue = 4f,
+                    valueRange = 0f..48f,
+                    onValueChange = { value ->
+                        applyCorners(topStart, value.toInt(), bottomEnd, bottomStart)
+                    },
+                )
+            }
+            item {
+                SliderSettingItem(
+                    title = stringResource(
+                        R.string.book_info_cover_corner,
+                        stringResource(R.string.corner_bottom_end),
+                    ),
+                    value = bottomEnd.toFloat(),
+                    defaultValue = 4f,
+                    valueRange = 0f..48f,
+                    onValueChange = { value ->
+                        applyCorners(topStart, topEnd, value.toInt(), bottomStart)
+                    },
+                )
+            }
+            item {
+                SliderSettingItem(
+                    title = stringResource(
+                        R.string.book_info_cover_corner,
+                        stringResource(R.string.corner_bottom_start),
+                    ),
+                    value = bottomStart.toFloat(),
+                    defaultValue = 4f,
+                    valueRange = 0f..48f,
+                    onValueChange = { value ->
+                        applyCorners(topStart, topEnd, bottomEnd, value.toInt())
+                    },
+                )
+            }
+        }
+    }
 }

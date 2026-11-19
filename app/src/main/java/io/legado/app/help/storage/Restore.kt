@@ -13,7 +13,11 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookCharacterEvent
+import io.legado.app.data.entities.BookCharacterProfile
+import io.legado.app.data.entities.BookCharacterRelation
 import io.legado.app.data.entities.BookGroup
+import io.legado.app.data.entities.BookKnowledgeEntry
 import io.legado.app.data.entities.BookMarking
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
@@ -281,6 +285,33 @@ object Restore : KoinComponent {
         if (BackupConfig.dbIsNotIgnored("tagGroupRule")) {
             fileToListT<TagGroupRule>(path, "tagGroupRule.json")?.let {
                 appDb.tagGroupRuleDao.replaceAll(it)
+            }
+        }
+        if (BackupConfig.dbIsNotIgnored("bookKnowledge")) {
+            // 与备份侧一致：四张表一起恢复，旧备份没有这些文件时保持现有数据不动。
+            fileToListT<BookCharacterProfile>(path, "bookCharacterProfiles.json")?.let {
+                try {
+                    appDb.bookKnowledgeDao.insertCharacterProfiles(it)
+                } catch (_: SQLiteConstraintException) {
+                }
+            }
+            fileToListT<BookCharacterRelation>(path, "bookCharacterRelations.json")?.let {
+                try {
+                    appDb.bookKnowledgeDao.insertCharacterRelations(it)
+                } catch (_: SQLiteConstraintException) {
+                }
+            }
+            fileToListT<BookCharacterEvent>(path, "bookCharacterEvents.json")?.let {
+                try {
+                    appDb.bookKnowledgeDao.insertCharacterEvents(it)
+                } catch (_: SQLiteConstraintException) {
+                }
+            }
+            fileToListT<BookKnowledgeEntry>(path, "bookKnowledgeEntries.json")?.let {
+                try {
+                    appDb.bookKnowledgeDao.insertKnowledgeEntries(it)
+                } catch (_: SQLiteConstraintException) {
+                }
             }
         }
         if (BackupConfig.dbIsNotIgnored("readRecord")) {

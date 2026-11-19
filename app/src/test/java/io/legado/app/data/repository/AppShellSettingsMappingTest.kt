@@ -223,4 +223,6 @@ private fun AppShellSettings.expectedPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.navIconRssSelected to navIconRssSelected,
     PreferKey.navIconMySelected to navIconMySelected,
     PreferKey.launcherIcon to launcherIcon,
+    PreferKey.launcherIconFollowDark to launcherIconFollowDark,
+    PreferKey.categoryChipSpacing to categoryChipSpacing,
 )

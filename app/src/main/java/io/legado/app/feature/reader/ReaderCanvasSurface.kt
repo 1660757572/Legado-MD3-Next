@@ -1759,8 +1759,9 @@ fun ReaderCanvasSurface(
                     }
                 } else Modifier
 
-                // 水波纹：目标页盖在源页之上，按「以触点为圆心的圆」逐步揭示，
-                // 半径跟着翻页进度长到覆盖全屏，收尾时正好露出完整的目标页。
+                // 水波纹：目标页盖在源页之上，按「以贴边触点为圆心的圆」逐步揭示。
+                // NEXT 从右边缘向左扩散、PREVIOUS 从左边缘向右扩散，方向与翻页手势一致；
+                // 圆边缘再叠一圈径向渐变，避免出现一圈硬切边。
                 val rippleClipModifier = if (
                     transitionMode == ReaderTransitionMode.WATER_RIPPLE &&
                     (
@@ -1768,14 +1769,15 @@ fun ReaderCanvasSurface(
                             (role == PagedLayerRole.PREVIOUS && composedTurnDirection == ReaderTurnDirection.PREVIOUS)
                         )
                 ) {
-                    val centerX = curlTouchX
-                    val centerY = curlTouchY
+                    val touchY = curlTouchY
+                    val fromRight = composedTurnDirection == ReaderTurnDirection.NEXT
                     Modifier.drawWithContent {
                         val progress = (abs(displayOffset) / size.width.coerceAtLeast(1f))
                             .coerceIn(0f, 1f)
                         if (progress <= 0f) return@drawWithContent
-                        val cx = if (centerX <= 0f && centerY <= 0f) size.width / 2f else centerX
-                        val cy = if (centerX <= 0f && centerY <= 0f) size.height / 2f else centerY
+                        // 圆心贴在本回合「进入侧」的边缘：下一页从右往左、上一页从左往右。
+                        val cx = if (fromRight) size.width else 0f
+                        val cy = if (touchY > 0f) touchY else size.height / 2f
                         val farthest = maxOf(
                             hypot(cx, cy),
                             hypot(size.width - cx, cy),
@@ -1795,6 +1797,20 @@ fun ReaderCanvasSurface(
                         clipPath(path) {
                             this@drawWithContent.drawContent()
                         }
+                        // 渐变收边：圆内靠近边界的一圈渐变到页面底色，硬边被柔化。
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colorStops = arrayOf(
+                                    0f to Color.Transparent,
+                                    0.86f to Color.Transparent,
+                                    1f to backgroundColor.copy(alpha = 0.55f),
+                                ),
+                                center = Offset(cx, cy),
+                                radius = radius,
+                            ),
+                            radius = radius,
+                            center = Offset(cx, cy),
+                        )
                     }
                 } else Modifier
 

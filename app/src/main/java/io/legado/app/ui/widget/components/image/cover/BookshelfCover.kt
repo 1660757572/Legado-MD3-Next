@@ -35,6 +35,8 @@ fun BookshelfCover(
     badgeText: String? = null,
     showBadgeDot: Boolean = false,
     leftBottomText: String? = null,
+    badgeAlignment: Alignment = Alignment.TopEnd,
+    typeAlignment: Alignment = Alignment.BottomStart,
     sourceOrigin: String? = null,
     // 本书 bookUrl，供封面别名缓存键；书架组件默认本地优先
     // （preferCache=true）：有缓存（含别名命中）直接显示，不跑书源规则脚本、不联网。
@@ -88,7 +90,7 @@ fun BookshelfCover(
                 icon = if (showBadgeDot) Icons.Default.Update else null,
                 iconSize = 12.dp,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(badgeAlignment)
                     .padding(2.dp)
                     .then(overlayModifier)
                     .graphicsLayer {
@@ -107,7 +109,7 @@ fun BookshelfCover(
                 backgroundColor = LegadoTheme.colorScheme.cardContainer,
                 contentColor = LegadoTheme.colorScheme.onCardContainer,
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .align(typeAlignment)
                     .padding(2.dp)
                     .then(overlayModifier)
                     .graphicsLayer {

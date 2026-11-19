@@ -57,5 +57,6 @@ sealed interface MainEffect {
     data object ExitApp : MainEffect
     data object NavigateToReadRecord : MainEffect
     data object NavigateToHighlightTagRule : MainEffect
+    data object NavigateToTagLibrary : MainEffect
     data object NavigateToAbout : MainEffect
 }

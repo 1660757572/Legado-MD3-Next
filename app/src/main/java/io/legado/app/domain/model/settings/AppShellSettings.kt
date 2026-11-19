@@ -33,8 +33,12 @@ data class AppShellSettings(
     val navIconRssSelected: String = "",
     val navIconMySelected: String = "",
     val launcherIcon: String = "ic_launcher",
+    /** 图标跟随深浅模式：深色用黑底图标，浅色用白底图标；开启时禁止手动切换。 */
+    val launcherIconFollowDark: Boolean = false,
     val navigationAnimationStyle: NavigationAnimationStyle = NavigationAnimationStyle.Default,
     val textAnimationLevel: TextAnimationLevel = TextAnimationLevel.Slide,
+    /** Mochi 分类 chip 之间以及内容左右的间距，单位 dp。 */
+    val categoryChipSpacing: Int = 12,
 )
 
 enum class TextAnimationLevel(val storedValue: String) {
@@ -56,7 +60,10 @@ enum class NavigationAnimationStyle(val storedValue: String) {
     Scale("scale"),
 
     /** Mochi 风格的预测性返回：退场页缩小 + 圆角收起，配合玻璃投影。 */
-    Mochi("mochi_predictive");
+    Mochi("mochi_predictive"),
+
+    /** 跟随系统的预测性返回观感（无缩放/圆角，滑入滑出为主）。 */
+    System("system_predictive");
 
     companion object {
         fun fromStoredValue(value: String?): NavigationAnimationStyle = when (value) {

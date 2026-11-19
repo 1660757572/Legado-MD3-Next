@@ -122,7 +122,6 @@ fun MyScreen(
     onNavigate: (PrefClickEvent) -> Unit,
 ) {
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
-    var showTagLibrary by remember { mutableStateOf(false) }
     AppScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets.systemBars
@@ -198,7 +197,7 @@ fun MyScreen(
                 ClickableSettingItem(
                     title = stringResource(R.string.tag_library),
                     imageVector = AppIcons.leadingOrNull(Icons.Default.Label),
-                    onClick = { showTagLibrary = true }
+                    onClick = { onNavigate(PrefClickEvent.OpenTagLibrary) }
                 )
             }
 
@@ -259,10 +258,6 @@ fun MyScreen(
                 )
             }
         }
-        TagLibrarySheet(
-            show = showTagLibrary,
-            onDismissRequest = { showTagLibrary = false },
-        )
     }
 }
 

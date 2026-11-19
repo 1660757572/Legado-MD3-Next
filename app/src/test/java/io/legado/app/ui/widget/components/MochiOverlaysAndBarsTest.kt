@@ -434,7 +434,7 @@ class MochiOverlaysAndBarsTest {
                                 shell.value = shell.value.copy(composeEngine = intent.value)
                             }
                         },
-                        {}, {}, {},
+                        {}, {}, {}, {},
                     )
                 }
             }
@@ -805,7 +805,7 @@ class MochiOverlaysAndBarsTest {
                     ThemeConfigScreen(
                         ThemeConfigUiState(appShell = shell, theme = theme),
                         { intent -> if (intent is ThemeConfigIntent.UpdateTheme) theme = intent.transform(theme) },
-                        {}, {}, {},
+                        {}, {}, {}, {},
                     )
                 }
             }

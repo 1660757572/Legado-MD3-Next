@@ -1,5 +1,6 @@
 package io.legado.app.domain.usecase
 
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.legado.app.data.entities.AiArtifact
 import io.legado.app.data.entities.BookCharacterProfile
@@ -117,6 +118,8 @@ class IdentifyBookCharactersUseCase(
             ?: error("No AI model configured for character identification")
         val prompt = identifyPreset?.promptTemplate?.takeIf(String::isNotBlank) ?: defaultPrompt(VoicePoolStore.enabledPoolNames())
         val response = StringBuilder()
+        // 部分模型把最终答案放在 reasoning 通道；两路都留一份，解析时按内容兜底。
+        val reasoning = StringBuilder()
         aiToolAwareGenerationUseCase.generateStream(
             AiGenerateRequest(
                 model = preset.model,
@@ -137,25 +140,32 @@ class IdentifyBookCharactersUseCase(
         ).collect { event ->
             when (event) {
                 is io.legado.app.domain.gateway.AiStreamEvent.Content -> response.append(event.text)
-                is io.legado.app.domain.gateway.AiStreamEvent.Reasoning -> emit(
-                    Progress.Reasoning(
-                        event.text
-                    )
-                )
+                is io.legado.app.domain.gateway.AiStreamEvent.Reasoning -> {
+                    reasoning.append(event.text)
+                    emit(Progress.Reasoning(event.text))
+                }
 
                 is io.legado.app.domain.gateway.AiStreamEvent.ToolCallDelta -> {
                     event.name?.takeIf(String::isNotBlank)?.let { emit(Progress.ToolCall(it)) }
                 }
             }
         }
-        val jsonStart = response.indexOf('{')
-        val jsonEnd = response.lastIndexOf('}')
-        require(jsonStart >= 0 && jsonEnd > jsonStart) {
-            "Character identification did not return a JSON object"
+        val raw = response.toString().ifBlank { reasoning.toString() }
+        val json = extractJsonPayload(raw)
+            ?: error(
+                "Character identification did not return a JSON object. " +
+                    "Raw tail: " + raw.takeLast(300)
+            )
+        val root = JsonParser.parseString(json).let { element ->
+            // 模型偶尔直接返回数组：补一层 {"characters": [...]} 兼容。
+            if (element.isJsonArray) {
+                JsonObject().apply { add("characters", element.asJsonArray) }
+            } else {
+                element.asJsonObject
+            }
         }
-        val root = JsonParser.parseString(response.substring(jsonStart, jsonEnd + 1)).asJsonObject
-        val candidates = root.getAsJsonArray("characters").map { element ->
-            val item = element.asJsonObject
+        val candidates = root.getAsJsonArray("characters")?.map { element ->
+            val item = if (element.isJsonObject) element.asJsonObject else JsonObject()
             Candidate(
                 name = item.get("name")?.asString?.trim().orEmpty(),
                 aliases = item.getAsJsonArray("aliases")?.map { it.asString.trim() }.orEmpty(),
@@ -167,7 +177,7 @@ class IdentifyBookCharactersUseCase(
                 evidence = item.get("evidence")?.asString.orEmpty(),
                 confidence = item.get("confidence")?.asFloat?.coerceIn(0f, 1f) ?: 0f,
             )
-        }.filter { it.name.isNotBlank() && it.confidence >= MIN_CONFIDENCE }
+        }.orEmpty().filter { it.name.isNotBlank() && it.confidence >= MIN_CONFIDENCE }
             .distinctBy { it.name }
         val now = System.currentTimeMillis()
         val contentHash = MD5Utils.md5Encode(bookUrl)
@@ -222,6 +232,25 @@ class IdentifyBookCharactersUseCase(
 
     companion object {
         private const val MIN_CONFIDENCE = 0.65f
+
+        /**
+         * 从模型输出里抽 JSON：去掉代码围栏，优先取最外层对象；
+         * 只有数组时补成 {"characters": [...]}，让模型格式波动不再直接把任务判失败。
+         */
+        private fun extractJsonPayload(raw: String): String? {
+            val sanitized = raw.replace(Regex("```(?:json)?", RegexOption.IGNORE_CASE), "")
+            val objectStart = sanitized.indexOf('{')
+            val objectEnd = sanitized.lastIndexOf('}')
+            if (objectStart >= 0 && objectEnd > objectStart) {
+                return sanitized.substring(objectStart, objectEnd + 1)
+            }
+            val arrayStart = sanitized.indexOf('[')
+            val arrayEnd = sanitized.lastIndexOf(']')
+            if (arrayStart >= 0 && arrayEnd > arrayStart) {
+                return "{\"characters\":" + sanitized.substring(arrayStart, arrayEnd + 1) + "}"
+            }
+            return null
+        }
 
         /**
          * 内置默认提示词。`voiceAgeBand` 一栏列的是用户的声音池名，

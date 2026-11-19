@@ -87,6 +87,7 @@ fun BookshelfGridItem(
     titleCenter: Boolean = true,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    coverShadowStrength: Int = 40,
     /** 封面四角圆角；null 时用 4dp 默认。 */
     coverCornerShape: RoundedCornerShape? = null,
     accessibilityLabel: String? = null,
@@ -98,8 +99,15 @@ fun BookshelfGridItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
-            .then(if (isSelected) Modifier.background(LegadoTheme.colorScheme.secondaryContainer) else Modifier)
+            // 不再给整项加 clip：外层裁剪会把封面 16dp 投影直接切掉，
+            // 选中底色单独用圆角 background，点击反馈仍由 combinedClickable 承担。
+            .then(
+                if (isSelected) {
+                    Modifier.background(LegadoTheme.colorScheme.secondaryContainer, RoundedCornerShape(4.dp))
+                } else {
+                    Modifier
+                }
+            )
             .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick)
             .bookshelfItemSemantics(accessibilityLabel ?: title, isSelected)
     ) {
@@ -114,6 +122,7 @@ fun BookshelfGridItem(
         ) {
             BookshelfItemCover(
                 coverShadow = coverShadow,
+                coverShadowStrength = coverShadowStrength,
                 cornerShape = coverCornerShape,
                 cover = cover,
             ) {
@@ -193,6 +202,7 @@ fun BookshelfListItem(
     bottomContent: @Composable (() -> Unit)? = null,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    coverShadowStrength: Int = 40,
     titleColor: Color? = null,
     accessibilityLabel: String? = null,
     coverWidth: Int = 84,
@@ -228,6 +238,7 @@ fun BookshelfListItem(
                 ) {
                     BookshelfItemCover(
                         coverShadow = coverShadow,
+                        coverShadowStrength = coverShadowStrength,
                         cornerShape = settings.coverCornerShape(),
                         cover = cover,
                     )
@@ -294,17 +305,37 @@ fun BookshelfListItem(
 @Composable
 private fun BookshelfItemCover(
     coverShadow: Boolean,
+    coverShadowStrength: Int = 40,
     cover: @Composable (Modifier) -> Unit,
     cornerShape: RoundedCornerShape? = null,
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
     val shape = cornerShape ?: RoundedCornerShape(4.dp)
+    val strength = coverShadowStrength.coerceIn(0, 100)
+    // 阴影高度随强度线性放大：elevation 越大，系统投影的扩散半径越大、边缘越柔；
+    // 同时把 ambient/spot 换成半透明黑，避免深色主题下 4dp 硬边黑块。
+    // 书架常铺封面图，浅色投影很容易被画面吃掉，最大档提高扩散与不透明度才看得出来。
+    val shadowElevation = if (coverShadow) (2f + strength / 100f * 16f).dp else 0.dp
+    val shadowColor = Color.Black.copy(alpha = 0.24f + 0.44f * (strength / 100f))
     Box(
         modifier = Modifier
-            .padding(4.dp)
+            .padding(6.dp)
             .fillMaxWidth()
             .aspectRatio(5f / 7f)
-            .then(if (coverShadow) Modifier.shadow(4.dp, shape) else Modifier)
+            .then(
+                if (coverShadow) {
+                    // clip = false：投影按 shape 轮廓绘制，圆角改动后阴影同步跟随。
+                    Modifier.shadow(
+                        elevation = shadowElevation,
+                        shape = shape,
+                        clip = false,
+                        ambientColor = shadowColor,
+                        spotColor = shadowColor,
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .clip(shape)
     ) {
         cover(Modifier.fillMaxSize())
@@ -354,6 +385,13 @@ private object formattedIntroCache {
             }
         }
     }
+}
+
+private fun bookshelfBadgeAlignment(position: Int): Alignment = when (position) {
+    1 -> Alignment.TopStart
+    2 -> Alignment.BottomEnd
+    3 -> Alignment.BottomStart
+    else -> Alignment.TopEnd
 }
 
 @Composable
@@ -492,6 +530,7 @@ fun BookGroupItemGrid(
     titleCenter: Boolean = true,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    coverShadowStrength: Int = 40,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?
@@ -514,6 +553,7 @@ fun BookGroupItemGrid(
         titleCenter = titleCenter,
         titleMaxLines = titleMaxLines,
         coverShadow = coverShadow,
+        coverShadowStrength = coverShadowStrength,
         coverWidth = settings.gridCoverWidthOrNull,
         coverCornerShape = settings.coverCornerShape(),
         onClick = onClick,
@@ -532,6 +572,7 @@ fun BookGroupItemList(
     isCompact: Boolean = false,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    coverShadowStrength: Int = 40,
     onLongClick: (() -> Unit)? = null,
     onBookClick: ((BookShelfItem) -> Unit)? = null
 ) {
@@ -580,6 +621,7 @@ fun BookGroupItemList(
         ),
         titleMaxLines = titleMaxLines,
         coverShadow = coverShadow,
+        coverShadowStrength = coverShadowStrength,
         coverWidth = settings.bookshelfListCoverWidth,
         modifier = modifier,
         onClick = onClick,
@@ -719,6 +761,7 @@ fun BookItem(
     titleCenter: Boolean = true,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    coverShadowStrength: Int = 40,
     isSearchMode: Boolean = false,
     searchKey: String = "",
     /** 私密书籍且尚未解锁：只渲染模糊封面与占位内容，不渲染任何真实文字 */
@@ -758,6 +801,7 @@ fun BookItem(
             titleCenter = titleCenter,
             titleMaxLines = titleMaxLines,
             coverShadow = coverShadow,
+            coverShadowStrength = coverShadowStrength,
             // 脱敏封面也要带上与正常封面相同的共享元素参数，
             // 否则源端没有 sharedBounds，进详情页的封面转场动画就无从接起
             sharedTransitionScope = sharedTransitionScope,
@@ -827,6 +871,8 @@ fun BookItem(
                 badgeText = if (locked) null else if (layoutMode != 0) unreadText else null,
                 showBadgeDot = !locked && showUpdateBadge,
                 leftBottomText = if (locked) null else matchedSourceLabel ?: bookTypeLabel,
+                badgeAlignment = bookshelfBadgeAlignment(settings.bookshelfBadgePosition),
+                typeAlignment = bookshelfBadgeAlignment(settings.bookshelfTypeBadgePosition),
                 showLoadingPlaceholder = true,
                 // 模糊与"已隐藏"叠加层都交给封面组件在**共享元素节点内部**渲染。
                 // 这是关键：转场时 overlay 只搬运 sharedBounds 节点自己的内容，
@@ -870,6 +916,7 @@ fun BookItem(
             titleCenter = titleCenter,
             titleMaxLines = titleMaxLines,
             coverShadow = coverShadow,
+            coverShadowStrength = coverShadowStrength,
             accessibilityLabel = if (locked) lockedHiddenLabel else accessibilityLabel,
             coverWidth = settings.gridCoverWidthOrNull,
             coverCornerShape = settings.coverCornerShape(),
@@ -997,6 +1044,7 @@ fun BookItem(
         } else null,
         titleMaxLines = titleMaxLines,
         coverShadow = coverShadow,
+        coverShadowStrength = coverShadowStrength,
         accessibilityLabel = if (locked) lockedHiddenLabel else accessibilityLabel,
         coverWidth = settings.bookshelfListCoverWidth,
         onClick = onClick,
@@ -1024,6 +1072,7 @@ private fun PrivateLockedBookItem(
     titleCenter: Boolean = true,
     titleMaxLines: Int = 2,
     coverShadow: Boolean = false,
+    coverShadowStrength: Int = 40,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     sharedCoverKey: String? = null,
@@ -1057,6 +1106,7 @@ private fun PrivateLockedBookItem(
             titleCenter = titleCenter,
             titleMaxLines = titleMaxLines,
             coverShadow = coverShadow,
+            coverShadowStrength = coverShadowStrength,
             accessibilityLabel = hiddenLabel,
             coverWidth = settings.gridCoverWidthOrNull,
             coverCornerShape = settings.coverCornerShape(),
@@ -1074,6 +1124,7 @@ private fun PrivateLockedBookItem(
         isSelected = isSelected,
         titleMaxLines = titleMaxLines,
         coverShadow = coverShadow,
+        coverShadowStrength = coverShadowStrength,
         accessibilityLabel = hiddenLabel,
         coverWidth = settings.bookshelfListCoverWidth,
         columnContent = null,

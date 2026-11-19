@@ -81,12 +81,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.domain.model.AiMessageRole
 import io.legado.app.domain.model.AiReasoningLevel
 import io.legado.app.ui.ai.AiReasoningModeButton
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.AppTextField
@@ -95,12 +97,17 @@ import io.legado.app.ui.widget.components.button.series.MediumTonalButton
 import io.legado.app.ui.widget.components.button.series.SmallPlainButton
 import io.legado.app.ui.widget.components.card.GlassCard
 import io.legado.app.ui.widget.components.card.NormalCard
+import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.text.AppText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import ui.feice.mochi.basic.MochiButtonStyle
+import ui.feice.mochi.basic.MochiIconButton
+import ui.feice.mochi.basic.MochiTextField
+import ui.feice.mochi.basic.MochiTextFieldDefaults
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -940,6 +947,21 @@ private fun ChatInputBar(
         label = "AiChatInputBottomPadding"
     )
 
+    if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        MochiChatInputBar(
+            value = value,
+            isSending = isSending,
+            reasoningLevel = reasoningLevel,
+            onValueChange = onValueChange,
+            onSend = onSend,
+            onStop = onStop,
+            onUpdateReasoningLevel = onUpdateReasoningLevel,
+            horizontalPadding = 16.dp,
+            bottomPadding = bottomPadding,
+        )
+        return
+    }
+
     // Floating capsule input bar
     Surface(
         modifier = Modifier
@@ -1013,6 +1035,68 @@ private fun ChatInputBar(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MochiChatInputBar(
+    value: String,
+    isSending: Boolean,
+    reasoningLevel: AiReasoningLevel,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onStop: () -> Unit,
+    onUpdateReasoningLevel: (AiReasoningLevel) -> Unit,
+    horizontalPadding: Dp,
+    bottomPadding: Dp,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = horizontalPadding, end = horizontalPadding, bottom = bottomPadding),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        AiReasoningModeButton(
+            level = reasoningLevel,
+            enabled = !isSending,
+            onLevelChange = onUpdateReasoningLevel,
+        )
+        MochiTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(1f),
+            placeholder = stringResource(R.string.ai_chat_input_hint),
+            enabled = !isSending,
+            singleLine = false,
+            maxLines = 6,
+            clearButton = false,
+            trailing = {
+                if (isSending) {
+                    MochiIconButton(
+                        onClick = onStop,
+                        size = MochiTextFieldDefaults.TrailingButtonSize,
+                    ) {
+                        AppIcon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = stringResource(R.string.stop),
+                        )
+                    }
+                } else {
+                    MochiIconButton(
+                        onClick = onSend,
+                        enabled = value.isNotBlank(),
+                        style = MochiButtonStyle.Filled,
+                        size = MochiTextFieldDefaults.TrailingButtonSize,
+                    ) {
+                        AppIcon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(R.string.ai_send),
+                        )
+                    }
+                }
+            },
+        )
     }
 }
 

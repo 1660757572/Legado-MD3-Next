@@ -200,6 +200,7 @@ fun MainScreen(
     onNavigateToReadRecord: () -> Unit,
     onNavigateToReadRecordOverview: () -> Unit,
     onNavigateToHighlightTagRule: () -> Unit,
+    onNavigateToTagLibrary: () -> Unit,
     onNavigateToDictRule: () -> Unit,
     onNavigateToTxtTocRule: () -> Unit,
     onNavigateToAllBookmark: () -> Unit,
@@ -232,6 +233,7 @@ fun MainScreen(
                 MainEffect.ExitApp -> (context as? ComponentActivity)?.finish()
                 MainEffect.NavigateToReadRecord -> onNavigateToReadRecord()
                 MainEffect.NavigateToHighlightTagRule -> onNavigateToHighlightTagRule()
+                MainEffect.NavigateToTagLibrary -> onNavigateToTagLibrary()
                 MainEffect.NavigateToAbout -> onNavigateToAbout()
             }
         }

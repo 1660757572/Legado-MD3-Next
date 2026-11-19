@@ -323,7 +323,9 @@ object BookHelp {
         // 保存阅读缓存文本(.nb)
         getChapterContentFile(book, bookChapter).apply { parentFile?.mkdirs() }.writeText(content)
         if (notifyContentChange) ContentProcessor.invalidateSemanticContent(book.bookUrl, bookChapter.index)
-        if (book.isOnLineTxt && readGateway.currentSettings.tocCountWords) {
+        if (book.isOnLineTxt &&
+            (readGateway.currentSettings.tocCountWords || bookChapter.wordCount.isNullOrBlank())
+        ) {
             // 正文里携带的 <img src="data:base64">、内联 SVG 等富文本源码会把章节字数虚抬
             // 几倍（3 页正文显示 3000+ 字）。这里剔除标签/Base64 后按可读纯文本计数，
             // 取代原先的 StringUtils.wordCountFormat(content.length)。
@@ -332,6 +334,27 @@ object BookHelp {
             bookChapter.wordCount = wordCount
             appDb.bookChapterDao.update(bookChapter)
         }
+    }
+
+    /**
+     * 补齐已缓存章节的字数。
+     *
+     * 旧版本只在「目录显示字数」开关打开时写 wordCount，关掉开关时缓存成功的章节会一直
+     * 是空值，详情页目录只能落回下载图标。这里按缓存正文补齐一次并回写数据库，供详情页
+     * 与阅读页目录共用。
+     */
+    suspend fun ensureChapterWordCount(book: Book, bookChapter: BookChapter): String? {
+        bookChapter.wordCount?.takeIf { it.isNotBlank() }?.let { return it }
+        if (book.isLocalTxt || bookChapter.isVolume) return null
+        val contentFile = getChapterContentFile(book, bookChapter)
+        if (!contentFile.isFile) return null
+        val readableLength = runCatching {
+            HtmlFormatter.countReadableTextLength(contentFile.readText())
+        }.getOrNull() ?: return null
+        val wordCount = StringUtils.wordCountFormat(readableLength)
+        bookChapter.wordCount = wordCount
+        appDb.bookChapterDao.update(bookChapter)
+        return wordCount
     }
 
     /**

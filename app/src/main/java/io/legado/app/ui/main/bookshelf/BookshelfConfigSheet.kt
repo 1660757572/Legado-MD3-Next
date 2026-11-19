@@ -247,55 +247,7 @@ fun BookshelfConfigSheet(
                 }
             }
 
-            // 封面四角圆角：四个角分开设置，0 表示直角。
-            CompactSliderSettingItem(
-                title = stringResource(
-                    R.string.bookshelf_cover_corner,
-                    stringResource(R.string.corner_top_start),
-                ),
-                value = settings.bookshelfCoverCornerTopStart.toFloat(),
-                valueRange = 0f..40f,
-                steps = 39,
-                onValueChange = { value ->
-                    onUpdate { it.copy(bookshelfCoverCornerTopStart = value.toInt()) }
-                }
-            )
-            CompactSliderSettingItem(
-                title = stringResource(
-                    R.string.bookshelf_cover_corner,
-                    stringResource(R.string.corner_top_end),
-                ),
-                value = settings.bookshelfCoverCornerTopEnd.toFloat(),
-                valueRange = 0f..40f,
-                steps = 39,
-                onValueChange = { value ->
-                    onUpdate { it.copy(bookshelfCoverCornerTopEnd = value.toInt()) }
-                }
-            )
-            CompactSliderSettingItem(
-                title = stringResource(
-                    R.string.bookshelf_cover_corner,
-                    stringResource(R.string.corner_bottom_end),
-                ),
-                value = settings.bookshelfCoverCornerBottomEnd.toFloat(),
-                valueRange = 0f..40f,
-                steps = 39,
-                onValueChange = { value ->
-                    onUpdate { it.copy(bookshelfCoverCornerBottomEnd = value.toInt()) }
-                }
-            )
-            CompactSliderSettingItem(
-                title = stringResource(
-                    R.string.bookshelf_cover_corner,
-                    stringResource(R.string.corner_bottom_start),
-                ),
-                value = settings.bookshelfCoverCornerBottomStart.toFloat(),
-                valueRange = 0f..40f,
-                steps = 39,
-                onValueChange = { value ->
-                    onUpdate { it.copy(bookshelfCoverCornerBottomStart = value.toInt()) }
-                }
-            )
+            // 封面圆角已统一到「外观设置 → 封面圆角」，这里不再重复提供入口。
 
             CompactDropdownSettingItem(
                 title = stringResource(R.string.layout_mode),
@@ -392,10 +344,43 @@ fun BookshelfConfigSheet(
                         CompactSliderSettingItem(
                             title = stringResource(R.string.grid_cover_width),
                             value = settings.bookshelfGridCoverWidth.toFloat(),
-                            valueRange = 40f..150f,
-                            steps = 110,
+                            valueRange = 40f..170f,
+                            steps = 130,
                             onValueChange = { value ->
                                 onUpdate { it.copy(bookshelfGridCoverWidth = value.toInt()) }
+                            }
+                        )
+                    }
+
+                    if (layoutMode != 0) {
+                        val positionLabels = arrayOf(
+                            stringResource(R.string.position_top_end),
+                            stringResource(R.string.position_top_start),
+                            stringResource(R.string.position_bottom_end),
+                            stringResource(R.string.position_bottom_start),
+                        )
+                        CompactDropdownSettingItem(
+                            title = stringResource(R.string.bookshelf_badge_position),
+                            selectedValue = settings.bookshelfBadgePosition.toString(),
+                            displayEntries = positionLabels,
+                            entryValues = arrayOf("0", "1", "2", "3"),
+                            color = LegadoTheme.colorScheme.surface,
+                            onValueChange = {
+                                onUpdate { current ->
+                                    current.copy(bookshelfBadgePosition = it.toInt())
+                                }
+                            }
+                        )
+                        CompactDropdownSettingItem(
+                            title = stringResource(R.string.bookshelf_type_badge_position),
+                            selectedValue = settings.bookshelfTypeBadgePosition.toString(),
+                            displayEntries = positionLabels,
+                            entryValues = arrayOf("0", "1", "2", "3"),
+                            color = LegadoTheme.colorScheme.surface,
+                            onValueChange = {
+                                onUpdate { current ->
+                                    current.copy(bookshelfTypeBadgePosition = it.toInt())
+                                }
                             }
                         )
                     }
@@ -647,6 +632,22 @@ fun BookshelfConfigSheet(
                 }
             )
 
+            // 投影强度：开关打开时才显示，数值越大投影越深、扩散越广。
+            if (settings.bookshelfCoverShadow) {
+                CompactSliderSettingItem(
+                    title = stringResource(
+                        R.string.cover_shadow_strength,
+                        settings.bookshelfCoverShadowStrength,
+                    ),
+                    value = settings.bookshelfCoverShadowStrength.toFloat(),
+                    valueRange = 0f..100f,
+                    steps = 19,
+                    onValueChange = { value ->
+                        onUpdate { it.copy(bookshelfCoverShadowStrength = value.toInt()) }
+                    }
+                )
+            }
+
             PillHeaderDivider(title = stringResource(R.string.bookshelf_section_badge))
 
             CompactSwitchSettingItem(
@@ -712,6 +713,16 @@ fun BookshelfConfigSheet(
                 color = LegadoTheme.colorScheme.surface,
                 onCheckedChange = { value ->
                     onUpdate { it.copy(bookshelfSearchActionDirectToSearch = value) }
+                }
+            )
+
+            CompactSwitchSettingItem(
+                title = stringResource(R.string.bookshelf_search_show_keyboard),
+                description = stringResource(R.string.bookshelf_search_show_keyboard_summary),
+                checked = settings.bookshelfSearchShowKeyboard,
+                color = LegadoTheme.colorScheme.surface,
+                onCheckedChange = { value ->
+                    onUpdate { it.copy(bookshelfSearchShowKeyboard = value) }
                 }
             )
 

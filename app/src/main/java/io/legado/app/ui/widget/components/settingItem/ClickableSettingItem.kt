@@ -21,6 +21,7 @@ fun ClickableSettingItem(
     imageVector: ImageVector? = null,
     onLongClick: (() -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val composeEngine = LegadoTheme.composeEngine
@@ -32,7 +33,8 @@ fun ClickableSettingItem(
                 title = title,
                 summary = description,
                 insideMargin = BasicComponentDefaults.InsideMargin,
-                onClick = onClick
+                onClick = onClick,
+                enabled = enabled,
             )
         }
         ComposeEngine.Material, ComposeEngine.Mochi, ComposeEngine.Coui -> {
@@ -50,7 +52,8 @@ fun ClickableSettingItem(
                     )
                 },
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = onLongClick,
+                enabled = enabled,
             )
         }
     }

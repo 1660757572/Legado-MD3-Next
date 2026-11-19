@@ -1,5 +1,6 @@
 package io.legado.app.ui.widget.components.tabRow
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,8 +8,12 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
@@ -25,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -32,6 +40,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.LocalMiuixBarBackdrop
 import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.theme.fadingEdge
@@ -42,6 +51,11 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.glass.GlassTabRow
 import top.yukonga.miuix.kmp.glass.GlassTabRowDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.feice.mochi.basic.MochiButton
+import ui.feice.mochi.basic.MochiButtonColors
+import ui.feice.mochi.basic.MochiButtonDefaults
+import ui.feice.mochi.basic.Text
+import ui.feice.mochi.theme.MochiTheme
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -58,7 +72,19 @@ fun AppTabRow(
     isScrollable: Boolean = true,
     horizontalPadding: Dp = 0.dp,
     trailingAction: (@Composable () -> Unit)? = null,
+    /** Mochi 主题下用可选中的 chip 代替文字 tab；书架/发现等分类栏使用。 */
+    mochiChipStyle: Boolean = false,
 ) {
+    if (mochiChipStyle && LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        MochiChipTabRow(
+            tabTitles = tabTitles,
+            selectedTabIndex = selectedTabIndex,
+            onTabSelected = onTabSelected,
+            modifier = modifier,
+            trailingAction = trailingAction,
+        )
+        return
+    }
     // GlassTabRow keys its children by title; duplicate titles keep the compatibility path.
     val useGlassTabs = isMiuixHyperOs4Enabled() && tabTitles.isNotEmpty() &&
         tabTitles.distinct().size == tabTitles.size
@@ -101,6 +127,90 @@ fun AppTabRow(
             // Keep popup content in the same layout node as the trigger, outside the scroll/fade.
             Box { trailingAction() }
         }
+    }
+}
+
+@Composable
+private fun MochiChipTabRow(
+    tabTitles: List<String>,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier,
+    trailingAction: (@Composable () -> Unit)?,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val listState = rememberLazyListState()
+        val chipSpacing = LocalAppUiConfiguration.current.appShell.categoryChipSpacing.dp
+        androidx.compose.foundation.lazy.LazyRow(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fadingEdge(listState, gradientWidth = 20.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(chipSpacing),
+        ) {
+            itemsIndexed(tabTitles) { index, title ->
+                MochiCategoryChip(
+                    label = title,
+                    selected = selectedTabIndex == index,
+                    onClick = { onTabSelected(index) },
+                )
+            }
+        }
+        if (trailingAction != null) {
+            Box(modifier = Modifier.padding(end = 12.dp)) { trailingAction() }
+        }
+    }
+}
+
+/**
+ * 分类栏专用的 Mochi 芯片：外观与 [MochiChip] 一致，但关闭按压缩放/跟手位移。
+ * 横向滑动时按钮形变会抢走手势，这里改用无形变的 MochiButton 承载同一套配色与语义。
+ */
+@Composable
+private fun MochiCategoryChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val cs = MochiTheme.colorScheme
+    val container by animateColorAsState(
+        if (selected) cs.primary else cs.onSurfaceVariant.copy(alpha = if (cs.isDark) 0.18f else 0.10f),
+        label = "categoryChipContainer",
+    )
+    val content by animateColorAsState(
+        if (selected) cs.onPrimary else cs.onSurface,
+        label = "categoryChipContent",
+    )
+    val colors = MochiButtonColors(
+        container = container,
+        content = content,
+        outline = Color.Transparent,
+        pressedContainer = Color.Transparent,
+        glow = Color.White.copy(alpha = if (cs.isDark) 0.16f else 0.4f),
+        disabledContainer = cs.onSurface.copy(alpha = 0.08f),
+        disabledContent = cs.onSurface.copy(alpha = 0.38f),
+    )
+    MochiButton(
+        onClick = onClick,
+        modifier = Modifier.semantics { this.selected = selected },
+        colors = colors,
+        contentPadding = PaddingValues(horizontal = 14.dp),
+        minHeight = 34.dp,
+        behavior = MochiButtonDefaults.behavior(
+            pressScale = 1f,
+            follow = 0.dp,
+            maxGrow = 0.dp,
+        ),
+    ) {
+        Text(
+            text = label,
+            maxLines = 1,
+            style = MochiTheme.textStyles.subhead.copy(fontWeight = FontWeight.Medium),
+        )
     }
 }
 

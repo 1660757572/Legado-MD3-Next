@@ -93,6 +93,13 @@ class HomeDashboardRepository(
             // 串里带「关闭」标记 = 首页模块被关掉，因此这里要取反。
             .map { raw -> !hasHomepageModulesDisabledToken(raw) }
 
+    override fun observeCarouselAutoPlay(): Flow<Boolean> =
+        localPreferencesRepository.getBoolean(CAROUSEL_AUTOPLAY_KEY, true)
+
+    override suspend fun updateCarouselAutoPlay(enabled: Boolean) {
+        localPreferencesRepository.putBoolean(CAROUSEL_AUTOPLAY_KEY, enabled)
+    }
+
     override suspend fun updateDailyGoal(minutes: Int) {
         localPreferencesRepository.updatePreference(
             LocalPreferencesKeys.DAILY_READING_GOAL_MINUTES,
@@ -140,4 +147,9 @@ class HomeDashboardRepository(
 
     private fun hasHomepageModulesDisabledToken(raw: String): Boolean =
         raw.split(',').any { it.trim() == HOMEPAGE_MODULES_DISABLED_TOKEN }
+
+    private companion object {
+        /** 随机推荐是否自动轮播；用普通 String key 读写，避免再引入一条旧偏好调用。 */
+        const val CAROUSEL_AUTOPLAY_KEY = "home_carousel_autoplay"
+    }
 }

@@ -33,6 +33,7 @@ fun GlassTopAppBar(
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    titleAlignment: TopBarTitleAlignment = TopBarTitleAlignment.Center,
 ) {
     val hazeState = LocalHazeState.current
     val composeEngine = LegadoTheme.composeEngine
@@ -41,7 +42,13 @@ fun GlassTopAppBar(
         return
     }
     if (composeEngine == ComposeEngine.Mochi) {
-        AppMochiTitleBar(title, modifier, navigationIcon = navigationIcon, actions = actions)
+        AppMochiTitleBar(
+            title,
+            modifier,
+            navigationIcon = navigationIcon,
+            actions = actions,
+            titleAlignment = titleAlignment,
+        )
         return
     }
     if (composeEngine == ComposeEngine.Miuix) {

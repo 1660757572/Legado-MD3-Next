@@ -2487,6 +2487,17 @@
     <string name="book_info_hide_cover">隱藏頂部封面</string>
     <string name="book_info_tab_intro">簡介</string>
     <string name="book_info_tab_toc">目錄</string>
+    <string name="book_info_tab_knowledge">知識</string>
+    <string name="book_info_knowledge_empty">暫無人物或知識</string>
+    <string name="home_carousel_autoplay">隨機推薦自動輪播</string>
+    <string name="navigation_animation_system">系統</string>
+    <string name="cover_corner_page_summary">左上 %1$d · 右上 %2$d · 右下 %3$d · 左下 %4$d</string>
+    <string name="cover_shadow_strength">投影強度 · %1$d</string>
+    <string name="bookshelf_search_show_keyboard">彈出搜尋框時彈出鍵盤</string>
+    <string name="cover_corner_page_title">封面圓角</string>
+    <string name="cover_corner_preview">預覽</string>
+    <string name="bookshelf_search_show_keyboard_summary">書架搜尋列展開時同時拉起輸入法鍵盤。</string>
+    <string name="cover_corner_preview_summary">書架與書籍詳情頁共用</string>
     <string name="book_info_cover_corner">詳情頁封面圓角 · %1$s</string>
     <string name="book_info_cover_corner_title">詳情頁封面圓角</string>
     <string name="bookshelf_cover_corner">書架封面圓角 · %1$s</string>

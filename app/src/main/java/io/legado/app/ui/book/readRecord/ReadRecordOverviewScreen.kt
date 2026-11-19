@@ -220,6 +220,8 @@ fun PeriodSelector(
         tabTitles = periods.map { it.second },
         selectedTabIndex = periods.indexOfFirst { it.first == selectedPeriod },
         onTabSelected = { index -> onPeriodSelected(periods[index].first) },
+        // 和下面的统计卡对齐左右边距，不要顶到屏幕边缘。
+        modifier = Modifier.padding(horizontal = 16.dp),
     )
 }
 

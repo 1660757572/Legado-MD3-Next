@@ -21,15 +21,19 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -55,14 +59,22 @@ import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.VerticalAlignBottom
+import androidx.compose.material.icons.filled.VerticalAlignTop
 import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.DownloadForOffline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -76,6 +88,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -92,6 +105,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -110,6 +124,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.size.Size
@@ -139,6 +154,8 @@ import io.legado.app.ui.theme.rememberImageSeedColor
 import io.legado.app.ui.theme.rememberThemeOverride
 import io.legado.app.ui.theme.responsiveHazeEffectFixedStyle
 import io.legado.app.ui.theme.MiuixBlurredTopBar
+import io.legado.app.ui.widget.components.AppFloatingActionButtonMenu
+import io.legado.app.ui.widget.components.FabMenuItem
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.AppTextField
 import io.legado.app.ui.widget.components.WebViewContainerCompose
@@ -146,7 +163,9 @@ import io.legado.app.ui.widget.components.alert.AppAlertDialog
 import io.legado.app.ui.widget.components.button.series.SmallTonalButton
 import io.legado.app.ui.widget.components.card.GlassCard
 import io.legado.app.ui.widget.components.card.HighlightTagRow
+import io.legado.app.ui.widget.components.card.NormalCard
 import io.legado.app.ui.widget.components.card.TextCard
+import io.legado.app.ui.widget.components.progressIndicator.AppContainedLoadingIndicator
 import io.legado.app.ui.widget.components.changeSource.ChangeSourceSheet
 import io.legado.app.ui.widget.components.conflict.BookshelfConflictSheet
 import io.legado.app.ui.widget.components.icon.AppIcon
@@ -305,7 +324,7 @@ fun BookInfoScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class
 )
 @Composable
 private fun BookInfoScreenContent(
@@ -328,6 +347,14 @@ private fun BookInfoScreenContent(
         M3GlassScrollBehavior(TopAppBarDefaults.exitUntilCollapsedScrollBehavior())
     }
     val listState = rememberLazyListState()
+    // 分段选择器吸顶后额外下移 100dp（只在真正吸顶时生效，初始位置不多留空白）。
+    val tabsStuck by remember(listState) {
+        derivedStateOf { listState.firstVisibleItemIndex >= 2 }
+    }
+    val stickyTabsTopPadding by animateDpAsState(
+        targetValue = if (tabsStuck) 100.dp else 0.dp,
+        label = "book_info_tabs_sticky_top",
+    )
     // 简介 / 目录 / 阅读记录 三合一的页内分段：0 简介、1 目录、2 阅读记录。
     var infoContentTab by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -433,17 +460,25 @@ private fun BookInfoScreenContent(
                                     )
                                 }
                                 item {
-                                    // 内容区顶部不再铺不透明底色：背景图的取色延伸要能透到这里，
-                                    // 只在最上面压一层很淡的 scrim 让正文更好读。
+                                    // 内容区顶部用「背景图取色 → 页面底色」的渐变铺开，
+                                    // 否则封面区域一结束就是一块硬边白块。
                                     val contentFadePx = with(LocalDensity.current) { 180.dp.toPx() }
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
                                                 Brush.verticalGradient(
-                                                    0f to LegadoTheme.colorScheme.surface.copy(alpha = 0.18f),
-                                                    0.5f to LegadoTheme.colorScheme.surface.copy(alpha = 0.08f),
-                                                    1f to Color.Transparent,
+                                                    0f to lerp(
+                                                        LegadoTheme.colorScheme.surface,
+                                                        LegadoTheme.colorScheme.secondaryContainer,
+                                                        0.16f,
+                                                    ),
+                                                    0.45f to lerp(
+                                                        LegadoTheme.colorScheme.surface,
+                                                        LegadoTheme.colorScheme.secondaryContainer,
+                                                        0.07f,
+                                                    ),
+                                                    1f to LegadoTheme.colorScheme.surface,
                                                     startY = 0f,
                                                     endY = contentFadePx,
                                                 )
@@ -459,37 +494,63 @@ private fun BookInfoScreenContent(
                                             onReadClick = { onIntent(BookInfoIntent.ReadClick) },
                                             readEnabled = !state.privateLocked,
                                         )
-                                        // 目录与阅读记录不再走二级页面/Sheet，改成页内分段切换。
+                                    }
+                                }
+                                // 目录与阅读记录不再走二级页面/Sheet，改成页内分段切换。
+                                // 分段选择器单独做成 stickyHeader：滑到操作按钮下方后固定，
+                                // 不再跟着整页内容一起被顶出屏幕。
+                                stickyHeader(key = "book_info_tabs") {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(LegadoTheme.colorScheme.surface)
+                                            // 吸顶后整体下移 80dp，避免紧贴顶栏/状态栏。
+                                            .padding(top = stickyTabsTopPadding)
+                                    ) {
                                         CardTabRow(
                                             tabTitles = listOf(
                                                 stringResource(R.string.book_info_tab_intro),
                                                 stringResource(R.string.book_info_tab_toc),
                                                 stringResource(R.string.read_record),
+                                                stringResource(R.string.book_info_tab_knowledge),
                                             ),
                                             selectedTabIndex = infoContentTab,
                                             onTabSelected = { infoContentTab = it },
                                             modifier = Modifier.padding(
                                                 start = 16.dp,
                                                 end = 16.dp,
-                                                top = 4.dp,
+                                                top = 8.dp,
                                             ),
                                         )
                                         HorizontalDivider(
                                             modifier = Modifier
                                                 .fillMaxWidth(0.8f)
                                                 .align(Alignment.CenterHorizontally)
-                                                .padding(vertical = 12.dp),
+                                                .padding(vertical = 18.dp),
                                             thickness = 1.dp,
                                             color = LegadoTheme.colorScheme.outlineVariant
                                                 .copy(alpha = 0.6f),
                                         )
-                                        when (infoContentTab) {
+                                    }
+                                }
+                                item {
+                                    when (infoContentTab) {
                                             1 -> BookInfoTocSection(
                                                 chapters = state.tocChapters,
                                                 currentIndex = book.durChapterIndex,
                                                 isLoading = state.isTocLoading,
+                                                cachedIndices = state.cachedChapterIndices,
+                                                downloadingIndices = state.downloadingChapterIndices,
+                                                failedIndices = state.failedChapterIndices,
+                                                wordCounts = state.tocChapterWordCounts,
                                                 onChapterClick = { index ->
                                                     onIntent(BookInfoIntent.ChapterClick(index))
+                                                },
+                                                onDownloadChapter = { index ->
+                                                    onIntent(BookInfoIntent.DownloadChapter(index))
+                                                },
+                                                onDownloadAll = {
+                                                    onIntent(BookInfoIntent.DownloadAllChapters)
                                                 },
                                             )
 
@@ -499,31 +560,44 @@ private fun BookInfoScreenContent(
                                                 modifier = Modifier.padding(horizontal = 16.dp),
                                             )
 
-                                            else -> {
-                                                if (
-                                                    state.characters.isNotEmpty() ||
-                                                    state.knowledgeEntries.isNotEmpty() ||
-                                                    state.recentEvents.isNotEmpty()
+                                            // 知识（人物 / 词条 / 事件）单独一页，和简介分开。
+                                            3 -> if (
+                                                state.characters.isEmpty() &&
+                                                state.knowledgeEntries.isEmpty() &&
+                                                state.recentEvents.isEmpty()
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 28.dp),
+                                                    contentAlignment = Alignment.Center,
                                                 ) {
-                                                    BookInfoCharacters(
-                                                        characters = state.characters,
-                                                        onCharacterClick = {
-                                                            onIntent(BookInfoIntent.CharacterClick(it))
-                                                        },
-                                                        onNetworkClick = {
-                                                            onIntent(BookInfoIntent.CharacterNetworkClick)
-                                                        },
-                                                        onViewAllClick = {
-                                                            onIntent(BookInfoIntent.CharacterListClick)
-                                                        },
-                                                        onKnowledgeClick = {
-                                                            onIntent(BookInfoIntent.KnowledgeListClick)
-                                                        },
-                                                        onEventsClick = {
-                                                            onIntent(BookInfoIntent.EventListClick)
-                                                        },
+                                                    EmptyMessage(
+                                                        message = stringResource(R.string.book_info_knowledge_empty)
                                                     )
                                                 }
+                                            } else {
+                                                BookInfoCharacters(
+                                                    characters = state.characters,
+                                                    relations = state.relations,
+                                                    knowledgeEntries = state.knowledgeEntries,
+                                                    events = state.recentEvents,
+                                                    onCharacterClick = {
+                                                        onIntent(BookInfoIntent.CharacterClick(it))
+                                                    },
+                                                    onNetworkClick = {
+                                                        onIntent(BookInfoIntent.CharacterNetworkClick)
+                                                    },
+                                                    onKnowledgeClick = {
+                                                        onIntent(BookInfoIntent.KnowledgeListClick)
+                                                    },
+                                                    onEventsClick = {
+                                                        onIntent(BookInfoIntent.EventListClick)
+                                                    },
+                                                )
+                                            }
+
+                                            else -> {
                                                 BookInfoSummary(
                                                     book = book,
                                                     tocLoadFailed = state.tocLoadFailed,
@@ -573,7 +647,6 @@ private fun BookInfoScreenContent(
                 }
             }
         }
-    }
 
     val currentSheet = state.sheet
     var renderedSheet by remember { mutableStateOf<BookInfoSheet>(BookInfoSheet.None) }
@@ -1198,36 +1271,21 @@ private fun BookInfoBackdrop(
         LegadoTheme.seedColor,
         0.42f
     )
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .clearAndSetSemantics { }
     ) {
+        // 背景图只铺页面前 72%，并在同一高度内渐隐到页面底色：
+        // 既能让阅读记录/知识列表顶部仍看到背景，又不会在图片下缘留下一条硬边。
+        val backdropHeight = maxHeight * 0.72f
+        val density = LocalDensity.current
         Crossfade(
             targetState = backdropState,
             animationSpec = tween(800),
             label = "BackdropCrossfade"
         ) { currentBook ->
             if (currentBook.style.showCover) {
-                // 铺满全屏的同一张封面（重模糊）当作「取色延伸」的底色：
-                // 480dp 封面图结束之后，下面不会直接露出页面白底。
-                BookCoverImage(
-                    name = currentBook.name,
-                    author = currentBook.author,
-                    path = currentBook.coverPath,
-                    sourceOrigin = currentBook.sourceOrigin,
-                    memoryCacheKey = currentBook.coverPath?.let { "$it#book-info-backdrop-extend" },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(30.dp),
-                    contentScale = ContentScale.Crop,
-                    showLoadingPlaceholder = false,
-                    onError = { onNetworkCoverLoadError(currentBook.coverPath) },
-                    requestBuilder = {
-                        // 只要一张糊底，没必要按原图尺寸解码，省一份大图内存。
-                        size(Size(720, 1280))
-                    }
-                )
                 BookCoverImage(
                     name = currentBook.name,
                     author = currentBook.author,
@@ -1236,7 +1294,7 @@ private fun BookInfoBackdrop(
                     memoryCacheKey = currentBook.coverPath?.let { "$it#book-info-backdrop" },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(480.dp)
+                        .height(backdropHeight)
                         .then(
                             if (currentBook.style.blurCover) {
                                 Modifier.blur(24.dp)
@@ -1268,23 +1326,22 @@ private fun BookInfoBackdrop(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
                             0f to Color.Transparent,
-                            0.20f to if (style.applySeedOverlay) {
+                            0.24f to if (style.applySeedOverlay) {
                                 seedOverlay.copy(alpha = 0.10f)
                             } else {
                                 Color.Transparent
                             },
-                            0.40f to if (style.applySeedOverlay) {
+                            0.46f to if (style.applySeedOverlay) {
                                 seedOverlay.copy(alpha = 0.18f)
                             } else {
-                                Color.Transparent
+                                LegadoTheme.colorScheme.surface.copy(alpha = 0.20f)
                             },
-                            // 480dp 封面图结束后，取色延伸要一直透到底色：
-                            // 只在接近页面底部时才收成 surface，避免出现一大块纯白。
-                            0.58f to LegadoTheme.colorScheme.surface.copy(alpha = 0.10f),
-                            0.78f to LegadoTheme.colorScheme.surface.copy(alpha = 0.55f),
-                            0.92f to LegadoTheme.colorScheme.surface.copy(alpha = 0.94f),
+                            0.66f to LegadoTheme.colorScheme.surface.copy(alpha = 0.58f),
+                            0.84f to LegadoTheme.colorScheme.surface.copy(alpha = 0.88f),
                             1f to LegadoTheme.colorScheme.surface,
-                        )
+                        ),
+                        startY = 0f,
+                        endY = with(density) { backdropHeight.toPx() },
                     )
                 )
         )
@@ -1387,11 +1444,15 @@ private fun BookInfoHeader(
                         Color.Transparent,
                         if (applySeedOverlay) {
                             lerp(LegadoTheme.colorScheme.surface, LegadoTheme.seedColor, 0.08f)
-                                .copy(alpha = 0.10f)
+                                .copy(alpha = 0.5f)
                         } else {
-                            LegadoTheme.colorScheme.surface.copy(alpha = 0.10f)
+                            LegadoTheme.colorScheme.surface.copy(alpha = 0.5f)
                         },
-                        LegadoTheme.colorScheme.surface.copy(alpha = 0.18f),
+                        lerp(
+                            LegadoTheme.colorScheme.surface,
+                            LegadoTheme.colorScheme.secondaryContainer,
+                            0.16f,
+                        ),
                     )
                 )
             )
@@ -1712,6 +1773,12 @@ private fun BookInfoActions(
     }
     // Mochi：左图标（加书架）+ 中主按钮（开始阅读，跟取色）+ 右图标（换源）
     if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        // 封面取色可能很深（深青、墨绿），按钮文字/图标必须跟着反色，否则黑字压在深底上看不清。
+        val readContainer = LegadoTheme.colorScheme.primary
+        val readContent = if (readContainer.luminance() < 0.45f) Color.White else Color.Black
+        val readButtonColors = MochiButtonDefaults
+            .colors(MochiButtonStyle.Filled)
+            .copy(container = readContainer, content = readContent)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1731,15 +1798,22 @@ private fun BookInfoActions(
                 onClick = onReadClick,
                 enabled = readEnabled,
                 style = MochiButtonStyle.Filled,
+                colors = readButtonColors,
                 minHeight = 52.dp,
                 modifier = Modifier
                     .weight(1f)
                     .semantics { contentDescription = readingLabel },
             ) {
-                AppIcon(Icons.Default.PlayArrow, null, Modifier.size(20.dp))
+                AppIcon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = readContent,
+                )
                 AppText(
                     text = stringResource(R.string.reading),
                     style = LegadoTheme.typography.labelLargeEmphasized,
+                    color = readContent,
                 )
             }
             MochiIconButton(
@@ -1831,12 +1905,40 @@ private fun BookInfoActionCard(
     }
 }
 
+private data class TocRow(val chapter: BookChapter, val nested: Boolean)
+
+/** 折叠分卷后的可见行：分卷行始终显示，其下的章节随折叠态过滤；nested 表示该章属于某个分卷。 */
+private fun visibleTocRows(
+    chapters: List<BookChapter>,
+    collapsedVolumes: Set<Int>,
+): List<TocRow> {
+    val out = ArrayList<TocRow>(chapters.size)
+    var currentCollapsed = false
+    var inVolume = false
+    chapters.forEach { chapter ->
+        if (chapter.isVolume) {
+            currentCollapsed = chapter.index in collapsedVolumes
+            inVolume = true
+            out.add(TocRow(chapter, nested = false))
+        } else if (!currentCollapsed) {
+            out.add(TocRow(chapter, nested = inVolume))
+        }
+    }
+    return out
+}
+
 @Composable
 private fun BookInfoTocSection(
     chapters: List<BookChapter>,
     currentIndex: Int,
     isLoading: Boolean,
+    cachedIndices: Set<Int>,
+    downloadingIndices: Set<Int>,
+    failedIndices: Set<Int>,
+    wordCounts: Map<Int, String>,
     onChapterClick: (Int) -> Unit,
+    onDownloadChapter: (Int) -> Unit,
+    onDownloadAll: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (chapters.isEmpty()) {
@@ -1855,84 +1957,255 @@ private fun BookInfoTocSection(
         return
     }
     // 内嵌目录只占一段固定高度，避免把详情页拉成一条无限列表；打开时直接定位到当前章节。
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = currentIndex.coerceIn(0, chapters.lastIndex)
+    val initialIndex = remember(chapters) {
+        chapters.indexOfFirst { it.index == currentIndex && !it.isVolume }
+            .coerceIn(0, chapters.lastIndex)
+    }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+    // 分卷折叠态：默认全展开，点分卷行切换；章节列表随折叠态过滤。
+    var collapsedVolumes by remember(chapters) { mutableStateOf(emptySet<Int>()) }
+    val visibleItems = remember(chapters, collapsedVolumes) {
+        visibleTocRows(chapters, collapsedVolumes)
+    }
+    val scope = rememberCoroutineScope()
+    var fabExpanded by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val locateText = stringResource(R.string.locate_current_reading)
+    val toTopText = stringResource(R.string.to_top)
+    val toBottomText = stringResource(R.string.to_bottom)
+    val downloadAllText = stringResource(R.string.download_all)
+    val expandText = stringResource(R.string.expand_volume)
+    val collapseText = stringResource(R.string.coll_volume)
+    // 目录页右下浮动按钮：定位当前 / 移至顶部 / 移至底部 / 一键缓存。
+    val fabItems = listOf(
+        FabMenuItem(Icons.Default.MyLocation, locateText) {
+            var lastVolume: Int? = null
+            var currentVolume: Int? = null
+            for (chapter in chapters) {
+                if (chapter.isVolume) lastVolume = chapter.index
+                if (!chapter.isVolume && chapter.index == currentIndex) {
+                    currentVolume = lastVolume
+                    break
+                }
+            }
+            val expandedVolumes = currentVolume?.let { collapsedVolumes - it } ?: collapsedVolumes
+            collapsedVolumes = expandedVolumes
+            val target = visibleTocRows(chapters, expandedVolumes)
+                .indexOfFirst { !it.chapter.isVolume && it.chapter.index == currentIndex }
+            if (target >= 0) scope.launch { listState.scrollToItem(target) }
+        },
+        FabMenuItem(Icons.Default.VerticalAlignTop, toTopText) {
+            scope.launch { listState.scrollToItem(0) }
+        },
+        FabMenuItem(Icons.Default.VerticalAlignBottom, toBottomText) {
+            scope.launch { listState.scrollToItem(visibleItems.lastIndex.coerceAtLeast(0)) }
+        },
+        FabMenuItem(Icons.Default.Download, downloadAllText) {
+            onDownloadAll()
+        },
     )
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(LegadoTheme.colorScheme.surface)
-            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-    ) {
-        AppText(
-            text = stringResource(R.string.read_chapter_total, chapters.size),
-            style = LegadoTheme.typography.labelMedium,
-            color = LegadoTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        LazyColumn(
-            state = listState,
+    Box(modifier = modifier.fillMaxWidth()) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                // 参考阅读页目录 sheet 的密度：限高 500dp，行间距拉开一点。
-                .heightIn(max = 500.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+                .background(LegadoTheme.colorScheme.surface)
+                .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         ) {
-            itemsIndexed(
-                items = chapters,
-                key = { index, _ -> index },
-            ) { index, chapter ->
-                val selected = index == currentIndex
-                if (chapter.isVolume) {
-                    // 分卷标题：整行铺开、不可点击、不可折叠，和章节卡片用不同底色区分。
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = LegadoTheme.colorScheme.surfaceContainer,
-                                shape = RoundedCornerShape(14.dp),
+            AppText(
+                text = stringResource(R.string.read_chapter_total, chapters.size),
+                style = LegadoTheme.typography.labelMedium,
+                color = LegadoTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // 参考阅读页目录 sheet 的密度：限高 500dp，行间距拉开一点。
+                    .heightIn(max = 550.dp),
+                contentPadding = PaddingValues(bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                itemsIndexed(
+                    items = visibleItems,
+                    key = { _, row -> row.chapter.index },
+                    contentType = { _, row -> if (row.chapter.isVolume) "volume" else "chapter" },
+                ) { _, row ->
+                    val chapter = row.chapter
+                    if (chapter.isVolume) {
+                        val collapsed = chapter.index in collapsedVolumes
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(LegadoTheme.colorScheme.surfaceContainer)
+                                .clickable(role = Role.Button) {
+                                    // 点一次切换一次：已展开 -> 收纳（加入集合）；
+                                    // 已收纳 -> 展开（移出集合）。此前两个分支写反，点击永远无效。
+                                    collapsedVolumes = if (collapsed) {
+                                        collapsedVolumes - chapter.index
+                                    } else {
+                                        collapsedVolumes + chapter.index
+                                    }
+                                }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppIcon(
+                                imageVector = if (collapsed) {
+                                    Icons.Default.ExpandMore
+                                } else {
+                                    Icons.Default.ExpandLess
+                                },
+                                contentDescription = null,
+                                tint = LegadoTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
                             )
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        AppText(
-                            text = chapter.title,
-                            style = LegadoTheme.typography.labelLargeEmphasized,
-                            color = LegadoTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(LegadoTheme.colorScheme.surfaceContainerLow)
-                            .clickable(role = Role.Button) { onChapterClick(index) }
-                            .padding(horizontal = 14.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        AppText(
-                            text = chapter.title,
-                            style = if (selected) {
-                                LegadoTheme.typography.bodyMediumEmphasized
-                            } else {
-                                LegadoTheme.typography.bodyMedium
-                            },
-                            color = if (selected) {
-                                LegadoTheme.colorScheme.primary
-                            } else {
-                                LegadoTheme.colorScheme.onSurface
-                            },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            AppText(
+                                text = chapter.title,
+                                style = LegadoTheme.typography.labelLargeEmphasized,
+                                color = LegadoTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .semantics {
+                                        contentDescription =
+                                            "${if (collapsed) expandText else collapseText}：${chapter.title}"
+                                    },
+                            )
+                        }
+                    } else {
+                        // 分卷下的章节整体右缩进，靠位置差异区分「卷」与「章」。
+                        val selected = chapter.index == currentIndex
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = if (row.nested) 12.dp else 0.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(LegadoTheme.colorScheme.surfaceContainerLow)
+                                .clickable(role = Role.Button) { onChapterClick(chapter.index) }
+                                .padding(horizontal = 14.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppText(
+                                text = chapter.title,
+                                style = if (selected) {
+                                    LegadoTheme.typography.bodyMediumEmphasized
+                                } else {
+                                    LegadoTheme.typography.bodyMedium
+                                },
+                                color = if (selected) {
+                                    LegadoTheme.colorScheme.primary
+                                } else {
+                                    LegadoTheme.colorScheme.onSurface
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            BookInfoTocChapterStatus(
+                                chapter = chapter,
+                                cached = chapter.index in cachedIndices,
+                                downloading = chapter.index in downloadingIndices,
+                                failed = chapter.index in failedIndices,
+                                selected = selected,
+                                wordCountOverride = wordCounts[chapter.index],
+                                onDownloadClick = { onDownloadChapter(chapter.index) },
+                            )
+                        }
                     }
                 }
             }
         }
+        AppFloatingActionButtonMenu(
+            expanded = fabExpanded,
+            onExpandedChange = { fabExpanded = it },
+            items = fabItems,
+            focusRequester = focusRequester,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 14.dp, bottom = 6.dp),
+        )
+    }
+}
+
+/**
+ * 内嵌目录行右侧的状态：缓存过显示字数标签，未缓存显示下载按钮，
+ * 与阅读页目录 sheet（[ReaderSheetChapterStatus]）保持同一套语义。
+ */
+@Composable
+private fun BookInfoTocChapterStatus(
+    chapter: BookChapter,
+    cached: Boolean,
+    downloading: Boolean,
+    failed: Boolean,
+    selected: Boolean,
+    wordCountOverride: String?,
+    onDownloadClick: () -> Unit,
+) {
+    val wordCount = wordCountOverride ?: chapter.wordCount
+    when {
+        cached && !wordCount.isNullOrBlank() -> NormalCard(
+            cornerRadius = 8.dp,
+            containerColor = if (selected) {
+                LegadoTheme.colorScheme.primaryContainer
+            } else {
+                LegadoTheme.colorScheme.surfaceContainer
+            },
+        ) {
+            AppText(
+                text = wordCount.orEmpty(),
+                style = LegadoTheme.typography.labelSmallEmphasized.copy(fontSize = 8.sp),
+                color = if (selected) {
+                    LegadoTheme.colorScheme.onPrimaryContainer
+                } else {
+                    LegadoTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+
+        downloading -> AppContainedLoadingIndicator(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .size(16.dp),
+        )
+
+        failed -> BookInfoTocStatusIconButton(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = stringResource(R.string.a11y_retry_chapter, chapter.title),
+            onClick = onDownloadClick,
+        )
+
+        !cached -> BookInfoTocStatusIconButton(
+            imageVector = Icons.Outlined.DownloadForOffline,
+            contentDescription = stringResource(R.string.download_chapter, chapter.title),
+            onClick = onDownloadClick,
+        )
+    }
+}
+
+@Composable
+private fun BookInfoTocStatusIconButton(
+    imageVector: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(width = 32.dp, height = 16.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        AppIcon(
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = LegadoTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 
@@ -2593,68 +2866,370 @@ private fun RelatedBooksBanner(
 @Composable
 private fun BookInfoCharacters(
     characters: ImmutableList<BookInfoCharacterUi>,
+    relations: ImmutableList<BookInfoRelationUi>,
+    knowledgeEntries: ImmutableList<BookInfoKnowledgeUi>,
+    events: ImmutableList<BookInfoEventUi>,
     onCharacterClick: (String) -> Unit,
     onNetworkClick: () -> Unit,
-    onViewAllClick: () -> Unit,
     onKnowledgeClick: () -> Unit,
     onEventsClick: () -> Unit,
 ) {
+    // 知识页内再分四段：人物 / 关系网 / 知识列表 / 事件列表。
+    // 右侧四个圆按钮已移除，入口全部收进分段选择器。
+    var knowledgeTab by rememberSaveable { mutableIntStateOf(0) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(LegadoTheme.colorScheme.surface)
             .padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppText(
-                text = stringResource(R.string.book_info_knowledge),
-                style = LegadoTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
+        CardTabRow(
+            tabTitles = listOf(
+                stringResource(R.string.book_characters),
+                stringResource(R.string.character_network),
+                stringResource(R.string.book_knowledge),
+                stringResource(R.string.plot_events),
+            ),
+            selectedTabIndex = knowledgeTab,
+            onTabSelected = { knowledgeTab = it },
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        when (knowledgeTab) {
+            0 -> BookInfoCharacterList(
+                characters = characters,
+                onCharacterClick = onCharacterClick,
             )
-            SmallTonalButton(
-                onClick = onViewAllClick,
-                icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
-                contentDescription = stringResource(R.string.book_characters),
+
+            1 -> BookInfoRelationList(
+                relations = relations,
+                onRelationClick = onNetworkClick,
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            SmallTonalButton(
-                onClick = onNetworkClick,
-                icon = Icons.Default.Group,
-                contentDescription = stringResource(R.string.character_network),
+
+            2 -> BookInfoKnowledgeList(
+                entries = knowledgeEntries,
+                onKnowledgeClick = onKnowledgeClick,
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            SmallTonalButton(
-                onClick = onKnowledgeClick,
-                icon = Icons.Default.Book,
-                contentDescription = stringResource(R.string.book_knowledge),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            SmallTonalButton(
-                onClick = onEventsClick,
-                icon = Icons.Default.Timeline,
-                contentDescription = stringResource(R.string.plot_events),
+
+            else -> BookInfoEventList(
+                events = events,
+                onEventsClick = onEventsClick,
             )
         }
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+    }
+}
+
+@Composable
+private fun KnowledgeSectionEmpty() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        EmptyMessage(message = stringResource(R.string.book_info_knowledge_empty))
+    }
+}
+
+@Composable
+private fun BookInfoCharacterList(
+    characters: ImmutableList<BookInfoCharacterUi>,
+    onCharacterClick: (String) -> Unit,
+) {
+    if (characters.isEmpty()) {
+        KnowledgeSectionEmpty()
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        characters.forEach { character ->
+            CharacterListRow(
+                character = character,
+                onClick = { onCharacterClick(character.id) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CharacterListRow(
+    character: BookInfoCharacterUi,
+    onClick: () -> Unit,
+) {
+    val avatarLoadFailed = remember(character.avatarUri) { mutableStateOf(false) }
+    val roleDisplayName = characterRoleDisplayName(character.role)
+    val tags = remember(character.tags) {
+        character.tags.split('|', ',', '，')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+    }
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        containerColor = LegadoTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top,
         ) {
-            items(
-                items = characters,
-                key = { it.id },
-            ) { character ->
-                CharacterEntryCard(
-                    character = character,
-                    onClick = { onCharacterClick(character.id) },
-                )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(LegadoTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!character.avatarUri.isNullOrBlank() && !avatarLoadFailed.value) {
+                    AsyncImage(
+                        model = character.avatarUri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        onError = { avatarLoadFailed.value = true },
+                    )
+                } else {
+                    AppIcon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = LegadoTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    AnimatedTextLine(
+                        text = character.name,
+                        style = LegadoTheme.typography.titleSmall,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (roleDisplayName.isNotBlank()) {
+                        AppText(
+                            text = roleDisplayName,
+                            style = LegadoTheme.typography.labelSmall,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(LegadoTheme.colorScheme.surfaceContainer)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+                if (tags.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        tags.forEach { tag ->
+                            AppText(
+                                text = tag,
+                                style = LegadoTheme.typography.labelSmall,
+                                color = LegadoTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(LegadoTheme.colorScheme.surfaceContainer)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
+                }
+                if (character.summary.isNotBlank()) {
+                    AppText(
+                        text = character.summary,
+                        style = LegadoTheme.typography.bodySmall,
+                        color = LegadoTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun characterRoleDisplayName(role: String): String = when (role) {
+    io.legado.app.data.entities.BookCharacterProfile.ROLE_MALE_LEAD -> stringResource(R.string.role_male_lead)
+    io.legado.app.data.entities.BookCharacterProfile.ROLE_FEMALE_LEAD -> stringResource(R.string.role_female_lead)
+    io.legado.app.data.entities.BookCharacterProfile.ROLE_MALE_SUPPORTING -> stringResource(R.string.role_male_supporting)
+    io.legado.app.data.entities.BookCharacterProfile.ROLE_FEMALE_SUPPORTING -> stringResource(R.string.role_female_supporting)
+    else -> ""
+}
+
+@Composable
+private fun BookInfoRelationList(
+    relations: ImmutableList<BookInfoRelationUi>,
+    onRelationClick: () -> Unit,
+) {
+    if (relations.isEmpty()) {
+        KnowledgeSectionEmpty()
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        relations.forEach { relation ->
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onRelationClick,
+                containerColor = LegadoTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        AppText(
+                            text = relation.fromName,
+                            style = LegadoTheme.typography.titleSmall,
+                        )
+                        AppIcon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = LegadoTheme.colorScheme.onSurfaceVariant,
+                        )
+                        AppText(
+                            text = relation.toName,
+                            style = LegadoTheme.typography.titleSmall,
+                        )
+                    }
+                    if (relation.relationType.isNotBlank()) {
+                        AppText(
+                            text = relation.relationType,
+                            style = LegadoTheme.typography.labelSmall,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(LegadoTheme.colorScheme.surfaceContainer)
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                    if (relation.summary.isNotBlank()) {
+                        AppText(
+                            text = relation.summary,
+                            style = LegadoTheme.typography.bodySmall,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookInfoKnowledgeList(
+    entries: ImmutableList<BookInfoKnowledgeUi>,
+    onKnowledgeClick: () -> Unit,
+) {
+    if (entries.isEmpty()) {
+        KnowledgeSectionEmpty()
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        entries.forEach { entry ->
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onKnowledgeClick,
+                containerColor = LegadoTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    AppText(
+                        text = entry.title,
+                        style = LegadoTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    AppText(
+                        text = entry.summary.ifBlank { stringResource(R.string.knowledge_content) },
+                        style = LegadoTheme.typography.bodySmall,
+                        color = LegadoTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookInfoEventList(
+    events: ImmutableList<BookInfoEventUi>,
+    onEventsClick: () -> Unit,
+) {
+    if (events.isEmpty()) {
+        KnowledgeSectionEmpty()
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        events.forEach { event ->
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onEventsClick,
+                containerColor = LegadoTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    val meta = listOf(event.chapterTitle, event.eventTimeText, event.characterName)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" · ")
+                    if (meta.isNotBlank()) {
+                        AppText(
+                            text = meta,
+                            style = LegadoTheme.typography.labelSmall,
+                            color = LegadoTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    AppText(
+                        text = event.content,
+                        style = LegadoTheme.typography.bodySmall,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

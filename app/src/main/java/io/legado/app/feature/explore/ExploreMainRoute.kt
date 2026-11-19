@@ -50,6 +50,7 @@ import io.legado.app.ui.widget.components.tabRow.AppTabRowIconButton
 import io.legado.app.ui.widget.components.topbar.DynamicTopAppBar
 import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
+import io.legado.app.ui.widget.components.topbar.TopBarTitleAlignment
 import io.legado.app.ui.widget.components.topbar.TopBarActionButton
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -117,6 +118,8 @@ fun ExploreMainRoute(
                             title = stringResource(R.string.discovery),
                             subtitle = selectedSource?.name,
                             scrollBehavior = scrollBehavior,
+                            // 发现页的折叠标题贴着展开态大标题的左边距，不居中。
+                            titleAlignment = TopBarTitleAlignment.Start,
                             actions = {
                                 // 等价旧版长按书源的「搜索」：打开搜索界面并只使用当前书源搜索。
                                 TopBarActionButton(
@@ -162,6 +165,7 @@ fun ExploreMainRoute(
                                             scope.launch { pagerState.animateScrollToPage(index) }
                                         },
                                         horizontalPadding = 12.dp,
+                                        mochiChipStyle = true,
                                         trailingAction = {
                                             AppTabRowIconButton(
                                                 onClick = { kindSheetVisible = true },

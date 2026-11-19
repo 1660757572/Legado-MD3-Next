@@ -43,6 +43,7 @@ import io.legado.app.domain.model.settings.OtherSettings
 import io.legado.app.domain.model.settings.PrivateAccessSettings
 import io.legado.app.domain.model.settings.ThemeSettings
 import io.legado.app.domain.usecase.BookTocUnavailableException
+import io.legado.app.domain.usecase.CacheBookChaptersUseCase
 import io.legado.app.domain.usecase.ChangeBookSourceUseCase
 import io.legado.app.domain.usecase.ChangeSourceMigrationOptions
 import io.legado.app.domain.usecase.ClearBookCacheUseCase
@@ -70,6 +71,7 @@ import io.legado.app.model.BookCover
 import io.legado.app.model.ReadBook
 import io.legado.app.model.SourceCallBack
 import io.legado.app.model.analyzeRule.AnalyzeUrl
+import io.legado.app.model.CacheBook
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.webBook.RelatedBooks
 import io.legado.app.model.webBook.WebBook
@@ -81,7 +83,13 @@ import io.legado.app.utils.ImageSaveUtils
 import io.legado.app.utils.UrlUtil
 import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.postEvent
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -111,6 +119,7 @@ class BookInfoViewModel(
     private val readRecordRepository: ReadRecordRepository,
     private val changeBookSourceUseCase: ChangeBookSourceUseCase,
     private val clearBookCacheUseCase: ClearBookCacheUseCase,
+    private val cacheBookChaptersUseCase: CacheBookChaptersUseCase,
     private val bookGroupRepository: BookGroupRepository,
     private val bookRepository: BookRepository,
     private val findBookshelfConflictUseCase: FindBookshelfConflictUseCase,
@@ -143,6 +152,15 @@ class BookInfoViewModel(
      */
     private val privateLockedByEntryFlow = MutableStateFlow(false)
 
+    /** 内嵌目录的缓存态：已缓存（显示字数）/ 下载中 / 失败（可重试）。 */
+    private val cachedChapterIndicesFlow = MutableStateFlow<ImmutableSet<Int>>(persistentSetOf())
+    private val downloadingChapterIndicesFlow = MutableStateFlow<ImmutableSet<Int>>(persistentSetOf())
+    private val failedChapterIndicesFlow = MutableStateFlow<ImmutableSet<Int>>(persistentSetOf())
+    /** 已缓存章节的字数覆盖值，按章节下标逐条发布，目录行只随对应项刷新。 */
+    private val tocChapterWordCountsFlow =
+        MutableStateFlow<ImmutableMap<Int, String>>(persistentMapOf())
+    private var chapterCacheScanKey: String? = null
+
     private val privateAccessState: StateFlow<PrivateAccessState> =
         privateAccessGateway.state
             .stateIn(viewModelScope, SharingStarted.Eagerly, PrivateAccessState())
@@ -172,6 +190,14 @@ class BookInfoViewModel(
                     screen.privateLockedByEntry &&
                     !screen.privateAccess.isTargetGranted(screen.book?.bookUrl, group)
         )
+    }.combine(cachedChapterIndicesFlow) { screen, cached ->
+        screen.copy(cachedChapterIndices = cached)
+    }.combine(downloadingChapterIndicesFlow) { screen, downloading ->
+        screen.copy(downloadingChapterIndices = downloading)
+    }.combine(failedChapterIndicesFlow) { screen, failed ->
+        screen.copy(failedChapterIndices = failed)
+    }.combine(tocChapterWordCountsFlow) { screen, counts ->
+        screen.copy(tocChapterWordCounts = counts)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -187,6 +213,98 @@ class BookInfoViewModel(
 
     init {
         collectEventBus()
+        observeChapterCacheState()
+    }
+
+    /** 内嵌目录的缓存态订阅：整书缓存成功 / 正在下载 / 下载失败。 */
+    private fun observeChapterCacheState() {
+        viewModelScope.launch {
+            CacheBook.cacheSuccessFlow.collect { chapter ->
+                if (chapter.bookUrl == currentBook?.bookUrl && !chapter.isVolume) {
+                    cachedChapterIndicesFlow.update { current -> (current + chapter.index).toPersistentSet() }
+                    // 下载完成时源站可能没给字数；补齐后只更新这一章的标签，不整页重扫。
+                    val wordCount = chapter.wordCount?.takeIf { it.isNotBlank() }
+                        ?: currentBook?.let { book ->
+                            withContext(IO) { BookHelp.ensureChapterWordCount(book, chapter) }
+                        }
+                    if (!wordCount.isNullOrBlank()) {
+                        tocChapterWordCountsFlow.update {
+                            (it + (chapter.index to wordCount)).toPersistentMap()
+                        }
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            CacheBook.downloadStateFlow.collect { state ->
+                val url = currentBook?.bookUrl
+                val bookState = url?.let { state.books[it] }
+                downloadingChapterIndicesFlow.value =
+                    bookState?.runningIndices?.toPersistentSet() ?: persistentSetOf()
+                failedChapterIndicesFlow.value =
+                    bookState?.failedIndices?.toPersistentSet() ?: persistentSetOf()
+            }
+        }
+    }
+
+    /** 章节列表变化后重扫缓存；用「书 + 目录长度」做签名，避免每次 refresh 都扫盘。 */
+    private fun refreshChapterCacheState() {
+        val book = currentBook ?: return
+        val chapters = currentChapterList
+        if (chapters.isEmpty()) {
+            chapterCacheScanKey = null
+            cachedChapterIndicesFlow.value = persistentSetOf()
+            return
+        }
+        val key = "${book.bookUrl}#${book.getFolderName()}#${chapters.size}"
+        if (key == chapterCacheScanKey) return
+        chapterCacheScanKey = key
+        viewModelScope.launch(IO) {
+            val cachedChapters = chapters.asSequence()
+                .filter { !it.isVolume }
+                .filter { BookHelp.hasContent(book, it) }
+                .toList()
+            // 先发布缓存索引，字数回填在后台逐章进行，避免大书首次进入详情页时
+            // 因读取全部缓存正文而延迟「已缓存」状态。
+            cachedChapterIndicesFlow.value = cachedChapters
+                .map { it.index }
+                .toSet()
+                .toPersistentSet()
+            var wordCountBackfilled = 0
+            cachedChapters.forEach { chapter ->
+                if (chapter.wordCount.isNullOrBlank()) {
+                    BookHelp.ensureChapterWordCount(book, chapter)?.let { wordCount ->
+                        wordCountBackfilled++
+                        tocChapterWordCountsFlow.update {
+                            (it + (chapter.index to wordCount)).toPersistentMap()
+                        }
+                    }
+                }
+            }
+            if (wordCountBackfilled > 0) {
+                syncUiState()
+            }
+        }
+    }
+
+    private fun downloadChapter(index: Int) {
+        val book = currentBook ?: return
+        viewModelScope.launch {
+            cacheBookChaptersUseCase.execute(book.bookUrl, listOf(index))
+        }
+    }
+
+    private fun downloadAllChapters() {
+        val book = currentBook ?: return
+        val cached = cachedChapterIndicesFlow.value
+        val pending = currentChapterList.asSequence()
+            .filter { !it.isVolume && it.index !in cached }
+            .map { it.index }
+            .toList()
+        if (pending.isEmpty()) return
+        viewModelScope.launch {
+            cacheBookChaptersUseCase.execute(book.bookUrl, pending)
+        }
     }
 
     private fun collectEventBus() {
@@ -277,6 +395,7 @@ class BookInfoViewModel(
     private var currentWebFiles: List<BookInfoWebFile> = emptyList()
     private var currentRelatedBooks: List<RelatedBooksUi> = emptyList()
     private var currentCharacters: List<BookInfoCharacterUi> = emptyList()
+    private var currentRelations: List<BookInfoRelationUi> = emptyList()
     private var currentHighlightedTags: List<HighlightedTag> = emptyList()
     private var currentKindLabels: List<String> = emptyList()
     private var currentGroupNames: String? = null
@@ -430,6 +549,8 @@ class BookInfoViewModel(
             BookInfoIntent.ShelfClick -> onShelfClick()
             BookInfoIntent.TocClick -> onTocClick()
             is BookInfoIntent.ChapterClick -> onChapterClick(intent.index)
+            is BookInfoIntent.DownloadChapter -> downloadChapter(intent.index)
+            BookInfoIntent.DownloadAllChapters -> downloadAllChapters()
             BookInfoIntent.CoverClick -> setSheet(BookInfoSheet.CoverPicker)
             BookInfoIntent.CoverLongClick -> currentBook?.getDisplayCover()?.takeIf { it.isNotBlank() }
                 ?.let { showDialog(BookInfoDialog.PhotoPreview(it)) }
@@ -1220,6 +1341,7 @@ class BookInfoViewModel(
             currentChapterList = toc
             currentRelatedBooks = emptyList()
             currentCharacters = emptyList()
+            currentRelations = emptyList()
             currentGroupNames = null
             currentHasCustomGroup = false
             currentKindLabels = emptyList()
@@ -1238,6 +1360,7 @@ class BookInfoViewModel(
         currentWebFiles = emptyList()
         currentRelatedBooks = emptyList()
         currentCharacters = emptyList()
+        currentRelations = emptyList()
         currentKindLabels = emptyList()
         currentGroupNames = null
         currentHasCustomGroup = false
@@ -1863,6 +1986,7 @@ class BookInfoViewModel(
                 deleteOriginal = LocalConfig.deleteBookOriginal,
             )
         }
+        refreshChapterCacheState()
     }
 
     private fun onRelatedBookClick(book: SearchBook) {
@@ -1950,9 +2074,35 @@ class BookInfoViewModel(
                 emptyList()
             }
             if (currentBook?.bookUrl != bookUrl) return@launch
+            val relations = try {
+                val nameMap = characters.associate { it.id to it.name }
+                withContext(IO) {
+                    bookKnowledgeGateway.getBookCharacterRelations(bookUrl, limit = 80)
+                }.mapNotNull { relation ->
+                    val fromName = nameMap[relation.fromCharacterId] ?: return@mapNotNull null
+                    val toName = nameMap[relation.toCharacterId] ?: return@mapNotNull null
+                    BookInfoRelationUi(
+                        id = relation.id,
+                        fromName = fromName,
+                        toName = toName,
+                        relationType = relation.relationType,
+                        summary = relation.summary,
+                        attitude = relation.attitude,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                emptyList()
+            }
+            if (currentBook?.bookUrl != bookUrl) return@launch
             currentCharacters = characters
+            currentRelations = relations
             _screenState.update {
-                it.copy(characters = currentCharacters.toImmutableList())
+                it.copy(
+                    characters = currentCharacters.toImmutableList(),
+                    relations = currentRelations.toImmutableList(),
+                )
             }
         }
     }

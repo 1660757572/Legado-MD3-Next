@@ -189,6 +189,7 @@ object MainNavigator {
             MainRouteSettingsAiPrompt,
             MainRouteSettingsCustomTheme,
             MainRouteSettingsThemeManage,
+            MainRouteSettingsThemeCoverCorner,
             MainRouteSettingsDownloadCache,
             MainRouteSettingsTranslation,
             MainRouteSettingsPrivate -> {
@@ -282,6 +283,7 @@ object MainNavigator {
                     currentRoute is MainRouteSearch ||
                     currentRoute is MainRouteExploreShow ||
                     currentRoute is MainRouteBookInfo ||
+                    currentRoute is MainRouteBookInfoEdit ||
                     currentRoute is MainRouteCache ||
                     currentRoute is MainRouteReadBook ||
                     currentRoute is MainRouteReadManga ||
@@ -307,6 +309,7 @@ object MainNavigator {
             is MainRouteBookEventDetail -> {
                 if (
                     currentRoute is MainRouteBookInfo ||
+                    currentRoute is MainRouteBookInfoEdit ||
                     currentRoute is MainRouteBookCharacterDetail ||
                     currentRoute is MainRouteBookCharacterNetwork ||
                     currentRoute is MainRouteBookCharacterList ||
@@ -412,6 +415,9 @@ object MainNavigator {
             // 「设置 → 下载缓存设置」的子页。只压栈不清栈，返回时要回到下载缓存设置页。
             // navigateToRouteInternal 的 when 没有 else，漏注册会表现为点击入口完全无响应。
             MainRouteCacheMaintenance -> backStack.add(route)
+
+            // 「我的 → 标签管理」二级页。只压栈不清栈，返回时回到「我的」。
+            MainRouteTagLibrary -> backStack.add(route)
 
             MainRouteAbout -> {
                 if (currentRoute == MainRouteHome) {

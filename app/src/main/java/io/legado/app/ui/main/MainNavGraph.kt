@@ -166,10 +166,12 @@ import io.legado.app.ui.config.otherConfig.OtherConfigRouteScreen
 import io.legado.app.ui.config.privateConfig.PrivateConfigRouteScreen
 import io.legado.app.ui.config.readConfig.ReadConfigRouteScreen
 import io.legado.app.ui.config.themeConfig.ThemeConfigRouteScreen
+import io.legado.app.ui.config.themeConfig.ThemeCoverCornerRouteScreen
 import io.legado.app.ui.config.themeManage.ThemeManageRouteScreen
 import io.legado.app.ui.config.translation.TranslationConfigRouteScreen
 import io.legado.app.ui.dict.rule.DictRuleRouteScreen
 import io.legado.app.ui.highlightTagRule.HighlightTagRuleRouteScreen
+import io.legado.app.ui.main.my.TagLibraryScreen
 import io.legado.app.ui.login.SourceLoginIntent
 import io.legado.app.ui.login.SourceLoginRoute
 import io.legado.app.ui.login.SourceLoginType
@@ -669,6 +671,9 @@ fun MainActivity.mainEntryProvider(
             onNavigateToHighlightTagRule = {
                 onNavigateToRoute(MainRouteHighlightTagRule)
             },
+            onNavigateToTagLibrary = {
+                onNavigateToRoute(MainRouteTagLibrary)
+            },
             onNavigateToDictRule = {
                 onNavigateToRoute(MainRouteDictRule)
             },
@@ -847,6 +852,10 @@ fun MainActivity.mainEntryProvider(
 
     entry<MainRouteSettingsThemeManage> {
         SettingsDestinationContent(SettingsSearchPage.ThemeManage, onNavigateBack)
+    }
+
+    entry<MainRouteSettingsThemeCoverCorner> {
+        ThemeCoverCornerRouteScreen(onBackClick = onNavigateBack)
     }
 
     entry<MainRouteSettingsBubble> {
@@ -1874,6 +1883,12 @@ fun MainActivity.mainEntryProvider(
         )
     }
 
+    entry<MainRouteTagLibrary> {
+        TagLibraryScreen(
+            onBack = { onNavigateBack() }
+        )
+    }
+
     // 以下三个原先各自是一个薄壳 Activity（只为 setContent 而存在）。改成普通目的地后，
     // 宽窗口下能与首页并排成右栏，也回到 NavDisplay 的统一转场里。
 
@@ -2179,7 +2194,8 @@ private fun MainEntryNavigation.SettingsDestinationContent(
             ThemeConfigRouteScreen(
                 onBackClick = { onNavigateBack() },
                 onNavigateToCustomTheme = { pushRoute(MainRouteSettingsCustomTheme) },
-                onNavigateToThemeManage = { pushRoute(MainRouteSettingsThemeManage) }
+                onNavigateToThemeManage = { pushRoute(MainRouteSettingsThemeManage) },
+                onNavigateToCoverCorner = { pushRoute(MainRouteSettingsThemeCoverCorner) }
             )
         }
         SettingsSearchPage.Other -> {

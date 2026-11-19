@@ -772,6 +772,7 @@ fun BookshelfScreen(
                             onTabSelected = { index ->
                                 scope.launch { pagerState.animateScrollToPage(index) }
                             },
+                            mochiChipStyle = true,
                             horizontalPadding = 12.dp,
                             trailingAction = if (uiState.settings.shouldShowExpandButton) {
                                 {
@@ -946,6 +947,7 @@ fun BookshelfScreen(
                                     isCompact = uiState.settings.bookshelfLayoutCompact,
                                     titleMaxLines = uiState.settings.bookshelfTitleMaxLines,
                                     coverShadow = uiState.settings.bookshelfCoverShadow,
+                                    coverShadowStrength = uiState.settings.bookshelfCoverShadowStrength,
                                     onClick = {
                                         scope.launch { pagerState.scrollToPage(index) }
                                         onIntent(BookshelfIntent.SetInFolderRoot(false))
@@ -966,6 +968,7 @@ fun BookshelfScreen(
                                     titleCenter = uiState.settings.bookshelfTitleCenter,
                                     titleMaxLines = uiState.settings.bookshelfTitleMaxLines,
                                     coverShadow = uiState.settings.bookshelfCoverShadow,
+                                    coverShadowStrength = uiState.settings.bookshelfCoverShadowStrength,
                                     onClick = {
                                         scope.launch { pagerState.scrollToPage(index) }
                                         onIntent(BookshelfIntent.SetInFolderRoot(false))
@@ -1313,7 +1316,9 @@ private fun BookshelfTopBar(
     GlassMediumFlexibleTopAppBar(
         modifier = Modifier.fillMaxWidth(),
         navigationIcon = {
-            if (uiState.isEditMode) {
+            // Mochi 选择模式不再放「关闭」按钮：返回手势/返回键即可退出选择模式，
+            // 这个按钮还会和后面的动作按钮挤在一起。
+            if (uiState.isEditMode && LegadoTheme.composeEngine != ComposeEngine.Mochi) {
                 TopBarNavigationButton(
                     onClick = onExitEditMode,
                     imageVector = AppIcons.Close,
@@ -1356,6 +1361,8 @@ private fun BookshelfTopBar(
                     query = uiState.searchKey,
                     onQueryChange = onSearchQueryChange,
                     onSearch = onSearchSubmit,
+                    // 是否随搜索栏展开一起拉起键盘，由书架布局设置控制。
+                    autoFocus = uiState.settings.bookshelfSearchShowKeyboard,
                     trailingIcon = {
                         if (uiState.searchKey.isNotEmpty()) {
                             SmallPlainButton(
@@ -1711,6 +1718,7 @@ fun BookshelfPage(
     val bookItemTitleCenter = uiState.settings.bookshelfTitleCenter
     val bookItemTitleMaxLines = uiState.settings.bookshelfTitleMaxLines
     val bookItemCoverShadow = uiState.settings.bookshelfCoverShadow
+    val bookItemCoverShadowStrength = uiState.settings.bookshelfCoverShadowStrength
     val showFastScroll = uiState.settings.showBookshelfFastScroller
     val listContentDescription = stringResource(R.string.bookshelf)
     val totalHorizontalPadding =
@@ -1831,6 +1839,7 @@ fun BookshelfPage(
                         titleCenter = bookItemTitleCenter,
                         titleMaxLines = bookItemTitleMaxLines,
                         coverShadow = bookItemCoverShadow,
+                        coverShadowStrength = bookItemCoverShadowStrength,
                         isSearchMode = uiState.isSearch,
                         searchKey = uiState.searchKey,
                         sharedTransitionScope = sharedTransitionScope,

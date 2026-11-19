@@ -341,7 +341,7 @@ class AppThemeEngineTest {
                     ThemeConfigScreen(
                         ThemeConfigUiState(appShell = shell),
                         { if (it is ThemeConfigIntent.SetComposeEngine) writes++ },
-                        {}, {}, {},
+                        {}, {}, {}, {},
                     )
                 }
             }

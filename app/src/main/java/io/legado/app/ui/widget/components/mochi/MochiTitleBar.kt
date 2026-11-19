@@ -37,6 +37,7 @@ import io.legado.app.ui.widget.components.topbar.GlassTopAppBarScrollBehavior
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
 import io.legado.app.ui.widget.components.topbar.M3GlassScrollBehavior
 import io.legado.app.ui.widget.components.topbar.TopBarActionsRow
+import io.legado.app.ui.widget.components.topbar.TopBarTitleAlignment
 import ui.feice.mochi.basic.Text
 import ui.feice.mochi.effect.content.MochiBlurText
 import ui.feice.mochi.effect.content.mochiBlurReveal
@@ -54,6 +55,7 @@ internal fun AppMochiTitleBar(
     actions: @Composable RowScope.() -> Unit,
     scrollBehavior: GlassTopAppBarScrollBehavior? = null,
     expandable: Boolean = false,
+    titleAlignment: TopBarTitleAlignment = TopBarTitleAlignment.Center,
 ) {
     val flexible = expandable && LocalAppUiConfiguration.current.theme.useFlexibleTopAppBar
     val backgroundProgress = {
@@ -78,18 +80,35 @@ internal fun AppMochiTitleBar(
                 background = background,
                 backgroundProgress = backgroundProgress,
             )
+            // 折叠态标题：Center 取两侧较大宽度对称留白（整屏居中，不会因为操作按钮多而偏左）；
+            // Start 直接贴在返回键右侧，和展开态大标题的左边距对齐。
+            val symmetricSide = with(density) { maxOf(navigationWidth, actionsWidth).toDp() } + 20.dp
+            val navigationSide = with(density) { navigationWidth.toDp() } + 20.dp
+            val actionsSide = with(density) { actionsWidth.toDp() } + 20.dp
             Column(
                 Modifier.matchParentSize().statusBarsPadding()
                     .padding(
-                        start = with(density) { navigationWidth.toDp() } + 20.dp,
-                        end = with(density) { actionsWidth.toDp() } + 20.dp,
+                        start = if (titleAlignment == TopBarTitleAlignment.Center) {
+                            symmetricSide
+                        } else {
+                            navigationSide
+                        },
+                        end = if (titleAlignment == TopBarTitleAlignment.Center) {
+                            symmetricSide
+                        } else {
+                            actionsSide
+                        },
                     )
                     .clearAndSetSemantics {
                         heading()
                         text = AnnotatedString(listOfNotNull(title, subtitle?.takeIf { it.isNotBlank() }).joinToString("\n"))
                     },
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = if (titleAlignment == TopBarTitleAlignment.Center) {
+                    Alignment.CenterHorizontally
+                } else {
+                    Alignment.Start
+                },
             ) {
                 // Keep the named heading outside the visual alpha/blur layer, including
                 // while the expanded title is visible and the compact text is hidden.

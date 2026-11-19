@@ -142,6 +142,30 @@ interface BookKnowledgeDao {
         limit: Int,
     ): List<BookOutlineNode>
 
+    @Query("select * from book_character_profiles")
+    suspend fun allCharacterProfiles(): List<BookCharacterProfile>
+
+    @Query("select * from book_character_events")
+    suspend fun allCharacterEvents(): List<BookCharacterEvent>
+
+    @Query("select * from book_character_relations")
+    suspend fun allCharacterRelations(): List<BookCharacterRelation>
+
+    @Query("select * from book_knowledge_entries")
+    suspend fun allKnowledgeEntries(): List<BookKnowledgeEntry>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCharacterProfiles(profiles: List<BookCharacterProfile>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCharacterEvents(events: List<BookCharacterEvent>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCharacterRelations(relations: List<BookCharacterRelation>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertKnowledgeEntries(entries: List<BookKnowledgeEntry>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCharacterProfile(profile: BookCharacterProfile)
 

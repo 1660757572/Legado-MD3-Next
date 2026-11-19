@@ -321,6 +321,8 @@ internal fun Preferences.toAppShellSettings(): AppShellSettings = AppShellSettin
     navIconRssSelected = compatDsString(PreferKey.navIconRssSelected) ?: "",
     navIconMySelected = compatDsString(PreferKey.navIconMySelected) ?: "",
     launcherIcon = compatDsString(PreferKey.launcherIcon) ?: "ic_launcher",
+    launcherIconFollowDark = compatDsBoolean(PreferKey.launcherIconFollowDark) ?: false,
+    categoryChipSpacing = (compatDsInt(PreferKey.categoryChipSpacing) ?: 12).coerceIn(8, 24),
 )
 
 internal fun AppShellSettings.toPrefMap(): Map<String, Any?> = mapOf(
@@ -357,6 +359,8 @@ internal fun AppShellSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.navIconRssSelected to navIconRssSelected,
     PreferKey.navIconMySelected to navIconMySelected,
     PreferKey.launcherIcon to launcherIcon,
+    PreferKey.launcherIconFollowDark to launcherIconFollowDark,
+    PreferKey.categoryChipSpacing to categoryChipSpacing,
 )
 
 internal fun Preferences.toThemeSettings(): ThemeSettings = ThemeSettings(

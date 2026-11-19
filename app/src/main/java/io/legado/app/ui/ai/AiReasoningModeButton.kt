@@ -15,14 +15,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.domain.model.AiReasoningLevel
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.AppSlider
 import io.legado.app.ui.widget.components.button.series.MediumTonalButton
 import io.legado.app.ui.widget.components.card.TextCard
+import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
+import ui.feice.mochi.basic.MochiButtonStyle
+import ui.feice.mochi.basic.MochiIconButton
+import ui.feice.mochi.basic.MochiIntensitySlider
 import kotlin.math.roundToInt
 
 @Composable
@@ -32,13 +40,26 @@ fun AiReasoningModeButton(
     onLevelChange: (AiReasoningLevel) -> Unit,
 ) {
     var showSheet by rememberSaveable { mutableStateOf(false) }
-    MediumTonalButton(
-        onClick = { showSheet = true },
-        icon = Icons.Default.Lightbulb,
-        enabled = enabled,
-        selected = level != AiReasoningLevel.OFF,
-        contentDescription = stringResource(R.string.ai_thinking_mode),
-    )
+    if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        MochiIconButton(
+            onClick = { showSheet = true },
+            enabled = enabled,
+            style = if (level == AiReasoningLevel.OFF) MochiButtonStyle.Tonal else MochiButtonStyle.Filled,
+        ) {
+            AppIcon(
+                imageVector = Icons.Default.Lightbulb,
+                contentDescription = stringResource(R.string.ai_thinking_mode),
+            )
+        }
+    } else {
+        MediumTonalButton(
+            onClick = { showSheet = true },
+            icon = Icons.Default.Lightbulb,
+            enabled = enabled,
+            selected = level != AiReasoningLevel.OFF,
+            contentDescription = stringResource(R.string.ai_thinking_mode),
+        )
+    }
     AppModalBottomSheet(
         show = showSheet,
         onDismissRequest = { showSheet = false },
@@ -66,21 +87,41 @@ internal fun AiReasoningLevelControl(
             backgroundColor = LegadoTheme.colorScheme.onSheetContent
         )
         Spacer(Modifier.height(32.dp))
-        AppSlider(
-            value = level.ordinal.toFloat(),
-            onValueChange = { value ->
-                // Pixel-to-step conversion can yield 1.9999999 for the LOW tick.
-                AiReasoningLevel.entries[value.roundToInt().coerceIn(
-                    0,
-                    AiReasoningLevel.entries.lastIndex,
-                )].let(onLevelChange)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            valueRange = 0f..AiReasoningLevel.entries.lastIndex.toFloat(),
-            steps = AiReasoningLevel.entries.size - 2,
-            accessibilityLabel = stringResource(R.string.ai_thinking_mode),
-            accessibilityValue = level.label(),
-        )
+        val thinkingModeDescription = stringResource(R.string.ai_thinking_mode)
+        val currentLevelLabel = level.label()
+        if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+            MochiIntensitySlider(
+                value = level.ordinal / AiReasoningLevel.entries.lastIndex.toFloat(),
+                onValueChange = { value ->
+                    val index = (value * AiReasoningLevel.entries.lastIndex).roundToInt()
+                    onLevelChange(AiReasoningLevel.entries[index.coerceIn(0, AiReasoningLevel.entries.lastIndex)])
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentDescription = thinkingModeDescription
+                        stateDescription = currentLevelLabel
+                    },
+                stops = AiReasoningLevel.entries.size,
+                detent = null,
+            )
+        } else {
+            AppSlider(
+                value = level.ordinal.toFloat(),
+                onValueChange = { value ->
+                    // Pixel-to-step conversion can yield 1.9999999 for the LOW tick.
+                    AiReasoningLevel.entries[value.roundToInt().coerceIn(
+                        0,
+                        AiReasoningLevel.entries.lastIndex,
+                    )].let(onLevelChange)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                valueRange = 0f..AiReasoningLevel.entries.lastIndex.toFloat(),
+                steps = AiReasoningLevel.entries.size - 2,
+                accessibilityLabel = stringResource(R.string.ai_thinking_mode),
+                accessibilityValue = currentLevelLabel,
+            )
+        }
         Spacer(Modifier.height(32.dp))
     }
 }

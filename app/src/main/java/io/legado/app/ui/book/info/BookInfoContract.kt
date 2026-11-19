@@ -13,7 +13,11 @@ import io.legado.app.domain.model.PrivateAccessState
 import io.legado.app.domain.usecase.ChangeSourceMigrationOptions
 import io.legado.app.ui.widget.components.variable.VariableEditorUiState
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 
 
 @Stable
@@ -28,6 +32,14 @@ data class BookInfoUiState(
     val tocLoadFailed: Boolean = false,
     /** 详情页内嵌「目录」分段用的章节列表；与 VM 里的缓存是同一个引用，不做拷贝。 */
     val tocChapters: List<BookChapter> = emptyList(),
+    /** 目录里已缓存正文的章节下标；有字数时右侧显示字数标签。 */
+    val cachedChapterIndices: ImmutableSet<Int> = persistentSetOf(),
+    /** 逐章补齐的字数覆盖值；只刷新对应目录行，不整页重扫。 */
+    val tocChapterWordCounts: ImmutableMap<Int, String> = persistentMapOf(),
+    /** 正在下载的章节下标（显示转圈）。 */
+    val downloadingChapterIndices: ImmutableSet<Int> = persistentSetOf(),
+    /** 下载失败的章节下标（显示重试）。 */
+    val failedChapterIndices: ImmutableSet<Int> = persistentSetOf(),
     val webFiles: List<BookInfoWebFile> = emptyList(),
     val highlightedTags: List<HighlightedTag> = emptyList(),
     val kindLabels: List<String> = emptyList(),
@@ -40,6 +52,7 @@ data class BookInfoUiState(
     val bookSourceUi: BookInfoSourceUi? = null,
     val relatedBooks: ImmutableList<RelatedBooksUi> = persistentListOf(),
     val characters: ImmutableList<BookInfoCharacterUi> = persistentListOf(),
+    val relations: ImmutableList<BookInfoRelationUi> = persistentListOf(),
     val knowledgeEntries: ImmutableList<BookInfoKnowledgeUi> = persistentListOf(),
     val recentEvents: ImmutableList<BookInfoEventUi> = persistentListOf(),
     val isTocLoading: Boolean = false,
@@ -137,6 +150,16 @@ data class BookInfoCharacterUi(
 )
 
 @Stable
+data class BookInfoRelationUi(
+    val id: String,
+    val fromName: String,
+    val toName: String,
+    val relationType: String,
+    val summary: String,
+    val attitude: String,
+)
+
+@Stable
 data class BookInfoKnowledgeUi(
     val id: String,
     val type: String,
@@ -211,6 +234,10 @@ sealed interface BookInfoIntent {
 
     /** 详情页内嵌目录里点了某一章：直接跳到该章阅读。 */
     data class ChapterClick(val index: Int) : BookInfoIntent
+    /** 下载目录里的单章（详情页内嵌目录用）。 */
+    data class DownloadChapter(val index: Int) : BookInfoIntent
+    /** 一键缓存目录里所有还没缓存的章节。 */
+    data object DownloadAllChapters : BookInfoIntent
     data object CoverClick : BookInfoIntent
     data object CoverLongClick : BookInfoIntent
     data object GroupClick : BookInfoIntent

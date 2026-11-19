@@ -56,6 +56,7 @@ fun GlassMediumFlexibleTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     isContentScrolled: Boolean? = null,
     compactMiuixActions: Boolean = false,
+    titleAlignment: TopBarTitleAlignment = TopBarTitleAlignment.Center,
     bottomContent: @Composable (ColumnScope.() -> Unit)? = null
 ) {
 
@@ -81,6 +82,7 @@ fun GlassMediumFlexibleTopAppBar(
             AppMochiTitleBar(
                 title, subtitle = subtitle, navigationIcon = navigationIcon, actions = actions,
                 scrollBehavior = scrollBehavior, expandable = true,
+                titleAlignment = titleAlignment,
             )
             bottomContent?.invoke(this)
         }

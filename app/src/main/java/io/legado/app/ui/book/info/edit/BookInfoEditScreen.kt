@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,6 +24,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Group
@@ -30,6 +33,8 @@ import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
@@ -37,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,12 +53,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.data.repository.ReusableTagRepository
 import io.legado.app.ui.book.info.ChangeCoverSheet
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.fadingEdge
 import io.legado.app.ui.widget.components.AppScaffold
@@ -64,6 +73,8 @@ import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.icon.AppIcons
 import io.legado.app.ui.widget.components.image.cover.CoilBookCover
 import io.legado.app.ui.widget.components.menu.AppChoiceOption
+import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
+import io.legado.app.ui.widget.components.modalBottomSheet.MochiSheetLayout
 import io.legado.app.ui.widget.components.reorderAccessibility
 import io.legado.app.ui.widget.components.settingItem.SettingItem
 import io.legado.app.ui.widget.components.settingItem.SwitchSettingItem
@@ -78,6 +89,11 @@ import io.legado.app.utils.launch
 import kotlinx.collections.immutable.toImmutableList
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import ui.feice.mochi.basic.MochiButton
+import ui.feice.mochi.basic.MochiButtonStyle
+import ui.feice.mochi.basic.MochiChip
+import ui.feice.mochi.basic.MochiChipGroup
+import ui.feice.mochi.basic.MochiTextField
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -236,7 +252,7 @@ fun BookInfoEditContent(
             onCheckedChange = { viewModel.onFixedTypeChange(it) }
         )
         Spacer(modifier = Modifier.height(16.dp))
-        AppTextField(
+        BookInfoEditTextField(
             value = uiState.name,
             onValueChange = { viewModel.onNameChange(it) },
             label = stringResource(R.string.book_name),
@@ -244,7 +260,7 @@ fun BookInfoEditContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        AppTextField(
+        BookInfoEditTextField(
             value = uiState.author,
             onValueChange = { viewModel.onAuthorChange(it) },
             label = stringResource(R.string.author),
@@ -252,7 +268,7 @@ fun BookInfoEditContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        AppTextField(
+        BookInfoEditTextField(
             value = uiState.coverUrl ?: "",
             onValueChange = { viewModel.onCoverUrlChange(it) },
             label = stringResource(R.string.cover_url),
@@ -260,14 +276,24 @@ fun BookInfoEditContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        AppTextField(
-            value = uiState.sourceKindList.joinToString(", "),
-            onValueChange = {},
-            readOnly = true,
-            label = stringResource(R.string.source_categories),
-            backgroundColor = LegadoTheme.colorScheme.surfaceInput,
-            modifier = Modifier.fillMaxWidth()
+        var showSourceKinds by rememberSaveable { mutableStateOf(true) }
+        SwitchSettingItem(
+            title = stringResource(R.string.show_source_categories),
+            description = stringResource(R.string.show_source_categories_summary),
+            checked = showSourceKinds,
+            onCheckedChange = { showSourceKinds = it }
         )
+        if (showSourceKinds) {
+            Spacer(modifier = Modifier.height(8.dp))
+            BookInfoEditTextField(
+                value = uiState.sourceKindList.joinToString(", "),
+                onValueChange = {},
+                readOnly = true,
+                label = stringResource(R.string.source_categories),
+                backgroundColor = LegadoTheme.colorScheme.surfaceInput,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         KindEditor(
             kindList = uiState.kindList,
@@ -276,6 +302,7 @@ fun BookInfoEditContent(
             backgroundColor = LegadoTheme.colorScheme.surfaceInput,
         )
         Spacer(modifier = Modifier.height(8.dp))
+        // Mochi 输入框有字数上限，内容简介动辄上千字，这里在大段文本上回退到通用输入框。
         AppTextField(
             value = uiState.intro ?: "",
             onValueChange = { viewModel.onIntroChange(it) },
@@ -284,12 +311,48 @@ fun BookInfoEditContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        AppTextField(
+        BookInfoEditTextField(
             value = uiState.remark ?: "",
             onValueChange = { viewModel.onRemarkChange(it) },
             label = stringResource(R.string.book_remark),
             backgroundColor = LegadoTheme.colorScheme.surfaceInput,
             modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun BookInfoEditTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    backgroundColor: Color,
+    modifier: Modifier = Modifier,
+    readOnly: Boolean = false,
+    singleLine: Boolean = false,
+    maxLines: Int = Int.MAX_VALUE,
+) {
+    if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        MochiTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = modifier,
+            placeholder = label,
+            enabled = !readOnly,
+            singleLine = singleLine,
+            maxLines = if (singleLine) 1 else maxLines.coerceAtMost(6),
+            clearButton = !readOnly,
+        )
+    } else {
+        AppTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = modifier,
+            readOnly = readOnly,
+            label = label,
+            backgroundColor = backgroundColor,
+            singleLine = singleLine,
+            maxLines = maxLines,
         )
     }
 }
@@ -391,6 +454,36 @@ fun BookTypeDropdown(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
+private fun TagEditorActionButton(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        MochiButton(
+            onClick = onClick,
+            style = MochiButtonStyle.Tonal,
+            minHeight = 38.dp,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = LegadoTheme.colorScheme.onSurface,
+            )
+            AppText(text = text, fontSize = 13.sp)        }
+    } else {
+        MediumOutlinedButton(
+            onClick = onClick,
+            icon = icon,
+            text = text,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
+@Composable
 fun KindEditor(
     kindList: List<String>,
     onKindListChange: (List<String>) -> Unit,
@@ -402,6 +495,7 @@ fun KindEditor(
     val hapticFeedback = LocalHapticFeedback.current
     val reusableTags by remember { ReusableTagRepository.observeTags() }
         .collectAsState(initial = ReusableTagRepository.tags())
+    var showTagLibrary by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
     fun moveKind(from: Int, to: Int) {
@@ -420,32 +514,32 @@ fun KindEditor(
         AppText(
             text = stringResource(R.string.my_tags)
         )
-        if (reusableTags.isNotEmpty()) {
-            // 标签库快速点选：点一下添加，再点一下移除，避免每次手输。
-            AppText(
-                text = stringResource(R.string.tag_library_quick),
-                style = LegadoTheme.typography.labelMedium,
-                color = LegadoTheme.colorScheme.onSurfaceVariant,
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                reusableTags.forEach { tag ->
-                    val added = kindList.contains(tag)
-                    KindChip(
-                        text = tag,
-                        isDragging = false,
-                        onClick = {
-                            onKindListChange(
-                                if (added) kindList - tag else kindList + tag
-                            )
-                        },
-                        modifier = Modifier,
-                    )
-                }
+        // 标签库、重置、添加统一放右侧，Mochi 主题下使用 Mochi 按钮组件。
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (reusableTags.isNotEmpty()) {
+                TagEditorActionButton(
+                    text = stringResource(R.string.tag_library_quick),
+                    icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
+                    onClick = { showTagLibrary = true },
+                )
             }
+            TagEditorActionButton(
+                text = stringResource(R.string.reset),
+                icon = Icons.Default.Replay,
+                onClick = onReset,
+            )
+            TagEditorActionButton(
+                text = stringResource(R.string.add),
+                icon = Icons.Default.Add,
+                onClick = {
+                    editingIndex = -1
+                    editText = ""
+                },
+            )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -492,26 +586,73 @@ fun KindEditor(
                     }
                 }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            MediumOutlinedButton(
-                onClick = {
-                    onReset()
-                },
-                icon = Icons.Default.Replay,
-                contentDescription = stringResource(R.string.reset)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            MediumOutlinedButton(
-                onClick = {
-                    editingIndex = -1
-                    editText = ""
-                },
-                icon = Icons.Default.Add,
-                contentDescription = stringResource(R.string.add)
-            )
         }
     }
 
+
+    AppModalBottomSheet(
+        show = showTagLibrary,
+        onDismissRequest = { showTagLibrary = false },
+        title = stringResource(R.string.tag_library_quick),
+        mochiLayout = MochiSheetLayout.Compact,
+        startAction = {
+            IconButton(onClick = { showTagLibrary = false }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close)
+                )
+            }
+        },
+        endAction = {
+            IconButton(onClick = { showTagLibrary = false }) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = stringResource(R.string.confirm)
+                )
+            }
+        },
+    ) {
+        if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+            MochiChipGroup(
+                modifier = Modifier.fillMaxWidth(),
+                wrap = true,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                reusableTags.forEach { tag ->
+                    val added = tag in kindList
+                    MochiChip(
+                        label = tag,
+                        selected = added,
+                        showCheck = true,
+                        onClick = {
+                            onKindListChange(if (added) kindList - tag else kindList + tag)
+                        },
+                    )
+                }
+            }
+        } else {
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                reusableTags.forEach { tag ->
+                    val added = tag in kindList
+                    KindChip(
+                        text = tag,
+                        isDragging = false,
+                        selected = added,
+                        onClick = {
+                            onKindListChange(if (added) kindList - tag else kindList + tag)
+                        },
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
 
     if (editingIndex != null) {
         val isAdding = editingIndex == -1
@@ -524,7 +665,7 @@ fun KindEditor(
                 stringResource(R.string.edit_tag)
             },
             content = {
-                AppTextField(
+                BookInfoEditTextField(
                     value = editText,
                     onValueChange = { editText = it },
                     label = stringResource(R.string.tag),
@@ -567,12 +708,21 @@ private fun KindChip(
     text: String,
     isDragging: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     NormalCard(
         cornerRadius = 8.dp,
-        containerColor = LegadoTheme.colorScheme.surfaceContainer,
-        contentColor = LegadoTheme.colorScheme.onSurface,
+        containerColor = if (selected) {
+            LegadoTheme.colorScheme.primaryContainer
+        } else {
+            LegadoTheme.colorScheme.surfaceContainer
+        },
+        contentColor = if (selected) {
+            LegadoTheme.colorScheme.onPrimaryContainer
+        } else {
+            LegadoTheme.colorScheme.onSurface
+        },
         elevation = if (isDragging) 2.dp else 0.dp,
         modifier = modifier
             .padding(2.dp)
@@ -582,7 +732,11 @@ private fun KindChip(
         AnimatedTextLine(
             text = text,
             style = LegadoTheme.typography.labelLargeEmphasized,
-            color = LegadoTheme.colorScheme.onSurface,
+            color = if (selected) {
+                LegadoTheme.colorScheme.onPrimaryContainer
+            } else {
+                LegadoTheme.colorScheme.onSurface
+            },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

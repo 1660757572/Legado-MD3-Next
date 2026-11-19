@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -292,13 +293,23 @@ private fun MoreActionsList(
                 .padding(vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            actions.forEach { action ->
+            actions.forEachIndexed { index, action ->
                 ActionListRow(
                     action = action,
                     state = state,
                     onIntent = onIntent,
                     dispatch = dispatch,
                 )
+                if (index != actions.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .align(Alignment.CenterHorizontally)
+                            .padding(vertical = 2.dp),
+                        thickness = 1.dp,
+                        color = LegadoTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                    )
+                }
             }
         }
     }

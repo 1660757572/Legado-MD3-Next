@@ -137,6 +137,9 @@ data object MainRouteSettingsCustomTheme : MainRoute
 data object MainRouteSettingsThemeManage : MainRoute
 
 @Serializable
+data object MainRouteSettingsThemeCoverCorner : MainRoute
+
+@Serializable
 data object MainRouteSettingsBubble : MainRoute
 
 @Serializable
@@ -300,6 +303,9 @@ data class MainRouteSearchContent(
 
 @Serializable
 data object MainRouteHighlightTagRule : MainRoute
+
+@Serializable
+data object MainRouteTagLibrary : MainRoute
 
 @Serializable
 data object MainRouteDictRule : MainRoute

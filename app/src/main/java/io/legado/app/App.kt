@@ -52,6 +52,7 @@ import io.legado.app.help.DispatchersMonitor
 import io.legado.app.help.LifecycleHelp
 import io.legado.app.help.RuleBigDataHelp
 import io.legado.app.help.book.BookHelp
+import io.legado.app.help.LauncherIconHelp
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
@@ -138,6 +139,12 @@ class App : Application(), SingletonImageLoader.Factory {
             get<AppLocaleGateway>().migrateLegacyLanguage(legacyLanguage)
         }
         applyDayNightInit(this)
+        // 跟随深浅模式时，应用启动也要把启动器图标切到当前模式对应的那一张。
+        if (get<AppShellSettingsGateway>().currentSettings.launcherIconFollowDark) {
+            LauncherIconHelp.changeIcon(
+                if (ThemeConfigStore.isNightTheme) "ic_launcher" else "launcherw"
+            )
+        }
         if (getPrefString("app_theme", "0") == "12") {
             if (themeGateway.currentSettings.customMode == "accent")
                 setTheme(R.style.ThemeOverlay_WhiteBackground)

@@ -75,23 +75,29 @@ internal fun Preferences.toBookshelfSettings() = BookshelfSettings(
     bookshelfTitleCenter = compatDsBoolean(PreferKey.bookshelfTitleCenter) ?: true,
     bookshelfTitleMaxLines = compatDsInt(PreferKey.bookshelfTitleMaxLines) ?: 2,
     bookshelfCoverShadow = compatDsBoolean(PreferKey.bookshelfCoverShadow) ?: false,
+    bookshelfCoverShadowStrength =
+        (compatDsInt(PreferKey.bookshelfCoverShadowStrength) ?: 40).coerceIn(0, 100),
     bookshelfCardColor = compatDsInt(PreferKey.bookshelfCardColor) ?: 0,
     bookshelfCardColorDark = compatDsInt(PreferKey.bookshelfCardColorDark) ?: 0,
     bookshelfGroupListStyle = compatDsInt(PreferKey.bookshelfGroupListStyle) ?: 0,
     bookshelfGroupCoverCount = compatDsInt(PreferKey.bookshelfGroupCoverCount) ?: 4,
     bookshelfListCoverWidth = compatDsInt(PreferKey.bookshelfListCoverWidth) ?: 84,
     bookshelfGridCoverWidth = compatDsInt(PreferKey.bookshelfGridCoverWidth) ?: 120,
+    bookshelfBadgePosition = (compatDsInt(PreferKey.bookshelfBadgePosition) ?: 0).coerceIn(0, 3),
+    bookshelfTypeBadgePosition =
+        (compatDsInt(PreferKey.bookshelfTypeBadgePosition) ?: 3).coerceIn(0, 3),
     bookshelfGridFixedColumns = compatDsBoolean(PreferKey.bookshelfGridFixedColumns) ?: true,
     bookshelfGridFixedCoverWidth = compatDsBoolean(PreferKey.bookshelfGridFixedCoverWidth) ?: true,
     bookshelfCoverCornerTopStart =
-        (compatDsInt(PreferKey.bookshelfCoverCornerTopStart) ?: 4).coerceIn(0, 40),
+        (compatDsInt(PreferKey.bookshelfCoverCornerTopStart) ?: 4).coerceIn(0, 48),
     bookshelfCoverCornerTopEnd =
-        (compatDsInt(PreferKey.bookshelfCoverCornerTopEnd) ?: 4).coerceIn(0, 40),
+        (compatDsInt(PreferKey.bookshelfCoverCornerTopEnd) ?: 4).coerceIn(0, 48),
     bookshelfCoverCornerBottomEnd =
-        (compatDsInt(PreferKey.bookshelfCoverCornerBottomEnd) ?: 4).coerceIn(0, 40),
+        (compatDsInt(PreferKey.bookshelfCoverCornerBottomEnd) ?: 4).coerceIn(0, 48),
     bookshelfCoverCornerBottomStart =
-        (compatDsInt(PreferKey.bookshelfCoverCornerBottomStart) ?: 4).coerceIn(0, 40),
+        (compatDsInt(PreferKey.bookshelfCoverCornerBottomStart) ?: 4).coerceIn(0, 48),
     bookshelfSearchActionDirectToSearch = compatDsBoolean(PreferKey.bookshelfSearchActionDirectToSearch) ?: true,
+    bookshelfSearchShowKeyboard = compatDsBoolean(PreferKey.bookshelfSearchShowKeyboard) ?: true,
     autoRefreshBook = compatDsBoolean(PreferKey.autoRefresh) ?: false,
     saveTabPosition = compatDsLong(PreferKey.bookshelfSelectedGroupId)
         ?: (rawPrefValue(PreferKey.saveTabPosition) as? Long)
@@ -141,12 +147,15 @@ internal fun BookshelfSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookshelfTitleCenter to bookshelfTitleCenter,
     PreferKey.bookshelfTitleMaxLines to bookshelfTitleMaxLines,
     PreferKey.bookshelfCoverShadow to bookshelfCoverShadow,
+    PreferKey.bookshelfCoverShadowStrength to bookshelfCoverShadowStrength,
     PreferKey.bookshelfCardColor to bookshelfCardColor,
     PreferKey.bookshelfCardColorDark to bookshelfCardColorDark,
     PreferKey.bookshelfGroupListStyle to bookshelfGroupListStyle,
     PreferKey.bookshelfGroupCoverCount to bookshelfGroupCoverCount,
     PreferKey.bookshelfListCoverWidth to bookshelfListCoverWidth,
     PreferKey.bookshelfGridCoverWidth to bookshelfGridCoverWidth,
+    PreferKey.bookshelfBadgePosition to bookshelfBadgePosition,
+    PreferKey.bookshelfTypeBadgePosition to bookshelfTypeBadgePosition,
     PreferKey.bookshelfCoverCornerTopStart to bookshelfCoverCornerTopStart,
     PreferKey.bookshelfCoverCornerTopEnd to bookshelfCoverCornerTopEnd,
     PreferKey.bookshelfCoverCornerBottomEnd to bookshelfCoverCornerBottomEnd,
@@ -154,6 +163,7 @@ internal fun BookshelfSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.bookshelfGridFixedColumns to bookshelfGridFixedColumns,
     PreferKey.bookshelfGridFixedCoverWidth to bookshelfGridFixedCoverWidth,
     PreferKey.bookshelfSearchActionDirectToSearch to bookshelfSearchActionDirectToSearch,
+    PreferKey.bookshelfSearchShowKeyboard to bookshelfSearchShowKeyboard,
     PreferKey.autoRefresh to autoRefreshBook,
     PreferKey.bookshelfSelectedGroupId to saveTabPosition,
 )

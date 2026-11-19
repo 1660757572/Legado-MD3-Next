@@ -113,7 +113,7 @@ class ExtendedSettingsSearchTest {
                                 shell = shell.copy(textAnimationLevel = intent.level)
                             }
                         },
-                        {}, {}, {},
+                        {}, {}, {}, {},
                     )
                 }
             }
@@ -150,7 +150,7 @@ class ExtendedSettingsSearchTest {
                                 shell = shell.copy(navigationAnimationStyle = intent.style)
                             }
                         },
-                        {}, {}, {},
+                        {}, {}, {}, {},
                     )
                 }
             }
@@ -196,7 +196,7 @@ class ExtendedSettingsSearchTest {
                     else SettingsSearchTargetScope(item) {
                         when (item.page) {
                             SettingsSearchPage.Theme -> ThemeConfigScreen(
-                                ThemeConfigUiState(appShell = shell), themeEvents::add, { target = null }, {}, {},
+                                ThemeConfigUiState(appShell = shell), themeEvents::add, { target = null }, {}, {}, {},
                             )
                             SettingsSearchPage.Other -> OtherConfigScreen(
                                 OtherConfigUiState(), otherEvents::add, { target = null },
@@ -238,7 +238,7 @@ class ExtendedSettingsSearchTest {
         compose.setContent {
             AppTheme(AppUiConfiguration()) {
                 SettingsSearchTargetScope(item) {
-                    ThemeConfigScreen(ThemeConfigUiState(), themeEvents::add, {}, {}, {})
+                    ThemeConfigScreen(ThemeConfigUiState(), themeEvents::add, {}, {}, {}, {})
                 }
             }
         }

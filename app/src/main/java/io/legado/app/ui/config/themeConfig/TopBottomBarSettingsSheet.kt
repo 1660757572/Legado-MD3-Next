@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.domain.model.settings.AppShellSettings
 import io.legado.app.domain.model.settings.ThemeSettings
+import io.legado.app.feature.settings.search.SearchableSetting
 import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.ThemeResolver
@@ -99,12 +100,14 @@ fun TopBottomBarSettingsSheet(
                 checked = appShell.showBottomView,
                 onCheckedChange = { onIntent(ThemeConfigIntent.SetShowBottomView(it)) },
             )
-            CompactSwitchSettingItem(
-                title = stringResource(R.string.pager_swipe_enabled),
-                description = stringResource(R.string.pager_swipe_enabled_summary),
-                checked = appShell.pagerSwipeEnabled,
-                onCheckedChange = { onIntent(ThemeConfigIntent.SetPagerSwipeEnabled(it)) },
-            )
+            SearchableSetting("theme.pager_swipe_enabled") {
+                CompactSwitchSettingItem(
+                    title = stringResource(R.string.pager_swipe_enabled),
+                    description = stringResource(R.string.pager_swipe_enabled_summary),
+                    checked = appShell.pagerSwipeEnabled,
+                    onCheckedChange = { onIntent(ThemeConfigIntent.SetPagerSwipeEnabled(it)) },
+                )
+            }
             CompactSwitchSettingItem(
                 title = stringResource(R.string.floating_bottom_bar),
                 description = stringResource(

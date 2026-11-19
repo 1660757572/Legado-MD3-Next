@@ -96,6 +96,10 @@ object Backup {
             "highlightRule.json",
             "highlightTagRule.json",
             "tagGroupRule.json",
+            "bookCharacterProfiles.json",
+            "bookCharacterRelations.json",
+            "bookCharacterEvents.json",
+            "bookKnowledgeEntries.json",
             "servers.json",
             DirectLinkUpload.ruleFileName,
             ReadBookConfig.configFileName,
@@ -223,6 +227,13 @@ object Backup {
         }
         if (BackupConfig.dbIsNotIgnored("tagGroupRule", true)) {
             writeListToJson(appDb.tagGroupRuleDao.getAll(), "tagGroupRule.json", backupPath)
+        }
+        if (BackupConfig.dbIsNotIgnored("bookKnowledge", true)) {
+            // 人物 / 关系 / 事件 / 知识词条是详情页「知识」页的内容，跟书架一起备份。
+            writeListToJson(appDb.bookKnowledgeDao.allCharacterProfiles(), "bookCharacterProfiles.json", backupPath)
+            writeListToJson(appDb.bookKnowledgeDao.allCharacterRelations(), "bookCharacterRelations.json", backupPath)
+            writeListToJson(appDb.bookKnowledgeDao.allCharacterEvents(), "bookCharacterEvents.json", backupPath)
+            writeListToJson(appDb.bookKnowledgeDao.allKnowledgeEntries(), "bookKnowledgeEntries.json", backupPath)
         }
         if (BackupConfig.dbIsNotIgnored("server", true)) {
             GSON.toJson(appDb.serverDao.all).let { json ->
