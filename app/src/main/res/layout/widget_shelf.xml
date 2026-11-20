@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/widget_shelf_card"
-        android:padding="8dp">
+        android:padding="10dp">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -30,14 +30,14 @@
                 android:baselineAligned="false"
                 android:gravity="bottom"
                 android:orientation="horizontal"
-                android:paddingStart="7dp"
-                android:paddingEnd="7dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
                 android:paddingBottom="10dp">
 
                 <FrameLayout
                     android:id="@+id/widget_spine_0"
                     android:layout_width="0dp"
-                    android:layout_height="72dp"
+                    android:layout_height="82dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="0.9"
@@ -54,7 +54,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_0"
@@ -75,7 +75,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_1"
                     android:layout_width="0dp"
-                    android:layout_height="78dp"
+                    android:layout_height="88dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="1.1"
@@ -92,7 +92,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_1"
@@ -113,7 +113,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_2"
                     android:layout_width="0dp"
-                    android:layout_height="66dp"
+                    android:layout_height="76dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="0.95"
@@ -130,7 +130,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_2"
@@ -151,7 +151,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_3"
                     android:layout_width="0dp"
-                    android:layout_height="80dp"
+                    android:layout_height="88dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="0.85"
@@ -168,7 +168,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_3"
@@ -189,7 +189,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_4"
                     android:layout_width="0dp"
-                    android:layout_height="74dp"
+                    android:layout_height="84dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="1.05"
@@ -206,7 +206,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_4"
@@ -227,7 +227,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_5"
                     android:layout_width="0dp"
-                    android:layout_height="76dp"
+                    android:layout_height="86dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="0.95"
@@ -244,7 +244,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_5"
@@ -265,7 +265,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_6"
                     android:layout_width="0dp"
-                    android:layout_height="64dp"
+                    android:layout_height="76dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="0.95"
@@ -282,7 +282,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_6"
@@ -303,7 +303,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_7"
                     android:layout_width="0dp"
-                    android:layout_height="70dp"
+                    android:layout_height="80dp"
                     android:layout_gravity="bottom"
                     android:layout_marginEnd="3dp"
                     android:layout_weight="0.9"
@@ -320,7 +320,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_7"
@@ -341,7 +341,7 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_8"
                     android:layout_width="0dp"
-                    android:layout_height="68dp"
+                    android:layout_height="78dp"
                     android:layout_gravity="bottom"
                     android:layout_weight="1.0"
                     android:background="#445E6D">
@@ -357,7 +357,7 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/widget_spine_scrim" />
+                        android:background="@drawable/widget_spine_overlay" />
 
                     <TextView
                         android:id="@+id/widget_spine_text_8"

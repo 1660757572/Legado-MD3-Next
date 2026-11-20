@@ -50,7 +50,7 @@
                 android:layout_marginTop="2dp"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
-                android:maxLines="1"
+                android:maxLines="2"
                 android:text="@string/widget_no_recent"
                 android:textColor="#1E211F"
                 android:textSize="18sp" />

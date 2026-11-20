@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.LayoutRes
@@ -23,6 +24,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** 两个桌面组件共用同一套异步查询、刷新和跳转逻辑。 */
 abstract class BaseBookWidgetProvider : AppWidgetProvider() {
@@ -81,6 +84,29 @@ abstract class BaseBookWidgetProvider : AppWidgetProvider() {
         requestCode: Int,
     ): PendingIntent {
         val intent = MainIntent.createReadBookIntent(context, book.bookUrl)
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /** 书架侧排点击进入详情页，而不是直接打开阅读界面。 */
+    protected fun openBookDetailIntent(
+        context: Context,
+        book: Book,
+        requestCode: Int,
+    ): PendingIntent {
+        val intent = MainIntent.createBookInfoIntent(
+            context = context,
+            name = book.name,
+            author = book.author,
+            bookUrl = book.bookUrl,
+            origin = book.origin,
+            coverPath = book.getDisplayCover(),
+        )
         intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
         return PendingIntent.getActivity(
             context,
@@ -172,7 +198,7 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
             }
             views.setOnClickPendingIntent(
                 viewId,
-                openBookIntent(context, book, appWidgetId * 16 + index),
+                openBookDetailIntent(context, book, appWidgetId * 16 + index),
             )
         }
         return views
@@ -183,10 +209,11 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         val model = cached?.absolutePath ?: book.getDisplayCover()
         if (model.isNullOrBlank()) return null
         return runCatching {
-            ImageLoader.loadBitmap(context, model)
+            val raw = ImageLoader.loadBitmap(context, model)
                 .centerCrop()
                 .submit(48, 150)
                 .get(3, TimeUnit.SECONDS)
+            blurSpineBitmap(raw)
         }.getOrNull()
     }
 
@@ -227,17 +254,9 @@ class RecentReadingWidgetProvider : BaseBookWidgetProvider() {
     override suspend fun buildViews(context: Context, appWidgetId: Int): RemoteViews {
         val views = RemoteViews(context.packageName, layoutId)
         val book = BookWidgetRepository.getRecentBook()
-        val minutes = BookWidgetRepository.getTodayReadMinutes()
-        views.setTextViewText(
-            R.id.widget_recent_time,
-            if (minutes > 0) {
-                context.getString(R.string.widget_today_read, minutes)
-            } else {
-                context.getString(R.string.widget_today_zero)
-            },
-        )
         if (book == null) {
             views.setViewVisibility(R.id.widget_recent_action, View.GONE)
+            views.setViewVisibility(R.id.widget_recent_time, View.GONE)
             views.setTextViewText(R.id.widget_recent_title, context.getString(R.string.widget_no_recent))
             views.setTextViewText(
                 R.id.widget_recent_author,
@@ -247,8 +266,13 @@ class RecentReadingWidgetProvider : BaseBookWidgetProvider() {
             return views
         }
         views.setViewVisibility(R.id.widget_recent_action, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_recent_time, View.VISIBLE)
         views.setTextViewText(R.id.widget_recent_title, book.name)
         views.setTextViewText(R.id.widget_recent_author, book.author)
+        views.setTextViewText(
+            R.id.widget_recent_time,
+            context.getString(R.string.widget_read_progress, book.readProgressPercent()),
+        )
         val pending = openBookIntent(context, book, appWidgetId * 16 + 15)
         views.setOnClickPendingIntent(R.id.widget_recent_action, pending)
         views.setOnClickPendingIntent(R.id.widget_recent_card, pending)
@@ -285,10 +309,110 @@ class RecentReadingWidgetProvider : BaseBookWidgetProvider() {
     }
 }
 
-/** 应用回到前台时刷新两个组件，保证阅读时长和最近一本是最新的。 */
+/** 应用回到前台时刷新两个组件，保证阅读进度和最近一本是最新的。 */
 object BookWidgets {
     fun refreshAll(context: Context) {
         ShelfSpineWidgetProvider.refreshAll(context)
         RecentReadingWidgetProvider.refreshAll(context)
     }
+}
+
+/** 最近阅读组件显示整本书的阅读进度，而不是今日时长。 */
+private fun Book.readProgressPercent(): Int {
+    if (totalChapterNum <= 0) return 0
+    return (((durChapterIndex + 1) * 100) / totalChapterNum).coerceIn(0, 100)
+}
+
+/**
+ * 书脊封面模糊：85% 强度按书脊短边换算出半径，连续三次盒式模糊近似高斯。
+ * 48×150 的位图很小，直接像素处理即可，不依赖 RenderScript / RenderEffect。
+ */
+private fun blurSpineBitmap(source: Bitmap): Bitmap {
+    val width = source.width
+    val height = source.height
+    if (width <= 0 || height <= 0) return source
+    val software = if (source.config == Bitmap.Config.ARGB_8888) {
+        source
+    } else {
+        source.copy(Bitmap.Config.ARGB_8888, false) ?: return source
+    }
+    val radius = (min(width, height) * 0.85f / 8f)
+        .roundToInt()
+        .coerceIn(1, 8)
+    var pixels = IntArray(width * height)
+    software.getPixels(pixels, 0, width, 0, 0, width, height)
+    repeat(3) {
+        pixels = boxBlur(pixels, width, height, radius)
+    }
+    return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+        setPixels(pixels, 0, width, 0, 0, width, height)
+    }
+}
+
+private fun boxBlur(pixels: IntArray, width: Int, height: Int, radius: Int): IntArray {
+    val temp = IntArray(width * height)
+    val result = IntArray(width * height)
+    for (y in 0 until height) {
+        var a = 0
+        var r = 0
+        var g = 0
+        var b = 0
+        for (i in -radius..radius) {
+            val x = i.coerceIn(0, width - 1)
+            val color = pixels[y * width + x]
+            a += Color.alpha(color)
+            r += Color.red(color)
+            g += Color.green(color)
+            b += Color.blue(color)
+        }
+        val count = radius * 2 + 1
+        for (x in 0 until width) {
+            temp[y * width + x] = Color.argb(
+                a / count,
+                r / count,
+                g / count,
+                b / count,
+            )
+            val removeX = (x - radius).coerceIn(0, width - 1)
+            val addX = (x + radius + 1).coerceIn(0, width - 1)
+            val remove = pixels[y * width + removeX]
+            val add = pixels[y * width + addX]
+            a += Color.alpha(add) - Color.alpha(remove)
+            r += Color.red(add) - Color.red(remove)
+            g += Color.green(add) - Color.green(remove)
+            b += Color.blue(add) - Color.blue(remove)
+        }
+    }
+    for (x in 0 until width) {
+        var a = 0
+        var r = 0
+        var g = 0
+        var b = 0
+        for (i in -radius..radius) {
+            val y = i.coerceIn(0, height - 1)
+            val color = temp[y * width + x]
+            a += Color.alpha(color)
+            r += Color.red(color)
+            g += Color.green(color)
+            b += Color.blue(color)
+        }
+        val count = radius * 2 + 1
+        for (y in 0 until height) {
+            result[y * width + x] = Color.argb(
+                a / count,
+                r / count,
+                g / count,
+                b / count,
+            )
+            val removeY = (y - radius).coerceIn(0, height - 1)
+            val addY = (y + radius + 1).coerceIn(0, height - 1)
+            val remove = temp[removeY * width + x]
+            val add = temp[addY * width + x]
+            a += Color.alpha(add) - Color.alpha(remove)
+            r += Color.red(add) - Color.red(remove)
+            g += Color.green(add) - Color.green(remove)
+            b += Color.blue(add) - Color.blue(remove)
+        }
+    }
+    return result
 }

@@ -925,10 +925,6 @@ private fun RandomBooksCarousel(
                     state = mochiPagerState,
                     showPageControl = true,
                     modifier = Modifier.fillMaxWidth(),
-                    onAdjacentClick = { page ->
-                        val index = ((page % books.size) + books.size) % books.size
-                        onBookClick(books[index])
-                    },
                 ) { page ->
                     val book = books[page % books.size]
                     Box(

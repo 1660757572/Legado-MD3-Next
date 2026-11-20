@@ -4095,4 +4095,5 @@
     <string name="widget_start_reading">Start reading</string>
     <string name="widget_today_read">%1$d min today</string>
     <string name="widget_today_zero">0 min today</string>
+    <string name="widget_read_progress">%1$d%% read</string>
 </resources>

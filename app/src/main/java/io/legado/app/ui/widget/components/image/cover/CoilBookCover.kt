@@ -284,6 +284,8 @@ fun CoilBookCover(
     path: String?,
     radius: Dp = 4.dp,
     modifier: Modifier = Modifier.width(64.dp),
+    /** 直接指定四角形状；为 null 时沿用 [radius]（兼容原有调用方）。 */
+    customShape: Shape? = null,
     sourceOrigin: String? = null,
     // 本书 bookUrl + 书架本地优先标志，透传给 BookCoverImage
     bookUrl: String? = null,
@@ -342,7 +344,7 @@ fun CoilBookCover(
         }
     }
 
-    val shape = rememberSharedCoverTransitionShape(
+    val effectiveShape = customShape ?: rememberSharedCoverTransitionShape(
         sharedCoverKey = sharedCoverKey,
         radius = radius,
         animatedVisibilityScope = animatedVisibilityScope
@@ -383,23 +385,23 @@ fun CoilBookCover(
                         Modifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(sharedCoverKey),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            clipInOverlayDuringTransition = OverlayClip(shape)
+                            clipInOverlayDuringTransition = OverlayClip(effectiveShape)
                         )
                     } else Modifier
                 }
             )
             .then(
                 if (coverSettings.showShadow) {
-                    Modifier.shadow(4.dp, shape)
+                    Modifier.shadow(4.dp, effectiveShape)
                 } else Modifier
             )
             .background(
                 if (!hasCustomDefault && !isOnlineCoverLoaded) {
                     LegadoTheme.colorScheme.surfaceContainerLow
                 } else Color.Transparent,
-                shape
+                effectiveShape
             )
-            .clip(shape)
+            .clip(effectiveShape)
     ) {
         BookCoverImage(
             name = name,

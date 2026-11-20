@@ -98,6 +98,7 @@ import io.legado.app.ui.book.toc.TocUiState
 import io.legado.app.ui.book.toc.TocViewModel
 import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.widget.components.AppFloatingActionButtonMenu
 import io.legado.app.ui.widget.components.ChapterStatusIcons
 import io.legado.app.ui.widget.components.EmptyMessage
@@ -423,6 +424,20 @@ internal fun ReaderBookHeader(
     val total = book?.totalChapterNum?.coerceAtLeast(0) ?: 0
     val isLocal = book?.isLocal == true
     var sourceMenuExpanded by remember { mutableStateOf(false) }
+    val themeSettings = LocalAppUiConfiguration.current.theme
+    val coverShape = remember(
+        themeSettings.bookInfoCoverCornerTopStart,
+        themeSettings.bookInfoCoverCornerTopEnd,
+        themeSettings.bookInfoCoverCornerBottomEnd,
+        themeSettings.bookInfoCoverCornerBottomStart,
+    ) {
+        RoundedCornerShape(
+            topStart = themeSettings.bookInfoCoverCornerTopStart.dp,
+            topEnd = themeSettings.bookInfoCoverCornerTopEnd.dp,
+            bottomEnd = themeSettings.bookInfoCoverCornerBottomEnd.dp,
+            bottomStart = themeSettings.bookInfoCoverCornerBottomStart.dp,
+        )
+    }
 
     Row(
         modifier = Modifier
@@ -438,6 +453,7 @@ internal fun ReaderBookHeader(
             // 阅读抽屉也是书维度场景，本地优先不跑书源脚本
             bookUrl = book?.bookUrl,
             preferCache = true,
+            customShape = coverShape,
             modifier = Modifier.width(50.dp),
         )
         Column(
