@@ -18,6 +18,9 @@ import io.legado.app.ui.main.MainIntent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -116,6 +119,30 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         R.id.widget_spine_8,
     )
 
+    private val spineImageIds = intArrayOf(
+        R.id.widget_spine_img_0,
+        R.id.widget_spine_img_1,
+        R.id.widget_spine_img_2,
+        R.id.widget_spine_img_3,
+        R.id.widget_spine_img_4,
+        R.id.widget_spine_img_5,
+        R.id.widget_spine_img_6,
+        R.id.widget_spine_img_7,
+        R.id.widget_spine_img_8,
+    )
+
+    private val spineTextIds = intArrayOf(
+        R.id.widget_spine_text_0,
+        R.id.widget_spine_text_1,
+        R.id.widget_spine_text_2,
+        R.id.widget_spine_text_3,
+        R.id.widget_spine_text_4,
+        R.id.widget_spine_text_5,
+        R.id.widget_spine_text_6,
+        R.id.widget_spine_text_7,
+        R.id.widget_spine_text_8,
+    )
+
     private val spineColors = intArrayOf(
         0xFF3B3634.toInt(),
         0xFF5C7A68.toInt(),
@@ -131,6 +158,11 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
     override suspend fun buildViews(context: Context, appWidgetId: Int): RemoteViews {
         val views = RemoteViews(context.packageName, layoutId)
         val books = BookWidgetRepository.getShelfBooks(spineIds.size)
+        val covers = coroutineScope {
+            books.map { book ->
+                async { loadSpineCover(context, book) }
+            }.awaitAll()
+        }
         views.setViewVisibility(
             R.id.widget_shelf_empty,
             if (books.isEmpty()) View.VISIBLE else View.GONE,
@@ -142,10 +174,16 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
                 return@forEachIndexed
             }
             views.setViewVisibility(viewId, View.VISIBLE)
-            views.setTextViewText(viewId, verticalTitle(book.name))
-            views.setTextColor(viewId, 0xFFFFF8EC.toInt())
+            views.setTextViewText(spineTextIds[index], verticalTitle(book.name))
             val color = spineColors[(book.name.hashCode() and 0x7fffffff) % spineColors.size]
             views.setInt(viewId, "setBackgroundColor", color)
+            val cover = covers.getOrNull(index)
+            if (cover != null) {
+                views.setViewVisibility(spineImageIds[index], View.VISIBLE)
+                views.setImageViewBitmap(spineImageIds[index], cover)
+            } else {
+                views.setViewVisibility(spineImageIds[index], View.GONE)
+            }
             views.setOnClickPendingIntent(
                 viewId,
                 openBookIntent(context, book, appWidgetId * 16 + index),
@@ -154,9 +192,21 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         return views
     }
 
+    private suspend fun loadSpineCover(context: Context, book: Book): Bitmap? {
+        val cached = CoverFileCache.readByBookUrl(book.bookUrl)
+        val model = cached?.absolutePath ?: book.getDisplayCover()
+        if (model.isNullOrBlank()) return null
+        return runCatching {
+            ImageLoader.loadBitmap(context, model)
+                .centerCrop()
+                .submit(64, 200)
+                .get(3, TimeUnit.SECONDS)
+        }.getOrNull()
+    }
+
     private fun verticalTitle(name: String): String {
         val clean = name.filterNot(Char::isWhitespace).ifEmpty { "?" }
-        return clean.take(7).toList().joinToString("\n")
+        return clean.take(6).toList().joinToString("\n")
     }
 
     companion object {

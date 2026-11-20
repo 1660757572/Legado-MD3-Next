@@ -1,125 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_recent_card"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:background="@drawable/widget_recent_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="10dp">
+
+    <FrameLayout
+        android:layout_width="80dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_cover_frame"
+        android:clipToOutline="true">
+
+        <ImageView
+            android:id="@+id/widget_recent_cover"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/image_cover_default" />
+    </FrameLayout>
 
     <LinearLayout
-        android:id="@+id/widget_recent_card"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
         android:layout_weight="1"
-        android:background="@drawable/widget_recent_card"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+        android:orientation="vertical">
 
-        <FrameLayout
-            android:layout_width="90dp"
-            android:layout_height="match_parent"
-            android:background="@drawable/widget_cover_frame"
-            android:clipToOutline="true">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.08"
+            android:text="@string/widget_reading_now"
+            android:textColor="#8B867C"
+            android:textSize="11sp" />
 
-            <ImageView
-                android:id="@+id/widget_recent_cover"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/image_cover_default" />
-        </FrameLayout>
+        <TextView
+            android:id="@+id/widget_recent_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="@string/widget_no_recent"
+            android:textColor="#1E211F"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/widget_recent_author"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/widget_open_a_book"
+            android:textColor="#69655D"
+            android:textSize="12sp" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/widget_recent_action"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_recent_time"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/widget_today_zero"
+                android:textColor="#7A756B"
+                android:textSize="12sp" />
+
+            <FrameLayout
+                android:id="@+id/widget_recent_play"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/widget_play_circle"
+                android:contentDescription="@string/widget_open_a_book">
+
+                <ImageView
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_widget_play" />
+            </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="@string/widget_reading_now"
-                android:textColor="#8B867C"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/widget_recent_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:ellipsize="end"
+                android:layout_marginStart="4dp"
                 android:fontFamily="sans-serif-medium"
-                android:maxLines="2"
-                android:text="@string/widget_no_recent"
+                android:text="@string/widget_start_reading"
                 android:textColor="#1E211F"
-                android:textSize="20sp" />
-
-            <TextView
-                android:id="@+id/widget_recent_author"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/widget_open_a_book"
-                android:textColor="#69655D"
-                android:textSize="14sp" />
-
-            <LinearLayout
-                android:id="@+id/widget_recent_action"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/widget_recent_time"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/widget_today_zero"
-                    android:textColor="#7A756B"
-                    android:textSize="15sp" />
-
-                <FrameLayout
-                    android:id="@+id/widget_recent_play"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:background="@drawable/widget_play_circle"
-                    android:contentDescription="@string/widget_open_a_book">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_widget_play" />
-                </FrameLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/widget_start_reading"
-                    android:textColor="#1E211F"
-                    android:textSize="13sp" />
-            </LinearLayout>
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:letterSpacing="0.04"
-        android:text="@string/app_name"
-        android:textColor="#DCEAF2"
-        android:textSize="11sp" />
 </LinearLayout>
