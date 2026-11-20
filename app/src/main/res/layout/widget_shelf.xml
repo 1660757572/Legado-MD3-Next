@@ -15,8 +15,7 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@drawable/widget_shelf_inner"
-            android:clipToOutline="true">
+            android:background="@drawable/widget_shelf_inner">
 
             <FrameLayout
                 android:layout_width="match_parent"
@@ -52,7 +51,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -90,7 +89,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -128,7 +127,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -166,7 +165,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -204,7 +203,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -242,7 +241,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -280,7 +279,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -318,7 +317,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />
@@ -355,7 +354,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone" />
 
-                    <View
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/widget_spine_scrim" />

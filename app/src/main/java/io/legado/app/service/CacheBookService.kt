@@ -1,6 +1,9 @@
 package io.legado.app.service
 
+import android.app.Notification
 import android.content.Intent
+import android.graphics.drawable.Icon
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
@@ -95,6 +98,8 @@ class CacheBookService : BaseService() {
             servicePendingIntent<CacheBookService>(IntentAction.stop)
         )
         builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        // Android 16 实时动态的提升标记；低于 36 时 NotificationCompat 会忽略。
+        builder.setRequestPromotedOngoing(true)
     }
 
     private data class AdmissionRequest(
@@ -577,16 +582,68 @@ class CacheBookService : BaseService() {
             CacheBook.downloadSummary
         }
 
+        notificationManager.notify(
+            NotificationId.CacheBookService,
+            buildCacheNotification(total, progress, summary),
+        )
+    }
+
+    private fun buildCacheNotification(
+        total: Int,
+        progress: Int,
+        summary: String,
+    ): Notification {
+        val safeTotal = total.coerceAtLeast(0)
+        val safeProgress = if (safeTotal > 0) progress.coerceIn(0, safeTotal) else 0
+        val percent = if (safeTotal > 0) {
+            (safeProgress * 100L / safeTotal).toInt().coerceIn(0, 100)
+        } else {
+            0
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            val style = Notification.ProgressStyle()
+                .setProgress(
+                    if (safeTotal > 0) (safeProgress * 1000 / safeTotal).coerceIn(0, 1000) else 0
+                )
+                .setProgressIndeterminate(safeTotal <= 0)
+            return Notification.Builder(this, AppConst.channelIdDownload)
+                .setSmallIcon(R.drawable.ic_download)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setContentTitle(getString(R.string.offline_cache))
+                .setContentText(summary)
+                .setSubText("$safeProgress/$safeTotal")
+                .setContentIntent(
+                    activityPendingIntent(
+                        MainActivity.createCacheIntent(this),
+                        "cacheActivity"
+                    )
+                )
+                .setStyle(style)
+                .setRequestPromotedOngoing(true)
+                .setShortCriticalText("$percent%")
+                .addAction(
+                    Notification.Action.Builder(
+                        Icon.createWithResource(this, R.drawable.ic_stop_black_24dp),
+                        getString(R.string.cancel),
+                        servicePendingIntent<CacheBookService>(IntentAction.stop),
+                    ).build()
+                )
+                .build()
+        }
+
         notificationBuilder.apply {
             setContentText(summary)
-            if (total > 0) {
-                setProgress(total, progress, false)
+            setSubText("$safeProgress/$safeTotal")
+            setShortCriticalText("$percent%")
+            if (safeTotal > 0) {
+                setProgress(safeTotal, safeProgress, false)
             } else {
                 setProgress(0, 0, true)
             }
         }
-
-        notificationManager.notify(NotificationId.CacheBookService, notificationBuilder.build())
+        return notificationBuilder.build()
     }
 
     private fun logDownloadDiagnostics() {
@@ -628,8 +685,11 @@ class CacheBookService : BaseService() {
      * 更新通知
      */
     override fun startForegroundNotification() {
-        notificationBuilder.setContentText(notificationContent)
-        val notification = notificationBuilder.build()
+        val notification = buildCacheNotification(
+            total = CacheBook.totalCount,
+            progress = CacheBook.completedCount,
+            summary = notificationContent,
+        )
         startForeground(NotificationId.CacheBookService, notification)
     }
 

@@ -28,6 +28,9 @@ interface HomeDashboardGateway {
     /** 首页「随机推荐」的卡片样式：0 = 经典横排，1 = Mochi 轮播。 */
     fun observeCarouselStyle(): Flow<Int>
 
+    /** 首页「最近阅读」进度样式：0 = 横向进度条，1 = 圆环。 */
+    fun observeRecentProgressStyle(): Flow<Int>
+
     suspend fun updateDailyGoal(minutes: Int)
 
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String)
@@ -39,4 +42,6 @@ interface HomeDashboardGateway {
     suspend fun updateCarouselAutoPlay(enabled: Boolean)
 
     suspend fun updateCarouselStyle(style: Int)
+
+    suspend fun updateRecentProgressStyle(style: Int)
 }

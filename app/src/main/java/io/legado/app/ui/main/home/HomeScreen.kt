@@ -148,6 +148,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import ui.feice.mochi.basic.MochiProgressRing
 import java.text.DateFormat
 import java.util.Date
 import kotlin.math.roundToInt
@@ -676,6 +677,7 @@ fun HomeScreen(
             homepageModulesEnabled = state.homepageModulesEnabled,
             carouselAutoPlay = state.carouselAutoPlay,
             carouselStyle = state.carouselStyle,
+            recentProgressStyle = state.recentProgressStyle,
             onIntent = onIntent,
         )
         AppAlertDialog(
@@ -725,6 +727,7 @@ private fun HomeDashboardContent(
             when (section) {
                 HomeDashboardSection.RecentBook -> RecentBookCard(
                     book = state.recentBook,
+                    progressStyle = state.recentProgressStyle,
                     onClick = { onIntent(HomeIntent.RecentBookClick) },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -922,6 +925,10 @@ private fun RandomBooksCarousel(
                     state = mochiPagerState,
                     showPageControl = true,
                     modifier = Modifier.fillMaxWidth(),
+                    onAdjacentClick = { page ->
+                        val index = ((page % books.size) + books.size) % books.size
+                        onBookClick(books[index])
+                    },
                 ) { page ->
                     val book = books[page % books.size]
                     Box(
@@ -1102,6 +1109,7 @@ private fun RandomBooksCarousel(
 }
 
 private const val CAROUSEL_INTERVAL_MILLIS = 4_000L
+private const val RECENT_PROGRESS_RING = 1
 
 @Composable
 private fun StatisticCard(
@@ -1168,10 +1176,14 @@ private fun StatisticCard(
 @Composable
 private fun RecentBookCard(
     book: HomeRecentBookUi?,
+    progressStyle: Int,
     onClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
+    val progress = book?.chapterProgress?.coerceIn(0f, 1f)
+    val percent = progress?.let { (it * 100f).roundToInt().coerceIn(0, 100) }
+    val showRing = progressStyle == RECENT_PROGRESS_RING && progress != null
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = if (book?.bookUrl != null) onClick else null,
@@ -1179,7 +1191,7 @@ private fun RecentBookCard(
         Box(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            book?.chapterProgress?.let { progress ->
+            if (progress != null && !showRing) {
                 RecentReadingProgress(
                     progress = progress,
                     modifier = Modifier
@@ -1187,11 +1199,29 @@ private fun RecentBookCard(
                         .fillMaxWidth(),
                 )
             }
+            if (showRing) {
+                MochiProgressRing(
+                    progress = progress,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 16.dp)
+                        .size(56.dp),
+                    strokeWidth = 5.dp,
+                    color = LegadoTheme.colorScheme.primary,
+                    trackColor = LegadoTheme.colorScheme.primary.copy(alpha = 0.16f),
+                ) {
+                    AppText(
+                        text = "$percent%",
+                        style = LegadoTheme.typography.labelMedium,
+                        color = LegadoTheme.colorScheme.onSurface,
+                    )
+                }
+            }
 
             Column(
                 modifier = Modifier.padding(
                     start = 16.dp,
-                    end = 16.dp,
+                    end = if (showRing) 84.dp else 16.dp,
                     top = 16.dp,
                     bottom = 14.dp
                 ),
@@ -1282,12 +1312,7 @@ private fun RecentBookCard(
                                             overflow = TextOverflow.Clip,
                                         )
                                     } ?: Spacer(modifier = Modifier.weight(1f))
-                                    book.chapterProgress?.let { progress ->
-                                        val percent = remember(progress) {
-                                            (progress * 100f)
-                                                .roundToInt()
-                                                .coerceIn(0, 100)
-                                        }
+                                    if (!showRing && percent != null) {
                                         TextCard(
                                             text = "$percent%",
                                             backgroundColor = LegadoTheme.colorScheme.secondaryContainer,
@@ -1662,11 +1687,13 @@ private fun HomeDashboardSettingsSheet(
     homepageModulesEnabled: Boolean,
     carouselAutoPlay: Boolean,
     carouselStyle: Int,
+    recentProgressStyle: Int,
     onSectionVisibilityChanged: (HomeDashboardSection, Boolean) -> Unit,
     onSectionMove: (HomeDashboardSection, Int) -> Unit,
     onHomepageModulesEnabledChanged: (Boolean) -> Unit,
     onCarouselAutoPlayChanged: (Boolean) -> Unit,
     onCarouselStyleChanged: (Int) -> Unit,
+    onRecentProgressStyleChanged: (Int) -> Unit,
 ) {
     if (!show) return
     // 开启的组件按当前顺序排在前面，关闭的组件按默认顺序排在后面。
@@ -1761,6 +1788,39 @@ private fun HomeDashboardSettingsSheet(
                         }
                     }
                 }
+                if (visible && section == HomeDashboardSection.RecentBook) {
+                    val barLabel = stringResource(R.string.home_recent_progress_bar)
+                    val ringLabel = stringResource(R.string.home_recent_progress_ring)
+                    val progressStyleOptions = remember(barLabel, ringLabel) {
+                        persistentListOf(
+                            AppChoiceOption("0", barLabel),
+                            AppChoiceOption("1", ringLabel),
+                        )
+                    }
+                    AppChoiceDropdown(
+                        options = progressStyleOptions,
+                        selectedId = recentProgressStyle.toString(),
+                        onSelect = { id ->
+                            onRecentProgressStyleChanged(id.toIntOrNull() ?: 0)
+                        },
+                        title = stringResource(R.string.home_recent_progress_style),
+                        modifier = Modifier.fillMaxWidth(),
+                        compact = true,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppText(
+                                text = stringResource(R.string.home_recent_progress_style),
+                                style = LegadoTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
             }
             // 首页模块是独立的整屏区块，固定在组件区之后，所以只有开关、没有排序箭头。
             TinySwitchSettingItem(
@@ -1837,6 +1897,7 @@ private fun HomeSheets(
     homepageModulesEnabled: Boolean,
     carouselAutoPlay: Boolean,
     carouselStyle: Int,
+    recentProgressStyle: Int,
     onIntent: (HomeIntent) -> Unit,
 ) {
     HomeDashboardSettingsSheet(
@@ -1846,6 +1907,7 @@ private fun HomeSheets(
         homepageModulesEnabled = homepageModulesEnabled,
         carouselAutoPlay = carouselAutoPlay,
         carouselStyle = carouselStyle,
+        recentProgressStyle = recentProgressStyle,
         onSectionVisibilityChanged = { section, visible ->
             onIntent(HomeIntent.SetSectionVisible(section, visible))
         },
@@ -1860,6 +1922,9 @@ private fun HomeSheets(
         },
         onCarouselStyleChanged = { style ->
             onIntent(HomeIntent.SetCarouselStyle(style))
+        },
+        onRecentProgressStyleChanged = { style ->
+            onIntent(HomeIntent.SetRecentProgressStyle(style))
         },
     )
     BackupOptionSheet(

@@ -107,6 +107,13 @@ class HomeDashboardRepository(
         localPreferencesRepository.putInt(CAROUSEL_STYLE_KEY, style.coerceIn(0, 1))
     }
 
+    override fun observeRecentProgressStyle(): Flow<Int> =
+        localPreferencesRepository.getInt(RECENT_PROGRESS_STYLE_KEY, 0)
+
+    override suspend fun updateRecentProgressStyle(style: Int) {
+        localPreferencesRepository.putInt(RECENT_PROGRESS_STYLE_KEY, style.coerceIn(0, 1))
+    }
+
     override suspend fun updateDailyGoal(minutes: Int) {
         localPreferencesRepository.updatePreference(
             LocalPreferencesKeys.DAILY_READING_GOAL_MINUTES,
@@ -161,5 +168,8 @@ class HomeDashboardRepository(
 
         /** 随机推荐卡片样式；0 = 经典横排，1 = Mochi 轮播。 */
         const val CAROUSEL_STYLE_KEY = "home_carousel_style"
+
+        /** 最近阅读进度样式；0 = 横向进度条，1 = 圆环。 */
+        const val RECENT_PROGRESS_STYLE_KEY = "home_recent_progress_style"
     }
 }

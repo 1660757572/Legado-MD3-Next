@@ -126,8 +126,9 @@ class HomeViewModel(
         homeDashboardUseCase.observeHomepageModulesEnabled(),
         homeDashboardUseCase.observeCarouselAutoPlay(),
         homeDashboardUseCase.observeCarouselStyle(),
-    ) { books, modulesEnabled, autoPlay, style ->
-        CarouselConfig(books, modulesEnabled, autoPlay, style)
+        homeDashboardUseCase.observeRecentProgressStyle(),
+    ) { books, modulesEnabled, autoPlay, style, recentProgressStyle ->
+        CarouselConfig(books, modulesEnabled, autoPlay, style, recentProgressStyle)
     }
 
     private data class CarouselConfig(
@@ -135,6 +136,7 @@ class HomeViewModel(
         val modulesEnabled: Boolean,
         val autoPlay: Boolean,
         val style: Int,
+        val recentProgressStyle: Int,
     )
 
     val uiState = combine(
@@ -160,6 +162,7 @@ class HomeViewModel(
             carouselBooks = carouselBooks,
             carouselAutoPlay = carousel.autoPlay,
             carouselStyle = carousel.style,
+            recentProgressStyle = carousel.recentProgressStyle,
             selectedSourceSetUrl = selectedSourceUrl,
             visibleSections = visibleSections.toImmutableList(),
             homepageModulesEnabled = carousel.modulesEnabled,
@@ -218,6 +221,11 @@ class HomeViewModel(
             is HomeIntent.SetCarouselStyle -> {
                 viewModelScope.launch {
                     homeDashboardUseCase.updateCarouselStyle(intent.style)
+                }
+            }
+            is HomeIntent.SetRecentProgressStyle -> {
+                viewModelScope.launch {
+                    homeDashboardUseCase.updateRecentProgressStyle(intent.style)
                 }
             }
             HomeIntent.ReadingGoalClick -> {

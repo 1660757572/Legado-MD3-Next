@@ -96,7 +96,7 @@ abstract class BaseBookWidgetProvider : AppWidgetProvider() {
             val model = cached?.absolutePath ?: book.getDisplayCover()
             ImageLoader.loadBitmap(context, model)
                 .centerCrop()
-                .submit(240, 340)
+                .submit(288, 384)
                 .get(10, TimeUnit.SECONDS)
         }.getOrNull()
     }
@@ -143,18 +143,6 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         R.id.widget_spine_text_8,
     )
 
-    private val spineColors = intArrayOf(
-        0xFF3B3634.toInt(),
-        0xFF5C7A68.toInt(),
-        0xFFB5715E.toInt(),
-        0xFF3F6E7A.toInt(),
-        0xFF2F5666.toInt(),
-        0xFF8B6A43.toInt(),
-        0xFF6E4B48.toInt(),
-        0xFF8A6472.toInt(),
-        0xFF445E6D.toInt(),
-    )
-
     override suspend fun buildViews(context: Context, appWidgetId: Int): RemoteViews {
         val views = RemoteViews(context.packageName, layoutId)
         val books = BookWidgetRepository.getShelfBooks(spineIds.size)
@@ -175,8 +163,6 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
             }
             views.setViewVisibility(viewId, View.VISIBLE)
             views.setTextViewText(spineTextIds[index], verticalTitle(book.name))
-            val color = spineColors[(book.name.hashCode() and 0x7fffffff) % spineColors.size]
-            views.setInt(viewId, "setBackgroundColor", color)
             val cover = covers.getOrNull(index)
             if (cover != null) {
                 views.setViewVisibility(spineImageIds[index], View.VISIBLE)
@@ -199,7 +185,7 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         return runCatching {
             ImageLoader.loadBitmap(context, model)
                 .centerCrop()
-                .submit(64, 200)
+                .submit(48, 150)
                 .get(3, TimeUnit.SECONDS)
         }.getOrNull()
     }

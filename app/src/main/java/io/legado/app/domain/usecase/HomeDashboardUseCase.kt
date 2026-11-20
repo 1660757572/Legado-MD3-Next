@@ -70,6 +70,9 @@ class HomeDashboardUseCase(
     fun observeCarouselStyle(): Flow<Int> =
         gateway.observeCarouselStyle()
 
+    fun observeRecentProgressStyle(): Flow<Int> =
+        gateway.observeRecentProgressStyle()
+
     suspend fun updateSelectedSourceSetUrl(sourceUrl: String) {
         gateway.updateSelectedSourceSetUrl(sourceUrl)
     }
@@ -88,6 +91,10 @@ class HomeDashboardUseCase(
 
     suspend fun updateCarouselStyle(style: Int) {
         gateway.updateCarouselStyle(style)
+    }
+
+    suspend fun updateRecentProgressStyle(style: Int) {
+        gateway.updateRecentProgressStyle(style)
     }
 
     private fun currentDate(): Flow<String> = flow {

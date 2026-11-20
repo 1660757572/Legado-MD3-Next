@@ -2554,6 +2554,11 @@
     <string name="homepage_edit_raw_json">Edit Raw JSON (LayoutConfig)</string>
     <string name="home_recent_reading">Recently Reading</string>
     <string name="home_recent_books">Recent reading history</string>
+    <string name="home_carousel_previous">Previous recommendation</string>
+    <string name="home_carousel_next">Next recommendation</string>
+    <string name="home_recent_progress_style">Recent reading progress style</string>
+    <string name="home_recent_progress_bar">Progress bar</string>
+    <string name="home_recent_progress_ring">Progress ring</string>
     <string name="home_dashboard_settings">Home components</string>
     <string name="home_random_recommend">Random picks</string>
     <string name="home_no_recent_reading">No reading history yet</string>
