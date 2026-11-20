@@ -7,7 +7,9 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -83,7 +85,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import ui.feice.mochi.basic.MochiCarousel
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -906,12 +907,16 @@ private fun RandomBooksCarousel(
                             System.currentTimeMillis() - mochiLastScrollAt >= CAROUSEL_INTERVAL_MILLIS
                         ) {
                             mochiPagerState.animateScrollToPage(
-                                mochiPagerState.currentPage + 1
+                                mochiPagerState.currentPage + 1,
+                                animationSpec = tween(
+                                    durationMillis = 650,
+                                    easing = FastOutSlowInEasing,
+                                ),
                             )
                         }
                     }
                 }
-                MochiCarousel(
+                HomeMochiCarousel(
                     pageCount = mochiPageCount,
                     height = 168.dp,
                     state = mochiPagerState,

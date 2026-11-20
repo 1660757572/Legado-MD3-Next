@@ -4079,4 +4079,15 @@
     <string name="a11y_reorder_position">Position %1$d of %2$d</string>
     <string name="hyper_os4_components">HyperOS 4 components</string>
     <string name="hyper_os4_components_summary">Use the glass top app bar, tabs and dropdowns in the Miuix theme. Requires Android 13 and system blur.</string>
+    <string name="widget_shelf_title">Shelf Spines</string>
+    <string name="widget_shelf_description">Books from your shelf lined up as spines</string>
+    <string name="widget_recent_title">Recent Reading</string>
+    <string name="widget_recent_description">Your latest book, today\'s reading time and a quick resume button</string>
+    <string name="widget_reading_now">Reading now</string>
+    <string name="widget_empty_shelf">Your shelf is empty</string>
+    <string name="widget_no_recent">No recent reading</string>
+    <string name="widget_open_a_book">Open a book to start</string>
+    <string name="widget_start_reading">Start reading</string>
+    <string name="widget_today_read">%1$d min today</string>
+    <string name="widget_today_zero">0 min today</string>
 </resources>

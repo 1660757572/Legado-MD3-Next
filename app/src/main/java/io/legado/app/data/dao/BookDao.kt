@@ -138,6 +138,35 @@ interface BookDao {
     @Query("SELECT * FROM books")
     suspend fun getAll(): List<Book>
 
+    /** 桌面「书架侧排」：只取公开分组、非私密的书，按最近阅读时间排序。 */
+    @Query(
+        """
+        SELECT * FROM books
+        WHERE $PUBLIC_BOOK_FILTER AND isPrivate = 0
+        ORDER BY durChapterTime DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun getWidgetShelfBooks(limit: Int): List<Book>
+
+    /** 桌面「最近阅读」：只在真正产生过阅读记录的书里取最近一本，避免新导入未读的书抢占。 */
+    @Query(
+        """
+        SELECT * FROM books
+        WHERE $PUBLIC_BOOK_FILTER AND isPrivate = 0
+        AND EXISTS (
+            SELECT 1 FROM readRecord r
+            WHERE r.bookName = books.name AND r.bookAuthor = books.author
+        )
+        ORDER BY (
+            SELECT MAX(r.lastRead) FROM readRecord r
+            WHERE r.bookName = books.name AND r.bookAuthor = books.author
+        ) DESC
+        LIMIT 1
+        """
+    )
+    suspend fun getWidgetRecentBook(): Book?
+
     @Query(
         """
     SELECT 

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <FrameLayout
+        android:id="@+id/widget_shelf_frame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_shelf_card"
+        android:padding="14dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/widget_shelf_inner"
+            android:clipToOutline="true">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="11dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/widget_shelf_board" />
+
+            <LinearLayout
+                android:id="@+id/widget_shelf_books"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:gravity="bottom"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:id="@+id/widget_spine_0"
+                    android:layout_width="0dp"
+                    android:layout_height="126dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="0.9"
+                    android:background="#3B3634"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_1"
+                    android:layout_width="0dp"
+                    android:layout_height="138dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="1.15"
+                    android:background="#5C7A68"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_2"
+                    android:layout_width="0dp"
+                    android:layout_height="122dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="1.0"
+                    android:background="#B5715E"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_3"
+                    android:layout_width="0dp"
+                    android:layout_height="142dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="0.85"
+                    android:background="#3F6E7A"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_4"
+                    android:layout_width="0dp"
+                    android:layout_height="130dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="1.1"
+                    android:background="#2F5666"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_5"
+                    android:layout_width="0dp"
+                    android:layout_height="136dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="0.95"
+                    android:background="#8B6A43"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_6"
+                    android:layout_width="0dp"
+                    android:layout_height="118dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="1.0"
+                    android:background="#6E4B48"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_7"
+                    android:layout_width="0dp"
+                    android:layout_height="134dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="0.9"
+                    android:background="#8A6472"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_spine_8"
+                    android:layout_width="0dp"
+                    android:layout_height="124dp"
+                    android:layout_weight="1.05"
+                    android:background="#445E6D"
+                    android:gravity="top|center_horizontal"
+                    android:includeFontPadding="false"
+                    android:paddingStart="2dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="2dp"
+                    android:textColor="#FFF8EC"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/widget_shelf_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:text="@string/widget_empty_shelf"
+                android:textColor="#8A7860"
+                android:textSize="15sp"
+                android:visibility="gone" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:letterSpacing="0.04"
+        android:text="@string/app_name"
+        android:textColor="#DCEAF2"
+        android:textSize="11sp" />
+</LinearLayout>

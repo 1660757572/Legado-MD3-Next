@@ -110,6 +110,7 @@ import io.legado.app.ui.main.bookshelf.BookshelfCoverPreloader
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.ThemeResolver
+import io.legado.app.ui.widget.BookWidgets
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.components.navigation.shouldUseRail
 import io.legado.app.ui.widget.components.privacy.PrivateAppStartGate
@@ -510,6 +511,7 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                 if (isPlaybackOverlayVisible) toggleSystemBar(true)
             }
         }
+        BookWidgets.refreshAll(applicationContext)
     }
 
     /**

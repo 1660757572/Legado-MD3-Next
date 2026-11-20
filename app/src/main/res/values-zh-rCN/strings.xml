@@ -2083,7 +2083,7 @@
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
     <string name="replace_purify_badge">计数替换净化</string>
     <string name="page_anim_fade">渐变</string>
-    <string name="page_anim_water_ripple">水波纹</string>
+    <string name="page_anim_water_ripple">涟漪</string>
     <string name="show_bookshelf_tab_menu">显示更多分组按钮</string>
     <string name="show_unread_new">显示新章节更新标志</string>
     <string name="read_change_all">换源按钮默认弹出整书换源</string>
@@ -4076,4 +4076,15 @@
     <string name="a11y_reorder_position">第 %1$d 项，共 %2$d 项</string>
     <string name="hyper_os4_components">HyperOS 4 风格组件</string>
     <string name="hyper_os4_components_summary">在 Miuix 主题下使用玻璃顶栏、标签页与下拉菜单。需要 Android 13 与系统模糊支持。</string>
+    <string name="widget_shelf_title">书架侧排</string>
+    <string name="widget_shelf_description">把书架里的书竖排成一面书墙</string>
+    <string name="widget_recent_title">最近阅读</string>
+    <string name="widget_recent_description">展示最近在读的书、今日阅读时长和继续阅读按钮</string>
+    <string name="widget_reading_now">正在读</string>
+    <string name="widget_empty_shelf">书架还没有书</string>
+    <string name="widget_no_recent">还没有最近阅读</string>
+    <string name="widget_open_a_book">打开一本书开始阅读</string>
+    <string name="widget_start_reading">开始阅读</string>
+    <string name="widget_today_read">今日 %1$d 分钟</string>
+    <string name="widget_today_zero">今日 0 分钟</string>
 </resources>
