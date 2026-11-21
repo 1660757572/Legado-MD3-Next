@@ -36,6 +36,7 @@ fun AppUiConfiguration.diffFrom(previous: AppUiConfiguration): AppUiConfiguratio
             theme.requiresLegacyThemeRefresh(previous.theme),
         fontScaleChanged = appShell.fontScale != previous.appShell.fontScale,
         windowChanged = appShell.showStatusBar != previous.appShell.showStatusBar ||
+            appShell.showNavigationBar != previous.appShell.showNavigationBar ||
             theme.backgroundImageLight != previous.theme.backgroundImageLight ||
             theme.backgroundImageDark != previous.theme.backgroundImageDark ||
             theme.backgroundImageBlurring != previous.theme.backgroundImageBlurring ||

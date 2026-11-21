@@ -64,7 +64,7 @@ android {
         applicationId = "io.legado.kumaki"
         minSdk = 26
         targetSdk = 37
-        versionCode = System.getenv("COMMIT_NUMBER")?.toInt()?.let { 10000 + it } ?: 32644
+        versionCode = System.getenv("COMMIT_NUMBER")?.toInt()?.let { 10000 + it } ?: 32650
         versionName = System.getenv("APP_VERSION_NAME") ?: projectVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -100,6 +100,20 @@ android {
             manifestPlaceholders["app_name"] = "@string/app_name"
             isMinifyEnabled = true
             isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+                "cronet-proguard-rules.pro"
+            )
+        }
+        create("beta") {
+            manifestPlaceholders["app_name"] = "@string/app_name"
+            isDebuggable = true
+            applicationIdSuffix = ".beta"
+            versionNameSuffix = "-beta.7"
+            isMinifyEnabled = false
+            isShrinkResources = false
+            matchingFallbacks += listOf("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

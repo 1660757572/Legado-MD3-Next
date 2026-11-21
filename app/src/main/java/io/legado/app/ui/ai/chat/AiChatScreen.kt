@@ -23,11 +23,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,7 +40,9 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
@@ -108,6 +112,15 @@ import ui.feice.mochi.basic.MochiButtonStyle
 import ui.feice.mochi.basic.MochiIconButton
 import ui.feice.mochi.basic.MochiTextField
 import ui.feice.mochi.basic.MochiTextFieldDefaults
+import ui.feice.mochi.icons.MochiIconStyle
+import ui.feice.mochi.icons.MochiIonicon
+import ui.feice.mochi.navigation.MochiSidebarHeader
+import ui.feice.mochi.navigation.MochiSidebarHeaderButton
+import ui.feice.mochi.navigation.MochiSidebarItem
+import ui.feice.mochi.navigation.MochiSidebarLayout
+import ui.feice.mochi.navigation.MochiSidebarSectionHeader
+import ui.feice.mochi.navigation.MochiSidebarStyle
+import ui.feice.mochi.navigation.rememberMochiSidebarState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -143,6 +156,8 @@ fun AiChatScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val mochiSidebarState = rememberMochiSidebarState()
+    val isMochi = LegadoTheme.composeEngine == ComposeEngine.Mochi
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboard.current
     var draft by rememberSaveable { mutableStateOf("") }
@@ -210,25 +225,14 @@ fun AiChatScreen(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            RecentChatsDrawer(
-                conversations = state.conversations,
-                onNewChat = {
-                    onIntent(AiChatIntent.NewConversation)
-                    scope.launch { drawerState.close() }
-                },
-                onSelectConversation = {
-                    onIntent(AiChatIntent.SelectConversation(it))
-                    scope.launch { drawerState.close() }
-                },
-                onDeleteConversation = {
-                    onIntent(AiChatIntent.DeleteConversation(it))
-                }
-            )
+    val openChatList: () -> Unit = {
+        if (isMochi) {
+            mochiSidebarState.open()
+        } else {
+            scope.launch { drawerState.open() }
         }
-    ) {
+    }
+    val chatPane: @Composable () -> Unit = {
         AppScaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             alwaysDrawBehindBars = true,
@@ -336,7 +340,7 @@ fun AiChatScreen(
                 ) {
                     if (state.messages.isEmpty() && state.streamingMessage == null) {
                         item {
-                            EmptyChatHint()
+                            if (isMochi) MochiEmptyChatHint() else EmptyChatHint()
                         }
                     }
                     items(state.messages, key = { it.id }) { message ->
@@ -427,7 +431,13 @@ fun AiChatScreen(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .imePadding()
-                        .navigationBarsPadding()
+                        .then(
+                            if (isMochi) {
+                                Modifier.windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
+                            } else {
+                                Modifier.navigationBarsPadding()
+                            }
+                        )
                 ) {
                     Box(
                         modifier = Modifier
@@ -491,6 +501,7 @@ fun AiChatScreen(
                                 value = draft,
                                 isSending = state.isSending,
                                 reasoningLevel = state.reasoningLevel,
+                                models = state.availableModels,
                                 onValueChange = { draft = it },
                                 onSend = {
                                     val text = draft
@@ -500,6 +511,9 @@ fun AiChatScreen(
                                 onStop = { onIntent(AiChatIntent.StopGenerating) },
                                 onUpdateReasoningLevel = {
                                     onIntent(AiChatIntent.UpdateReasoningLevel(it))
+                                },
+                                onSelectModel = {
+                                    onIntent(AiChatIntent.SelectModel(it))
                                 }
                             )
                         }
@@ -527,6 +541,51 @@ fun AiChatScreen(
                                 )
                             )
                     )
+                    if (isMochi) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .statusBarsPadding()
+                                .height(56.dp)
+                                .padding(horizontal = 16.dp),
+                        ) {
+                            MochiIconButton(
+                                onClick = openChatList,
+                                modifier = Modifier.align(Alignment.CenterStart),
+                                style = MochiButtonStyle.Glass,
+                                size = 44.dp,
+                            ) {
+                                AppIcon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = stringResource(R.string.ai_recent_chats),
+                                    tint = LegadoTheme.colorScheme.onSurface,
+                                )
+                            }
+                            AppText(
+                                text = conversationTitle,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(horizontal = 64.dp),
+                                style = LegadoTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = LegadoTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            MochiIconButton(
+                                onClick = { onIntent(AiChatIntent.NewConversation) },
+                                modifier = Modifier.align(Alignment.CenterEnd),
+                                style = MochiButtonStyle.Glass,
+                                size = 44.dp,
+                            ) {
+                                AppIcon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = stringResource(R.string.ai_new_chat),
+                                    tint = LegadoTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                    } else {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -574,7 +633,7 @@ fun AiChatScreen(
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             MediumTonalButton(
-                                onClick = { scope.launch { drawerState.open() } },
+                                onClick = openChatList,
                                 icon = Icons.Default.Menu,
                                 contentDescription = stringResource(R.string.ai_recent_chats)
                             )
@@ -585,8 +644,57 @@ fun AiChatScreen(
                             )
                         }
                     }
+                    }
                 }
             }
+        }
+    }
+
+    if (isMochi) {
+        MochiSidebarLayout(
+            state = mochiSidebarState,
+            style = MochiSidebarStyle.Floating,
+            swipeToOpen = true,
+            sidebar = {
+                MochiRecentChatsSidebar(
+                    conversations = state.conversations,
+                    onNewChat = {
+                        onIntent(AiChatIntent.NewConversation)
+                        mochiSidebarState.close()
+                    },
+                    onSelectConversation = {
+                        onIntent(AiChatIntent.SelectConversation(it))
+                        mochiSidebarState.close()
+                    },
+                    onDeleteConversation = {
+                        onIntent(AiChatIntent.DeleteConversation(it))
+                    },
+                )
+            },
+        ) {
+            chatPane()
+        }
+    } else {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                RecentChatsDrawer(
+                    conversations = state.conversations,
+                    onNewChat = {
+                        onIntent(AiChatIntent.NewConversation)
+                        scope.launch { drawerState.close() }
+                    },
+                    onSelectConversation = {
+                        onIntent(AiChatIntent.SelectConversation(it))
+                        scope.launch { drawerState.close() }
+                    },
+                    onDeleteConversation = {
+                        onIntent(AiChatIntent.DeleteConversation(it))
+                    }
+                )
+            }
+        ) {
+            chatPane()
         }
     }
 
@@ -929,34 +1037,29 @@ private fun ChatInputBar(
     value: String,
     isSending: Boolean,
     reasoningLevel: AiReasoningLevel,
+    models: List<AiChatModelUi>,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     onStop: () -> Unit,
-    onUpdateReasoningLevel: (AiReasoningLevel) -> Unit
+    onUpdateReasoningLevel: (AiReasoningLevel) -> Unit,
+    onSelectModel: (String) -> Unit
 ) {
-    val isKeyboardVisible =
-        WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
-    val horizontalPadding by animateDpAsState(
-        targetValue = if (isKeyboardVisible) 16.dp else 46.dp,
-        animationSpec = tween(durationMillis = 250),
-        label = "AiChatInputHorizontalPadding"
-    )
-    val bottomPadding by animateDpAsState(
-        targetValue = if (isKeyboardVisible) 16.dp else 32.dp,
-        animationSpec = tween(durationMillis = 250),
-        label = "AiChatInputBottomPadding"
-    )
+    // 键盘收起时不再做横向/纵向补间，避免输入栏先下沉再回弹。
+    val horizontalPadding = 16.dp
+    val bottomPadding = 10.dp
 
     if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
         MochiChatInputBar(
             value = value,
             isSending = isSending,
             reasoningLevel = reasoningLevel,
+            models = models,
             onValueChange = onValueChange,
             onSend = onSend,
             onStop = onStop,
             onUpdateReasoningLevel = onUpdateReasoningLevel,
-            horizontalPadding = 16.dp,
+            onSelectModel = onSelectModel,
+            horizontalPadding = horizontalPadding,
             bottomPadding = bottomPadding,
         )
         return
@@ -985,7 +1088,9 @@ private fun ChatInputBar(
             AiReasoningModeButton(
                 level = reasoningLevel,
                 enabled = !isSending,
+                models = models,
                 onLevelChange = onUpdateReasoningLevel,
+                onSelectModel = onSelectModel,
             )
 
             // Text field
@@ -1043,10 +1148,12 @@ private fun MochiChatInputBar(
     value: String,
     isSending: Boolean,
     reasoningLevel: AiReasoningLevel,
+    models: List<AiChatModelUi>,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     onStop: () -> Unit,
     onUpdateReasoningLevel: (AiReasoningLevel) -> Unit,
+    onSelectModel: (String) -> Unit,
     horizontalPadding: Dp,
     bottomPadding: Dp,
 ) {
@@ -1060,7 +1167,9 @@ private fun MochiChatInputBar(
         AiReasoningModeButton(
             level = reasoningLevel,
             enabled = !isSending,
+            models = models,
             onLevelChange = onUpdateReasoningLevel,
+            onSelectModel = onSelectModel,
         )
         MochiTextField(
             value = value,
@@ -1089,15 +1198,122 @@ private fun MochiChatInputBar(
                         style = MochiButtonStyle.Filled,
                         size = MochiTextFieldDefaults.TrailingButtonSize,
                     ) {
-                        AppIcon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
+                        MochiIonicon(
+                            name = "arrow-up",
+                            style = MochiIconStyle.Filled,
                             contentDescription = stringResource(R.string.ai_send),
+                            tint = LegadoTheme.colorScheme.onPrimary,
+                            size = 22.dp,
                         )
                     }
                 }
             },
         )
     }
+}
+
+@Composable
+private fun MochiEmptyChatHint() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 96.dp, start = 24.dp, end = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        AppIcon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            modifier = Modifier.size(44.dp),
+            tint = LegadoTheme.colorScheme.primary,
+        )
+        AppText(
+            text = stringResource(R.string.ai_chat_empty_title),
+            modifier = Modifier.padding(top = 16.dp),
+            style = LegadoTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = LegadoTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+/** Mochi 浮动侧边栏里的对话列表：保留搜索、切换、按选中项删除。 */
+@Composable
+private fun MochiRecentChatsSidebar(
+    conversations: List<AiChatConversationUi>,
+    onNewChat: () -> Unit,
+    onSelectConversation: (String) -> Unit,
+    onDeleteConversation: (String) -> Unit,
+) {
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var conversationToDelete by remember { mutableStateOf<AiChatConversationUi?>(null) }
+    val filteredConversations = remember(conversations, searchQuery) {
+        if (searchQuery.isBlank()) {
+            conversations
+        } else {
+            conversations.filter { it.title.contains(searchQuery, ignoreCase = true) }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        MochiSidebarHeader(
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
+            placeholder = stringResource(R.string.search),
+            action = {
+                MochiSidebarHeaderButton(onClick = onNewChat) {
+                    AppIcon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.ai_new_chat),
+                        tint = LegadoTheme.colorScheme.onSurface,
+                    )
+                }
+            },
+        )
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = 12.dp),
+        ) {
+            item(key = "sidebar-section") {
+                MochiSidebarSectionHeader(stringResource(R.string.ai_recent_chats))
+            }
+            items(filteredConversations, key = { it.id }) { conversation ->
+                MochiSidebarItem(
+                    title = conversation.title,
+                    onClick = { onSelectConversation(conversation.id) },
+                    selected = conversation.isSelected,
+                    trailing = {
+                        if (conversation.isSelected) {
+                            MochiIconButton(
+                                onClick = { conversationToDelete = conversation },
+                                style = MochiButtonStyle.Text,
+                                size = 32.dp,
+                            ) {
+                                AppIcon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.delete),
+                                    tint = LegadoTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    AppAlertDialog(
+        show = conversationToDelete != null,
+        onDismissRequest = { conversationToDelete = null },
+        title = stringResource(R.string.delete),
+        text = stringResource(R.string.sure_del),
+        confirmText = stringResource(R.string.delete),
+        onConfirm = {
+            conversationToDelete?.let { onDeleteConversation(it.id) }
+            conversationToDelete = null
+        },
+        dismissText = stringResource(R.string.cancel),
+        onDismiss = { conversationToDelete = null },
+    )
 }
 
 @Composable

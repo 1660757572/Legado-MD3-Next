@@ -175,6 +175,7 @@ internal fun MenuBottomBar(
                     menuConfig = state.menuConfig,
                     glassEnabled = buttonGlassEnabled,
                     contentDescription = stringResource(R.string.previous_chapter),
+                    mochiIconName = "arrow-back",
                 )
 
                 ReadMenuSlider(
@@ -204,6 +205,7 @@ internal fun MenuBottomBar(
                     menuConfig = state.menuConfig,
                     glassEnabled = buttonGlassEnabled,
                     contentDescription = stringResource(R.string.next_chapter),
+                    mochiIconName = "arrow-forward",
                 )
             }
         }
@@ -300,6 +302,7 @@ private fun BottomBarGlassIconButton(
     menuConfig: ReadMenuConfig,
     glassEnabled: Boolean,
     contentDescription: String? = null,
+    mochiIconName: String? = null,
 ) {
     ReadMenuGlassIconButton(
         onClick = onClick,
@@ -309,6 +312,7 @@ private fun BottomBarGlassIconButton(
         menuConfig = menuConfig,
         glassEnabled = glassEnabled,
         contentDescription = contentDescription,
+        mochiIconName = mochiIconName,
     )
 }
 

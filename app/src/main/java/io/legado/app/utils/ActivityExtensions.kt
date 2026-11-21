@@ -161,6 +161,28 @@ fun Activity.toggleSystemBar(show: Boolean) {
     }
 }
 
+/** 分别控制状态栏与导航栏；任一栏隐藏时都允许从边缘临时划出。 */
+fun Activity.setSystemBarVisibility(
+    showStatusBar: Boolean,
+    showNavigationBar: Boolean,
+) {
+    WindowCompat.getInsetsController(window, window.decorView).run {
+        if (showStatusBar) {
+            show(WindowInsetsCompat.Type.statusBars())
+        } else {
+            hide(WindowInsetsCompat.Type.statusBars())
+        }
+        if (showNavigationBar) {
+            show(WindowInsetsCompat.Type.navigationBars())
+        } else {
+            hide(WindowInsetsCompat.Type.navigationBars())
+        }
+        if (!showStatusBar || !showNavigationBar) {
+            systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+}
+
 /////以下方法需要在View完全被绘制出来之后调用，否则判断不了,在比如 onWindowFocusChanged（）方法中可以得到正确的结果/////
 
 /**

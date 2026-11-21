@@ -46,6 +46,7 @@ import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.openUrl
 import io.legado.app.utils.share
 import io.legado.app.utils.takePersistablePermissionSafely
+import io.legado.app.utils.setSystemBarVisibility
 import io.legado.app.utils.toggleSystemBar
 import kotlinx.coroutines.flow.collectLatest
 
@@ -57,7 +58,8 @@ fun MangaReaderRouteScreen(
     chapterChanged: Boolean,
     openRequestId: Long,
     viewModel: MangaReaderViewModel,
-    restoreSystemBarsVisible: Boolean,
+    restoreStatusBarVisible: Boolean,
+    restoreNavigationBarVisible: Boolean,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     sharedCoverKey: String? = null,
@@ -254,7 +256,12 @@ fun MangaReaderRouteScreen(
         }
     }
 
-    DisposableEffect(activity, viewModel, restoreSystemBarsVisible) {
+    DisposableEffect(
+        activity,
+        viewModel,
+        restoreStatusBarVisible,
+        restoreNavigationBarVisible,
+    ) {
         val originalBrightness = activity.window.attributes.screenBrightness
         activity.activeMangaKeyHandler = fun(keyCode: Int): Boolean {
             if (!currentIsTopRoute) return false
@@ -276,7 +283,10 @@ fun MangaReaderRouteScreen(
             activity.window.attributes = activity.window.attributes.apply {
                 screenBrightness = originalBrightness
             }
-            activity.toggleSystemBar(restoreSystemBarsVisible)
+            activity.setSystemBarVisibility(
+                restoreStatusBarVisible,
+                restoreNavigationBarVisible,
+            )
         }
     }
 

@@ -69,7 +69,8 @@ internal fun FloatingIconRow(
         modifier = Modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
-            .padding(all = 16.dp),
+            // 按钮自身左右各 4dp；12+4=16，和顶栏返回/更多、底栏上一章/下一章的外边距一致。
+            .padding(horizontal = 12.dp, vertical = 16.dp),
         horizontalArrangement = when (alignment) {
             Alignment.Start -> Arrangement.Start
             Alignment.End -> Arrangement.End

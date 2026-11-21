@@ -115,6 +115,7 @@ import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
 import io.legado.app.ui.widget.components.topbar.TopBarActionButton
 import io.legado.app.ui.theme.isMiuixHyperOs4Enabled
 import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
+import io.legado.app.ui.widget.components.topbar.TopBarTitleAlignment
 import io.legado.app.utils.StringUtils.formatFriendlyDate
 import io.legado.app.utils.formatReadDuration
 import kotlinx.coroutines.flow.Flow
@@ -275,6 +276,8 @@ fun ReadRecordScreen(
                         }
                         subTitle
                     },
+                    // 右侧动作多，居中折叠标题会被两侧预留挤没；折叠后固定贴在返回键右侧。
+                    titleAlignment = TopBarTitleAlignment.Start,
                     navigationIcon = {
                         TopBarNavigationButton(
                             onClick = {
@@ -285,6 +288,8 @@ fun ReadRecordScreen(
                                 }
                             }
                         )
+                        // 折叠标题贴在返回键右侧时留出呼吸间距，避免视觉上紧贴图标。
+                        Spacer(modifier = Modifier.width(8.dp))
                     },
                     actions = {
                         if (inSelectionMode) {

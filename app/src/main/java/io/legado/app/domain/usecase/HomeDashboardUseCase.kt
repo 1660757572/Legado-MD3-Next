@@ -113,7 +113,7 @@ class HomeDashboardUseCase(
     }.distinctUntilChanged()
 
     private companion object {
-        const val RECENT_BOOK_LIMIT = 7
+        const val RECENT_BOOK_LIMIT = 10
         const val MIN_DATE_REFRESH_DELAY_MILLIS = 1_000L
     }
 }

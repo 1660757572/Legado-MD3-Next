@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -54,7 +57,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
+import io.legado.app.utils.formatReadDurationInHours
+import io.legado.app.ui.book.readRecord.component.ReadingCategoryRankingCard
+import io.legado.app.ui.book.readRecord.component.ReadingPeriodShareCard
 import io.legado.app.ui.book.readRecord.component.ReadingTimeBarChartCard
+import io.legado.app.ui.book.readRecord.component.ReadingTimeOfDayCard
 import io.legado.app.ui.book.readRecord.component.StatItem
 import io.legado.app.ui.book.readRecord.component.StatsGridCard
 import io.legado.app.ui.theme.LegadoTheme
@@ -74,8 +81,10 @@ import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
 import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 import org.koin.androidx.compose.koinViewModel
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,51 +146,119 @@ fun ReadRecordOverviewScreen(
             )
         }
     ) { padding ->
+        val contentAlpha = remember { Animatable(0f) }
+        LaunchedEffect(state.period) {
+            contentAlpha.snapTo(0f)
+            contentAlpha.animateTo(1f, animationSpec = tween(durationMillis = 560))
+        }
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = contentAlpha.value },
             contentPadding = adaptiveContentPaddingOnlyVertical(
                 top = padding.calculateTopPadding(),
                 bottom = padding.calculateBottomPadding() + 16.dp
             )
         ) {
-            if (state.period != ReadPeriod.ALL && state.dailyTimeData.isNotEmpty()) {
+            if (state.period == ReadPeriod.DAY) {
+                if (state.hasTimeOfDayData) {
+                    item {
+                        ReadingTimeOfDayCard(
+                            hourlyMillis = state.hourlyMillis,
+                            mostReadHour = state.mostReadHour,
+                            mostReadDayPart = state.mostReadDayPart,
+                            averageStartMinute = state.averageStartMinute,
+                            nightShare = state.nightShare,
+                        )
+                    }
+                }
+            } else if (state.dailyTimeData.isNotEmpty()) {
                 item {
                     ReadingTimeBarChartCard(data = state.dailyTimeData, period = state.period)
                 }
             }
 
-            item {
-                val readingTime = ReadRecordFormatter.hourMinuteDuration(state.totalTime)
-                val readingTimeText = when {
-                    readingTime.hours > 0 && readingTime.minutes > 0 -> stringResource(
-                        R.string.hours_minutes_format,
-                        readingTime.hours,
-                        readingTime.minutes,
-                    )
-                    readingTime.hours > 0 -> stringResource(
-                        R.string.whole_hours_format,
-                        readingTime.hours,
-                    )
-                    else -> stringResource(
-                        R.string.minutes_format,
-                        readingTime.minutes,
+            if (state.period != ReadPeriod.DAY && state.hasTimeOfDayData) {
+                item {
+                    ReadingTimeOfDayCard(
+                        hourlyMillis = state.hourlyMillis,
+                        mostReadHour = state.mostReadHour,
+                        mostReadDayPart = state.mostReadDayPart,
+                        averageStartMinute = state.averageStartMinute,
+                        nightShare = state.nightShare,
                     )
                 }
-                val stats = listOf(
-                    StatItem(
-                        stringResource(R.string.reading_time),
-                        readingTimeText,
-                    ),
-                    StatItem(stringResource(R.string.reading_days), stringResource(R.string.days_format, state.readingDays)),
-                    StatItem(stringResource(R.string.total_read_books), stringResource(R.string.books_format, state.totalBooks)),
-                    StatItem(stringResource(R.string.finished_books), stringResource(R.string.books_format, state.finishedBooks)),
-                    StatItem(
-                        stringResource(R.string.reading_books),
-                        stringResource(R.string.books_format, state.readingBooks)
+            }
+
+            item {
+                val readingTimeText = formatReadDurationInHours(state.totalTime)
+                val stats = buildList {
+                    add(
+                        StatItem(
+                            label = stringResource(R.string.reading_time),
+                            value = readingTimeText,
+                            fullWidth = true,
+                        )
                     )
-                )
+                    if (state.period != ReadPeriod.DAY) {
+                        add(
+                            StatItem(
+                                label = stringResource(R.string.single_day_longest),
+                                value = state.maxSingleDayTime.takeIf { it > 0L }
+                                    ?.let { formatReadDurationInHours(it) }
+                                    ?: "—",
+                                fullWidth = true,
+                            )
+                        )
+                    }
+                    add(
+                        StatItem(
+                            stringResource(R.string.reading_days),
+                            stringResource(R.string.days_format, state.readingDays),
+                        )
+                    )
+                    if (state.period == ReadPeriod.DAY) {
+                        add(
+                            StatItem(
+                                stringResource(R.string.longest_reading_session),
+                                formatSessionRange(
+                                    startMillis = state.longestSessionStart,
+                                    endMillis = state.longestSessionEnd,
+                                ),
+                            )
+                        )
+                    }
+                    add(StatItem(stringResource(R.string.total_read_books), stringResource(R.string.books_format, state.totalBooks)))
+                    add(StatItem(stringResource(R.string.finished_books), stringResource(R.string.books_format, state.finishedBooks)))
+                    add(
+                        StatItem(
+                            stringResource(R.string.reading_books),
+                            stringResource(R.string.books_format, state.readingBooks)
+                        )
+                    )
+                    if (state.period != ReadPeriod.DAY) {
+                        add(
+                            StatItem(
+                                stringResource(R.string.goal_days),
+                                stringResource(R.string.days_format, state.goalDays),
+                            )
+                        )
+                        add(
+                            StatItem(
+                                stringResource(R.string.goal_streak),
+                                stringResource(R.string.days_format, state.goalStreak),
+                            )
+                        )
+                    }
+                }
                 StatsGridCard(title = stringResource(R.string.reading_data), items = stats)
+            }
+
+            if (state.hasTimeOfDayData) {
+                item {
+                    ReadingPeriodShareCard(hourlyMillis = state.hourlyMillis)
+                }
             }
 
             item {
@@ -194,11 +271,30 @@ fun ReadRecordOverviewScreen(
                 }
             }
 
+            if (state.categoryRankings.isNotEmpty()) {
+                item {
+                    ReadingCategoryRankingCard(
+                        items = state.categoryRankings,
+                        totalTime = state.totalTime,
+                    )
+                }
+            }
+
             item {
                 ReadingCalendarCard(state, loadBookCover)
             }
         }
     }
+}
+
+@Composable
+private fun formatSessionRange(startMillis: Long?, endMillis: Long?): String {
+    if (startMillis == null || endMillis == null || endMillis <= startMillis) return "—"
+    val formatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val zone = remember { ZoneId.systemDefault() }
+    val start = remember(startMillis, zone) { Instant.ofEpochMilli(startMillis).atZone(zone) }
+    val end = remember(endMillis, zone) { Instant.ofEpochMilli(endMillis).atZone(zone) }
+    return "${start.format(formatter)}-${end.format(formatter)}"
 }
 
 @Composable
@@ -376,13 +472,18 @@ fun TopReadingListCard(
                         .padding(vertical = 8.dp, horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AppText(
-                        text = "${index + 1}",
-                        style = LegadoTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 12.dp, end = 16.dp),
-                        textAlign = TextAlign.Center,
-                        color = if (index < 3) LegadoTheme.colorScheme.primary else LegadoTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier.width(30.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AppText(
+                            text = "${index + 1}",
+                            style = LegadoTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            color = if (index < 3) LegadoTheme.colorScheme.primary else LegadoTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     if (overviewLocked) {
                         PrivateLockedCover(
                             name = book.bookName,

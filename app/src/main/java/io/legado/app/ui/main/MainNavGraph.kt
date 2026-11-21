@@ -37,6 +37,8 @@ import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import io.legado.app.R
 import io.legado.app.constant.BookType
+import io.legado.app.data.entities.Book
+import io.legado.app.help.book.shouldOpenMangaReader
 import io.legado.app.core.ui.morph.BookCoverMorphAnchors
 import io.legado.app.core.ui.morph.isAnchorVisibleInScreen
 import io.legado.app.core.ui.player.PlayerMorphAppearance
@@ -94,6 +96,7 @@ import io.legado.app.ui.book.knowledge.CharacterDetailIntent
 import io.legado.app.ui.book.knowledge.deleteCharacterAvatar
 import io.legado.app.ui.book.knowledge.saveCharacterAvatar
 import io.legado.app.ui.book.manage.BookshelfManageRouteScreen
+import io.legado.app.ui.main.bookshelf.toLightBook
 import io.legado.app.ui.book.manga.MangaReaderIntent
 import io.legado.app.ui.book.manga.MangaReaderRouteScreen
 import io.legado.app.ui.book.manga.MangaReaderViewModel
@@ -198,6 +201,7 @@ import io.legado.app.utils.openUrl
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.startActivityForBook
 import io.legado.app.utils.toastOnUi
+import io.legado.app.utils.setSystemBarVisibility
 import io.legado.app.utils.toggleSystemBar
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers.IO
@@ -209,17 +213,17 @@ import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-/** 全屏书页（阅读/漫画）走普通 nav3 场景：与文本阅读页同一段 600ms 交叉淡入淡出。 */
+/** 全屏书页（阅读/漫画）走普通 nav3 场景：与文本阅读页同一段 320ms 交叉淡入淡出。 */
 private fun readerEntryMetadata(predictiveBackEnabled: Boolean) = metadata {
     put(NavDisplay.TransitionKey) {
-        fadeIn(animationSpec = tween(600)) togetherWith fadeOut(animationSpec = tween(600))
+        fadeIn(animationSpec = tween(320)) togetherWith fadeOut(animationSpec = tween(320))
     }
     put(NavDisplay.PopTransitionKey) {
-        fadeIn(animationSpec = tween(600)) togetherWith fadeOut(animationSpec = tween(600))
+        fadeIn(animationSpec = tween(320)) togetherWith fadeOut(animationSpec = tween(320))
     }
     if (predictiveBackEnabled) {
         put(NavDisplay.PredictivePopTransitionKey) { _ ->
-            fadeIn(animationSpec = tween(600)) togetherWith fadeOut(animationSpec = tween(600))
+            fadeIn(animationSpec = tween(320)) togetherWith fadeOut(animationSpec = tween(320))
         }
     }
 }
@@ -527,6 +531,20 @@ fun MainActivity.mainEntryProvider(
     entry<MainRouteHome> {
         val mainViewModel = koinViewModel<MainViewModel>()
         val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+        val openBook: (Book, String?) -> Unit = { book, sharedCoverKey ->
+            when {
+                book.type == BookType.video -> onNavigateToRoute(MainRouteVideoPlay(bookUrl = book.bookUrl))
+                book.type == BookType.audio -> onNavigateToRoute(
+                    MainRouteAudioPlay(bookUrl = book.bookUrl, sharedCoverKey = sharedCoverKey)
+                )
+                book.shouldOpenMangaReader(showMangaUi) -> onNavigateToRoute(
+                    MainRouteReadManga(bookUrl = book.bookUrl, sharedCoverKey = sharedCoverKey)
+                )
+                else -> onNavigateToRoute(
+                    MainRouteReadBook(bookUrl = book.bookUrl, sharedCoverKey = sharedCoverKey)
+                )
+            }
+        }
         MainScreen(
             mainUiState = mainUiState,
             onIntent = mainViewModel::onIntent,
@@ -568,34 +586,9 @@ fun MainActivity.mainEntryProvider(
                 onNavigateToRoute(MainRouteBookCacheManage)
             },
             onOpenBookshelfBook = { book, sharedCoverKey ->
-                if (book.isVideo) {
-                    onNavigateToRoute(
-                        // 播放页是全屏画面，没有可共享的封面元素
-                        MainRouteVideoPlay(bookUrl = book.bookUrl)
-                    )
-                } else if (book.isAudio) {
-                    onNavigateToRoute(
-                        MainRouteAudioPlay(
-                            bookUrl = book.bookUrl,
-                            sharedCoverKey = sharedCoverKey
-                        )
-                    )
-                } else if (book.shouldOpenMangaReader(showMangaUi)) {
-                    onNavigateToRoute(
-                        MainRouteReadManga(
-                            bookUrl = book.bookUrl,
-                            sharedCoverKey = sharedCoverKey
-                        )
-                    )
-                } else {
-                    onNavigateToRoute(
-                        MainRouteReadBook(
-                            bookUrl = book.bookUrl,
-                            sharedCoverKey = sharedCoverKey,
-                        )
-                    )
-                }
+                openBook(book.toLightBook(), sharedCoverKey)
             },
+            onOpenBook = openBook,
             onNavigateToBackupSettings = {
                 onNavigateToRoute(MainRouteSettingsBackup)
             },
@@ -1135,7 +1128,10 @@ fun MainActivity.mainEntryProvider(
                     MainActivity.hasActiveReadBookRoute = false
                     controller.onClose = null
                     controller.clearTts()
-                    this@mainEntryProvider.toggleSystemBar(configuration.appShell.showStatusBar)
+                    this@mainEntryProvider.setSystemBarVisibility(
+                        configuration.appShell.showStatusBar,
+                        configuration.appShell.showNavigationBar,
+                    )
                 }
             }
 
@@ -1192,7 +1188,8 @@ fun MainActivity.mainEntryProvider(
                 viewModel = mangaViewModel,
                 onOpenMangaTranslationSettings = { pushRoute(MainRouteSettingsManga(openTranslation = true)) },
                 onOpenToc = { bookUrl, page -> onNavigateToRoute(MainRouteToc(bookUrl, page)) },
-                restoreSystemBarsVisible = configuration.appShell.showStatusBar,
+                restoreStatusBarVisible = configuration.appShell.showStatusBar,
+                restoreNavigationBarVisible = configuration.appShell.showNavigationBar,
                 sharedTransitionScope = sharedTransitionScope.takeIf {
                     configuration.appShell.readerSharedElementEnabled
                 },

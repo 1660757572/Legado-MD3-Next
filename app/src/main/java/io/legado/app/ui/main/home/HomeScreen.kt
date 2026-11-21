@@ -1,5 +1,6 @@
 package io.legado.app.ui.main.home
 
+import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -47,6 +48,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Leaderboard
@@ -84,6 +86,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -125,6 +128,7 @@ import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.icon.AppIcons
 import io.legado.app.ui.widget.components.image.cover.BookshelfCover
 import io.legado.app.ui.widget.components.menu.AppAction
+import io.legado.app.ui.widget.components.modalBottomSheet.MochiSheetLayout
 import io.legado.app.ui.widget.components.menu.AppActionGroup
 import io.legado.app.ui.widget.components.menu.AppActionMenu
 import io.legado.app.ui.widget.components.menu.AppChoiceDropdown
@@ -754,7 +758,7 @@ private fun HomeDashboardContent(
                 }
 
                 HomeDashboardSection.RecentBooks -> if (state.recentBooks.isNotEmpty()) {
-                    RecentBooksRow(
+                    RecentBooksSection(
                         books = state.recentBooks,
                         onBookClick = { url -> onIntent(HomeIntent.RecentHistoryBookClick(url)) },
                     )
@@ -1263,7 +1267,7 @@ private fun RecentBookCard(
                             path = book.coverPath,
                             sourceOrigin = book.origin,
                             modifier = Modifier
-                                .width(72.dp)
+                                .width(RECENT_BOOK_COVER_WIDTH)
                                 .aspectRatio(5f / 7f)
                                 .clip(RoundedCornerShape(10.dp)),
                             coverModifier = Modifier.fillMaxSize(),
@@ -1392,20 +1396,53 @@ private fun RecentReadingProgress(
 }
 
 @Composable
-private fun RecentBooksRow(
+private fun RecentBooksSection(
     books: List<HomeRecentBookUi>,
     onBookClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        itemsIndexed(books, key = { index, book -> "${book.bookUrl}_$index" }) { index, book ->
-            RecentHistoryBookCard(
-                book = book,
-                onClick = { book.bookUrl?.let(onBookClick) },
-            )
+    val configuration = LocalConfiguration.current
+    val maxItems = if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        RECENT_BOOKS_LANDSCAPE_LIMIT
+    } else {
+        RECENT_BOOKS_PORTRAIT_LIMIT
+    }
+    val visibleBooks = if (books.size > maxItems) books.take(maxItems) else books
+
+    GlassCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                AppIcon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = null,
+                    tint = LegadoTheme.colorScheme.primary,
+                )
+                AppText(
+                    text = stringResource(R.string.home_recent_books),
+                    style = LegadoTheme.typography.titleMediumEmphasized,
+                )
+            }
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                itemsIndexed(
+                    visibleBooks,
+                    key = { index, book -> "${book.bookUrl}_$index" },
+                ) { _, book ->
+                    RecentHistoryBookCard(
+                        book = book,
+                        onClick = { book.bookUrl?.let(onBookClick) },
+                    )
+                }
+            }
         }
     }
 }
@@ -1418,7 +1455,7 @@ private fun RecentHistoryBookCard(
 ) {
     Box(
         modifier = modifier
-            .width(60.dp)
+            .width(RECENT_BOOK_COVER_WIDTH)
             .aspectRatio(5f / 7f)
             .clip(RoundedCornerShape(12.dp))
             .clickable(
@@ -1700,6 +1737,7 @@ private fun HomeDashboardSettingsSheet(
         show = show,
         onDismissRequest = onDismissRequest,
         title = stringResource(R.string.home_dashboard_settings),
+        mochiLayout = MochiSheetLayout.FitContent,
     ) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),
@@ -1955,12 +1993,15 @@ private fun AppModalBottomSheet(
     show: Boolean,
     onDismissRequest: () -> Unit,
     title: String? = null,
+    mochiLayout: io.legado.app.ui.widget.components.modalBottomSheet.MochiSheetLayout =
+        io.legado.app.ui.widget.components.modalBottomSheet.MochiSheetLayout.HalfScreen,
     content: @Composable () -> Unit,
 ) {
     io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet(
         show = show,
         onDismissRequest = onDismissRequest,
         title = title,
+        mochiLayout = mochiLayout,
     ) {
         content()
     }
@@ -1983,3 +2024,7 @@ private fun bookAccessibilityLabel(
 ): String {
     return if (author.isBlank()) name else "$name, $author"
 }
+
+private const val RECENT_BOOKS_PORTRAIT_LIMIT = 8
+private const val RECENT_BOOKS_LANDSCAPE_LIMIT = 10
+private val RECENT_BOOK_COVER_WIDTH = 72.dp

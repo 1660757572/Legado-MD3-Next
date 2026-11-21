@@ -120,6 +120,10 @@ class ThemeConfigViewModel(
                 transform = { it.copy(showStatusBar = intent.visible) },
                 effect = ThemeConfigEffect.NotifyMain,
             )
+            is ThemeConfigIntent.SetShowNavigationBar -> updateAppShell(
+                transform = { it.copy(showNavigationBar = intent.visible) },
+                effect = ThemeConfigEffect.NotifyMain,
+            )
             is ThemeConfigIntent.SetSwipeAnimation -> updateAppShell {
                 it.copy(swipeAnimation = intent.enabled)
             }
@@ -128,6 +132,9 @@ class ThemeConfigViewModel(
             }
             is ThemeConfigIntent.SetUseFloatingBottomBar -> updateAppShell {
                 it.copy(useFloatingBottomBar = intent.enabled)
+            }
+            is ThemeConfigIntent.SetMochiNavAccessory -> updateAppShell {
+                it.copy(mochiNavAccessory = intent.enabled)
             }
             is ThemeConfigIntent.SetUseFloatingBottomBarLiquidGlass -> updateAppShell {
                 it.copy(useFloatingBottomBarLiquidGlass = intent.enabled)

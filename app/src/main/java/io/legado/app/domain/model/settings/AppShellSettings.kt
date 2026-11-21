@@ -8,11 +8,14 @@ data class AppShellSettings(
     val showDiscovery: Boolean = true,
     val showRss: Boolean = true,
     val showStatusBar: Boolean = true,
+    val showNavigationBar: Boolean = true,
     val swipeAnimation: Boolean = true,
     val predictiveBackEnabled: Boolean = true,
     val readerSharedElementEnabled: Boolean = true,
     val showBottomView: Boolean = true,
     val useFloatingBottomBar: Boolean = false,
+    /** Mochi 导航栏右侧的最近阅读附件入口。 */
+    val mochiNavAccessory: Boolean = false,
     val useFloatingBottomBarLiquidGlass: Boolean = false,
     /** 是否允许在主页各页面之间左右滑动切换 */
     val pagerSwipeEnabled: Boolean = true,

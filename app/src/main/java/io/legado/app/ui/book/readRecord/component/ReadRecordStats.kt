@@ -29,7 +29,7 @@ import io.legado.app.ui.widget.components.card.GlassCard
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.text.AppText
 
-data class StatItem(val label: String, val value: String)
+data class StatItem(val label: String, val value: String, val fullWidth: Boolean = false)
 
 @Composable
 fun StatsGridCard(
@@ -56,19 +56,29 @@ fun StatsGridCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Column {
-                for (i in items.indices step 2) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StatCell(items[i], Modifier.weight(1f))
-                        if (i + 1 < items.size) {
-                            StatCell(items[i + 1], Modifier.weight(1f))
-                        } else {
-                            Spacer(modifier = Modifier.weight(1f))
+                var index = 0
+                while (index < items.size) {
+                    val item = items[index]
+                    if (item.fullWidth) {
+                        StatCell(item, Modifier.fillMaxWidth())
+                        index += 1
+                    } else {
+                        val nextIndex = (index + 1)
+                            .takeIf { it < items.size && !items[it].fullWidth }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            StatCell(item, Modifier.weight(1f))
+                            if (nextIndex != null) {
+                                StatCell(items[nextIndex], Modifier.weight(1f))
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
+                        index = if (nextIndex != null) nextIndex + 1 else index + 1
                     }
-                    if (i + 2 < items.size) Spacer(modifier = Modifier.height(16.dp))
+                    if (index < items.size) Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

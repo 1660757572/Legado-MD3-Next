@@ -113,7 +113,7 @@ fun ReadAloudConfigContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(top = 8.dp, bottom = 16.dp),
+                    .padding(top = 14.dp, bottom = 16.dp),
             ) {
                 if (page == 0) {
                     TinyDropdownSettingItem(

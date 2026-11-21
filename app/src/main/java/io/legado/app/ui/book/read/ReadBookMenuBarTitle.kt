@@ -63,6 +63,7 @@ import io.legado.app.R
 import io.legado.app.constant.ReadMenuBlurMode
 import io.legado.app.data.entities.BookSource
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.menu.AppAction
 import io.legado.app.ui.widget.components.menu.AppActionGroup
@@ -79,6 +80,8 @@ import io.legado.app.ui.widget.components.text.AppText
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.roundToInt
+import ui.feice.mochi.icons.MochiIconStyle
+import ui.feice.mochi.icons.MochiIonicon
 
 @Composable
 internal fun MenuTitleBar(
@@ -382,6 +385,7 @@ internal fun ReadMenuGlassIconButton(
     selected: Boolean = false,
     menuBorderEnabled: Boolean = false,
     contentDescription: String? = null,
+    mochiIconName: String? = null,
 ) {
     ReadMenuGlassButtonSurface(
         onClick = onClick,
@@ -396,12 +400,22 @@ internal fun ReadMenuGlassIconButton(
         menuBorderEnabled = menuBorderEnabled,
         contentDescription = contentDescription,
     ) { tint ->
-        AppIcon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(20.dp),
-        )
+        if (mochiIconName != null && LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+            MochiIonicon(
+                name = mochiIconName,
+                tint = tint,
+                size = 22.dp,
+                style = MochiIconStyle.Outline,
+                optical = false,
+            )
+        } else {
+            AppIcon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 

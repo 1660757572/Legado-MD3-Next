@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import io.legado.app.domain.gateway.AiChatGateway
 import io.legado.app.domain.gateway.AiProfileGateway
+import io.legado.app.domain.model.AiImageModels
 import io.legado.app.domain.model.AiMessagePart
 import io.legado.app.domain.model.AiMessagePartJson
 import io.legado.app.domain.model.AiMessageRole
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
@@ -55,6 +57,7 @@ class AiChatViewModel(
     init {
         observeConversations()
         observeCurrentMessages()
+        observeChatModels()
     }
 
     fun onIntent(intent: AiChatIntent) {
@@ -66,6 +69,7 @@ class AiChatViewModel(
             AiChatIntent.ConfirmPendingTool -> confirmPendingTool()
             AiChatIntent.RejectPendingTool -> rejectPendingTool()
             is AiChatIntent.UpdateReasoningLevel -> updateReasoningLevel(intent.level)
+            is AiChatIntent.SelectModel -> selectModel(intent.modelId)
             is AiChatIntent.RegenerateMessage -> regenerateMessage(intent.messageId)
             is AiChatIntent.SwitchBranch -> switchBranch(intent.messageId)
             is AiChatIntent.DeleteConversation -> deleteConversation(intent.id)
@@ -140,6 +144,67 @@ class AiChatViewModel(
                     }
                     _uiState.update { it.copy(messages = lastMessages.toImmutableList()) }
                 }
+        }
+    }
+
+    private fun observeChatModels() {
+        viewModelScope.launch {
+            combine(
+                aiProfileGateway.observeModels(),
+                aiProfileGateway.observeProviders()
+            ) { models, providers -> models to providers }
+                .collect { (models, providers) ->
+                    val preset = runCatching {
+                        aiProfileGateway.getTaskPreset(AiTaskType.CHAT)
+                    }.getOrNull()
+                    val selectedId = preset?.model?.id.orEmpty()
+                    val providerNames = providers.associate { it.id to it.name }
+                    val providersById = providers.associateBy { it.id }
+                    val textModels = models.filter { model ->
+                        model.enabled && providersById[model.providerId]?.let { provider ->
+                            AiImageModels.isTextModel(
+                                provider.protocol,
+                                model.modelId,
+                                model.capabilities
+                            )
+                        } == true
+                    }
+                    _uiState.update { current ->
+                        current.copy(
+                            selectedModelId = selectedId,
+                            availableModels = textModels.map { model ->
+                                AiChatModelUi(
+                                    id = model.id,
+                                    displayName = model.displayName.ifBlank { model.modelId },
+                                    providerName = providerNames[model.providerId].orEmpty(),
+                                    selected = model.id == selectedId
+                                )
+                            }.toImmutableList()
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun selectModel(modelId: String) {
+        viewModelScope.launch {
+            runCatching {
+                aiProfileGateway.setTaskModel(AiTaskType.CHAT, modelId)
+            }.onSuccess {
+                _uiState.update { current ->
+                    current.copy(
+                        selectedModelId = modelId,
+                        availableModels = current.availableModels.map { model ->
+                            model.copy(selected = model.id == modelId)
+                        }.toImmutableList()
+                    )
+                }
+                currentConversationId.value?.let { selectConversation(it) }
+            }.onFailure { error ->
+                _effects.tryEmit(
+                    AiChatEffect.ShowMessage(error.message ?: "Failed to switch model")
+                )
+            }
         }
     }
 

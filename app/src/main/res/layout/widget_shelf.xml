@@ -37,11 +37,12 @@
                 <FrameLayout
                     android:id="@+id/widget_spine_0"
                     android:layout_width="0dp"
-                    android:layout_height="82dp"
+                    android:layout_height="88dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="0.9"
-                    android:background="#3B3634">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#3B3634">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_0"
@@ -73,13 +74,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_1"
                     android:layout_width="0dp"
-                    android:layout_height="88dp"
+                    android:layout_height="100dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="1.1"
-                    android:background="#5C7A68">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#5C7A68">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_1"
@@ -111,13 +117,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_2"
                     android:layout_width="0dp"
-                    android:layout_height="76dp"
+                    android:layout_height="84dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="0.95"
-                    android:background="#B5715E">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#B5715E">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_2"
@@ -149,13 +160,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_3"
                     android:layout_width="0dp"
-                    android:layout_height="88dp"
+                    android:layout_height="96dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="0.85"
-                    android:background="#3F6E7A">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#3F6E7A">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_3"
@@ -187,13 +203,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_4"
                     android:layout_width="0dp"
-                    android:layout_height="84dp"
+                    android:layout_height="90dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="1.05"
-                    android:background="#2F5666">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#2F5666">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_4"
@@ -225,13 +246,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_5"
                     android:layout_width="0dp"
-                    android:layout_height="86dp"
+                    android:layout_height="98dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="0.95"
-                    android:background="#8B6A43">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#8B6A43">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_5"
@@ -263,13 +289,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_6"
                     android:layout_width="0dp"
-                    android:layout_height="76dp"
+                    android:layout_height="80dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="0.95"
-                    android:background="#6E4B48">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#6E4B48">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_6"
@@ -301,13 +332,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_7"
                     android:layout_width="0dp"
-                    android:layout_height="80dp"
+                    android:layout_height="94dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginEnd="3dp"
-                    android:layout_weight="0.9"
-                    android:background="#8A6472">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#8A6472">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_7"
@@ -339,12 +375,18 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
                     android:id="@+id/widget_spine_8"
                     android:layout_width="0dp"
-                    android:layout_height="78dp"
+                    android:layout_height="86dp"
                     android:layout_gravity="bottom"
-                    android:layout_weight="1.0"
-                    android:background="#445E6D">
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#445E6D">
 
                     <ImageView
                         android:id="@+id/widget_spine_img_8"
@@ -361,6 +403,49 @@
 
                     <TextView
                         android:id="@+id/widget_spine_text_8"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="top|center_horizontal"
+                        android:includeFontPadding="false"
+                        android:maxLines="6"
+                        android:paddingStart="2dp"
+                        android:paddingTop="5dp"
+                        android:paddingEnd="2dp"
+                        android:shadowColor="#66000000"
+                        android:shadowRadius="2"
+                        android:textColor="#FFFDF7"
+                        android:textSize="8sp" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent" />
+
+                <FrameLayout
+                    android:id="@+id/widget_spine_9"
+                    android:layout_width="0dp"
+                    android:layout_height="92dp"
+                    android:layout_gravity="bottom"
+                    android:layout_weight="1"
+                    android:background="@drawable/widget_spine_bg"
+                    android:clipToOutline="true"
+                    android:backgroundTint="#685F78">
+
+                    <ImageView
+                        android:id="@+id/widget_spine_img_9"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@null"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/widget_spine_overlay" />
+
+                    <TextView
+                        android:id="@+id/widget_spine_text_9"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:gravity="top|center_horizontal"

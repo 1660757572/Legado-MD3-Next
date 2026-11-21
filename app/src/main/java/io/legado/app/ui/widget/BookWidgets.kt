@@ -6,10 +6,15 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.LayoutRes
+import androidx.core.graphics.ColorUtils
+import androidx.palette.graphics.Palette
 import io.legado.app.R
 import io.legado.app.data.entities.Book
 import io.legado.app.data.repository.BookWidgetRepository
@@ -142,7 +147,7 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         R.id.widget_spine_5,
         R.id.widget_spine_6,
         R.id.widget_spine_7,
-        R.id.widget_spine_8,
+        R.id.widget_spine_8, R.id.widget_spine_9,
     )
 
     private val spineImageIds = intArrayOf(
@@ -154,7 +159,7 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         R.id.widget_spine_img_5,
         R.id.widget_spine_img_6,
         R.id.widget_spine_img_7,
-        R.id.widget_spine_img_8,
+        R.id.widget_spine_img_8, R.id.widget_spine_img_9,
     )
 
     private val spineTextIds = intArrayOf(
@@ -166,7 +171,7 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
         R.id.widget_spine_text_5,
         R.id.widget_spine_text_6,
         R.id.widget_spine_text_7,
-        R.id.widget_spine_text_8,
+        R.id.widget_spine_text_8, R.id.widget_spine_text_9,
     )
 
     override suspend fun buildViews(context: Context, appWidgetId: Int): RemoteViews {
@@ -246,13 +251,14 @@ class ShelfSpineWidgetProvider : BaseBookWidgetProvider() {
     }
 }
 
-/** 「最近阅读」：最近一本书 + 今日阅读时长 + 继续阅读按钮。 */
+/** 「最近阅读」：最近一本书 + 阅读进度 + 跟随封面强调色的继续阅读胶囊。 */
 class RecentReadingWidgetProvider : BaseBookWidgetProvider() {
 
     override val layoutId: Int = R.layout.widget_recent
 
     override suspend fun buildViews(context: Context, appWidgetId: Int): RemoteViews {
         val views = RemoteViews(context.packageName, layoutId)
+        updateRecentActionStyle(views, DEFAULT_WIDGET_ACCENT)
         val book = BookWidgetRepository.getRecentBook()
         if (book == null) {
             views.setViewVisibility(R.id.widget_recent_action, View.GONE)
@@ -274,11 +280,12 @@ class RecentReadingWidgetProvider : BaseBookWidgetProvider() {
             context.getString(R.string.widget_read_progress, book.readProgressPercent()),
         )
         val pending = openBookIntent(context, book, appWidgetId * 16 + 15)
-        views.setOnClickPendingIntent(R.id.widget_recent_action, pending)
+        views.setOnClickPendingIntent(R.id.widget_recent_play, pending)
         views.setOnClickPendingIntent(R.id.widget_recent_card, pending)
         val cover = loadCover(context, book)
         if (cover != null) {
             views.setImageViewBitmap(R.id.widget_recent_cover, cover)
+            updateRecentActionStyle(views, cover.widgetAccentColor())
         } else {
             views.setImageViewResource(R.id.widget_recent_cover, R.drawable.image_cover_default)
         }
@@ -315,6 +322,31 @@ object BookWidgets {
         ShelfSpineWidgetProvider.refreshAll(context)
         RecentReadingWidgetProvider.refreshAll(context)
     }
+}
+
+private const val DEFAULT_WIDGET_ACCENT = 0xFF6558A6.toInt()
+
+/** RemoteViews 不能安全地对 shape 背景动态着色，胶囊底色用小位图绘制，避免退化成矩形。 */
+private fun updateRecentActionStyle(views: RemoteViews, accentColor: Int) {
+    val capsule = Bitmap.createBitmap(339, 102, Bitmap.Config.ARGB_8888)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
+    Canvas(capsule).drawRoundRect(RectF(0f, 0f, 339f, 102f), 51f, 51f, paint)
+    val contentColor = if (ColorUtils.calculateLuminance(accentColor) > 0.42) {
+        0xFF1E211F.toInt()
+    } else {
+        Color.WHITE
+    }
+    views.setImageViewBitmap(R.id.widget_recent_action_bg, capsule)
+    views.setTextColor(R.id.widget_recent_action_text, contentColor)
+    views.setInt(R.id.widget_recent_action_icon, "setColorFilter", contentColor)
+}
+
+private fun Bitmap.widgetAccentColor(): Int {
+    val palette = Palette.from(this).generate()
+    return palette.vibrantSwatch?.rgb
+        ?: palette.mutedSwatch?.rgb
+        ?: palette.dominantSwatch?.rgb
+        ?: DEFAULT_WIDGET_ACCENT
 }
 
 /** 最近阅读组件显示整本书的阅读进度，而不是今日时长。 */

@@ -151,6 +151,12 @@
 
         <io.legado.app.lib.prefs.SwitchPreference
             android:defaultValue="true"
+            android:key="showNavigationBar"
+            android:title="@string/show_navigation_bar"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.SwitchPreference
+            android:defaultValue="true"
             android:key="swipeAnimation"
             android:title="@string/show_swipe_animation"
             app:iconSpaceReserved="false" />

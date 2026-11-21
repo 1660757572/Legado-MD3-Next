@@ -100,6 +100,14 @@ fun TopBottomBarSettingsSheet(
                 checked = appShell.showBottomView,
                 onCheckedChange = { onIntent(ThemeConfigIntent.SetShowBottomView(it)) },
             )
+            if (engine == ComposeEngine.Mochi) {
+                CompactSwitchSettingItem(
+                    title = stringResource(R.string.mochi_nav_accessory),
+                    description = stringResource(R.string.mochi_nav_accessory_summary),
+                    checked = appShell.mochiNavAccessory,
+                    onCheckedChange = { onIntent(ThemeConfigIntent.SetMochiNavAccessory(it)) },
+                )
+            }
             SearchableSetting("theme.pager_swipe_enabled") {
                 CompactSwitchSettingItem(
                     title = stringResource(R.string.pager_swipe_enabled),

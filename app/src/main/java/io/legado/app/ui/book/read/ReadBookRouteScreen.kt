@@ -19,6 +19,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,6 +29,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.graphicsLayer
+import io.legado.app.ui.widget.components.image.cover.BookCoverImage
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -630,6 +633,15 @@ fun ReadBookRouteScreen(
             transition.currentState == EnterExitState.Visible &&
             transition.targetState == EnterExitState.Visible
     } ?: true
+    // 从 Mochi 导航附件条进入时不把整页正文当成共享块；改为让封面直接铺满全屏，
+    // 正文再从封面下面淡入，和参考视频「迷你条 → 全屏封面 → 内容」一致。
+    val isAccessoryEntry = sharedCoverKey?.contains(":mochi-nav-accessory") == true
+    // 退出共享元素转场时只保留一块纯色底面：整页正文、菜单和模糊层每帧都要被重新裁进
+    // sharedBounds overlay，返回书架时会明显掉帧。转场开始后立刻卸掉这些重内容，
+    // 让缩小中的只剩阅读页底色，封面收回仍然连续。
+    val readerTransitioningOut = animatedVisibilityScope?.transition?.let { transition ->
+        transition.targetState != EnterExitState.Visible
+    } == true
     LaunchedEffect(readerEntranceSettled) {
         controller.onReaderEntranceStateChanged(readerEntranceSettled)
         if (readerEntranceSettled) viewModel.onReaderEntranceSettled()
@@ -673,7 +685,7 @@ fun ReadBookRouteScreen(
             .readerSharedBounds(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                sharedCoverKey = sharedCoverKey,
+                sharedCoverKey = sharedCoverKey.takeIf { !isAccessoryEntry },
                 displayCornerRadiusPx = displayCornerRadiusPx,
                 density = density,
             )
@@ -695,9 +707,9 @@ fun ReadBookRouteScreen(
             // 与背景图（`readerSurfaceColor` 不透明，根层这一遍会被整屏遮住）。画布可见时
             // 一律让出根层，否则每个翻页帧都要重画一次未压缩的全屏背景位图；画布不可见
             // （首个可读页之前、退出之后）仍由根层兜底。
-            val readerCanvasVisible = hasReadablePage
+            val readerCanvasVisible = hasReadablePage && !readerTransitioningOut
             val readerTransitionMode = ReaderTransitionMode.fromPageAnim(controller.pageAnim)
-            if (!readerCanvasVisible) {
+            if (!readerCanvasVisible && !readerTransitioningOut) {
                 // 归因用：成对 marker 夹住子树，其间隔即该子树的组合耗时（都在
                 // `Compose:recompose` 之内）。子系统不用 tracing 时 marker 是空操作。
                 ReaderPerfTrace.marker("compose.background.begin")
@@ -709,11 +721,12 @@ fun ReadBookRouteScreen(
                 )
                 ReaderPerfTrace.marker("compose.background.end")
             }
-            AnimatedVisibility(
-                visible = readerCanvasVisible,
-                enter = fadeIn(animationSpec = tween(400)),
-                exit = fadeOut(animationSpec = tween(450)),
-            ) {
+            if (!readerTransitioningOut) {
+                AnimatedVisibility(
+                    visible = readerCanvasVisible,
+                    enter = fadeIn(animationSpec = tween(400)),
+                    exit = fadeOut(animationSpec = tween(450)),
+                ) {
                 ReaderPerfTrace.marker("compose.canvas.begin")
                 ReaderCanvasSurface(
                     hostPages = displayedReaderPageWindow ?: readerPageWindow,
@@ -795,11 +808,12 @@ fun ReadBookRouteScreen(
                     onVisibleBodyTextPositionProvider = controller::setComposeVisibleBodyTextPositionProvider,
                 )
                 ReaderPerfTrace.marker("compose.canvas.end")
+                }
             }
             AnimatedVisibility(
                 // 旧 View 把消息画成页（chrome 保留）；只有画布无从成页（还没有窗口/视口）
                 // 或排版失败需要重试入口时，才退回外层浮层。
-                visible = readerEntranceSettled && (
+                visible = !readerTransitioningOut && readerEntranceSettled && (
                         readerPaginationError != null || (state.msg != null && !hasReadablePage)
                         ),
                 enter = fadeIn(animationSpec = tween(300)),
@@ -839,7 +853,7 @@ fun ReadBookRouteScreen(
             )
         }
         ReaderPerfTrace.marker("compose.chrome.begin")
-        ReadBookColorTheme(
+        if (!readerTransitioningOut) ReadBookColorTheme(
             styleConfig = state.styleConfig,
             preferences = readPreferences,
             isDarkTheme = isDarkTheme,
@@ -1031,6 +1045,49 @@ fun ReadBookRouteScreen(
             ReaderPerfTrace.marker("compose.selection.end")
         }
         ReaderPerfTrace.marker("compose.chrome.end")
+
+        // 附件条进入的封面层：共享元素从 36×48 的那一格长到满屏（Crop），
+        // 展开完成后封面再淡出，露出已经在下面铺好的正文。
+        if (
+            isAccessoryEntry &&
+            sharedTransitionScope != null &&
+            animatedVisibilityScope != null
+        ) {
+            // 初始帧必须是封面；等处内转场结束后再淡出，避免首帧就露出正文。
+            // 退出时反向淡入同一层共享封面，让封面从满屏收回附件条。
+            var accessoryCoverRevealed by remember { mutableStateOf(false) }
+            val exiting = animatedVisibilityScope.transition.targetState != EnterExitState.Visible
+            LaunchedEffect(readerEntranceSettled) {
+                if (readerEntranceSettled && !accessoryCoverRevealed) {
+                    delay(120)
+                    accessoryCoverRevealed = true
+                }
+            }
+            val coverAlpha by animateFloatAsState(
+                targetValue = if (exiting || !accessoryCoverRevealed) 1f else 0f,
+                animationSpec = tween(durationMillis = if (exiting) 120 else 260),
+                label = "AccessoryEntryCover",
+            )
+            val book = state.book
+            if (book != null) {
+                BookCoverImage(
+                    name = book.name,
+                    author = book.author,
+                    path = book.getDisplayCover(),
+                    sourceOrigin = book.origin,
+                    bookUrl = book.bookUrl,
+                    preferCache = true,
+                    showLoadingPlaceholder = false,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    sharedCoverKey = sharedCoverKey,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = coverAlpha },
+                )
+            }
+        }
     }
     ReaderPerfTrace.marker("compose.screen.end")
 }

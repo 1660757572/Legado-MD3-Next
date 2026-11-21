@@ -159,7 +159,7 @@ fun ReaderMoreActionsSheet(
                 },
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -209,7 +209,7 @@ private fun MoreActionsPager(
             ) { page ->
                 val pageItems = pages[page]
                 Column(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     pageItems.chunked(4).forEach { rowItems ->
@@ -236,7 +236,7 @@ private fun MoreActionsPager(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 4.dp),
+                        .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

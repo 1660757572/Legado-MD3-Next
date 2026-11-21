@@ -291,6 +291,7 @@ internal fun Preferences.toAppShellSettings(): AppShellSettings = AppShellSettin
     showDiscovery = compatDsBoolean(PreferKey.showDiscovery) ?: true,
     showRss = compatDsBoolean(PreferKey.showRss) ?: true,
     showStatusBar = compatDsBoolean(PreferKey.showStatusBar) ?: true,
+    showNavigationBar = compatDsBoolean(PreferKey.showNavigationBar) ?: true,
     swipeAnimation = compatDsBoolean(PreferKey.swipeAnimation) ?: true,
     predictiveBackEnabled = compatDsBoolean(PreferKey.isPredictiveBackEnabled) ?: true,
     navigationAnimationStyle = NavigationAnimationStyle.fromStoredValue(
@@ -300,6 +301,7 @@ internal fun Preferences.toAppShellSettings(): AppShellSettings = AppShellSettin
     readerSharedElementEnabled = compatDsBoolean(PreferKey.readerSharedElementEnabled) ?: true,
     showBottomView = compatDsBoolean(PreferKey.showBottomView) ?: true,
     useFloatingBottomBar = compatDsBoolean(PreferKey.useFloatingBottomBar) ?: false,
+    mochiNavAccessory = compatDsBoolean(PreferKey.mochiNavAccessory) ?: false,
     useFloatingBottomBarLiquidGlass =
         compatDsBoolean(PreferKey.useFloatingBottomBarLiquidGlass) ?: false,
     pagerSwipeEnabled = compatDsBoolean(PreferKey.pagerSwipeEnabled) ?: true,
@@ -333,6 +335,7 @@ internal fun AppShellSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.showDiscovery to showDiscovery,
     PreferKey.showRss to showRss,
     PreferKey.showStatusBar to showStatusBar,
+    PreferKey.showNavigationBar to showNavigationBar,
     PreferKey.swipeAnimation to swipeAnimation,
     PreferKey.isPredictiveBackEnabled to predictiveBackEnabled,
     PreferKey.navigationAnimationStyle to navigationAnimationStyle.storedValue,
@@ -340,6 +343,7 @@ internal fun AppShellSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.readerSharedElementEnabled to readerSharedElementEnabled,
     PreferKey.showBottomView to showBottomView,
     PreferKey.useFloatingBottomBar to useFloatingBottomBar,
+    PreferKey.mochiNavAccessory to mochiNavAccessory,
     PreferKey.useFloatingBottomBarLiquidGlass to useFloatingBottomBarLiquidGlass,
     PreferKey.pagerSwipeEnabled to pagerSwipeEnabled,
     PreferKey.tabletInterface to tabletInterface,

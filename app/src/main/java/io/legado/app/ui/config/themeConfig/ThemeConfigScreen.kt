@@ -486,6 +486,17 @@ fun ThemeConfigScreen(
                             }
                         )
                     }
+                    SearchableSetting("theme.show_navigation_bar") {
+                        SwitchSettingItem(
+                            title = stringResource(R.string.show_navigation_bar),
+                            checked = appShell.showNavigationBar,
+                            onCheckedChange = {
+                                onIntent(
+                                    ThemeConfigIntent.SetShowNavigationBar(it)
+                                )
+                            }
+                        )
+                    }
                     //TODO:这个可以不要了，在删掉原来的设置页以后删
                     SearchableSetting("theme.show_swipe_animation") {
                         SwitchSettingItem(

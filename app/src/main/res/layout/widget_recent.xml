@@ -65,50 +65,67 @@
                 android:text="@string/widget_open_a_book"
                 android:textColor="#69655D"
                 android:textSize="12sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/widget_recent_action"
-            android:layout_width="match_parent"
-            android:layout_height="28dp"
-            android:layout_gravity="bottom"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/widget_recent_time"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginTop="3dp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="@string/widget_today_zero"
                 android:textColor="#7A756B"
                 android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_recent_action"
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:layout_gravity="bottom"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/widget_recent_play"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:background="@drawable/widget_play_circle"
+                android:layout_width="113dp"
+                android:layout_height="34dp"
                 android:contentDescription="@string/widget_open_a_book">
 
                 <ImageView
-                    android:layout_width="13dp"
-                    android:layout_height="13dp"
-                    android:layout_gravity="center"
+                    android:id="@+id/widget_recent_action_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_widget_play" />
-            </FrameLayout>
+                    android:scaleType="fitXY" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/widget_start_reading"
-                android:textColor="#1E211F"
-                android:textSize="11sp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="13dp"
+                    android:paddingEnd="13dp">
+
+                    <ImageView
+                        android:id="@+id/widget_recent_action_icon"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_widget_play" />
+
+                    <TextView
+                        android:id="@+id/widget_recent_action_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:includeFontPadding="false"
+                        android:text="@string/widget_start_reading"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </FrameLayout>
         </LinearLayout>
     </FrameLayout>
 </LinearLayout>

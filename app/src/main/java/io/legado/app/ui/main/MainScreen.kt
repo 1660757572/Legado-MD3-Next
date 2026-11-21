@@ -13,6 +13,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -32,11 +33,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -61,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
@@ -89,6 +93,7 @@ import coil3.compose.AsyncImage
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import io.legado.app.R
+import io.legado.app.data.entities.Book
 import io.legado.app.feature.explore.ExploreMainRoute
 import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleEndPadding
 import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleSize
@@ -104,6 +109,8 @@ import io.legado.app.ui.main.my.PrefClickEvent
 import io.legado.app.ui.main.rss.RssRouteScreen
 import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
+import ui.feice.mochi.icons.MochiIconStyle
+import ui.feice.mochi.icons.MochiIonicon
 import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.LocalBottomOverlayPadding
 import io.legado.app.ui.theme.LocalMiuixBarBackdrop
@@ -112,9 +119,12 @@ import io.legado.app.ui.widget.components.mochi.AppMochiNavigationBar
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import ui.feice.mochi.basic.MochiTabItem
+import ui.feice.mochi.basic.Text as MochiText
 import ui.feice.mochi.effect.glass.LocalMochiBackdrop
 import ui.feice.mochi.effect.glass.rememberMochiBackdrop
 import ui.feice.mochi.effect.glass.mochiBackdropSource
+import ui.feice.mochi.theme.LocalContentColor as LocalMochiContentColor
+import ui.feice.mochi.theme.MochiTheme
 import top.yukonga.miuix.kmp.blur.layerBackdrop as miuixLayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
@@ -133,6 +143,7 @@ import io.legado.app.ui.widget.components.coui.LocalCouiFloatingNavigation
 import io.legado.app.ui.widget.components.coui.rememberCouiCapsuleRenderer
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.icon.AppIcons
+import io.legado.app.ui.widget.components.image.cover.BookCoverImage
 import io.legado.app.ui.widget.components.menu.AppAction
 import io.legado.app.ui.widget.components.menu.AppActionGroup
 import io.legado.app.ui.widget.components.menu.AppActionMenu
@@ -141,7 +152,6 @@ import io.legado.app.ui.widget.components.navigation.AppNavigationBarItem
 import io.legado.app.ui.widget.components.pager.rememberPagerFlingPassThroughConnection
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.sendToClip
-import io.legado.app.utils.startActivityForBook
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -154,6 +164,9 @@ import top.yukonga.miuix.kmp.basic.NavigationRail as MiuixNavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem as MiuixNavigationRailItem
 
 private val MainNavigationTabMinWidth = 76.dp
+
+private fun navAccessoryCoverKey(bookUrl: String): String =
+    bookCoverSharedElementKey("$bookUrl:mochi-nav-accessory")
 
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
@@ -178,6 +191,7 @@ fun MainScreen(
     onNavigateToCache: (Long) -> Unit,
     onNavigateToBookCacheManage: () -> Unit,
     onOpenBookshelfBook: (BookShelfItem, String?) -> Unit,
+    onOpenBook: (Book, String?) -> Unit,
     onNavigateToBackupSettings: () -> Unit,
     onNavigateToBookInfo: (name: String, author: String, bookUrl: String, origin: String?, coverPath: String?, sharedCoverKey: String?) -> Unit,
     onNavigateToExploreShow: (title: String?, sourceUrl: String, exploreUrl: String?) -> Unit,
@@ -213,10 +227,18 @@ fun MainScreen(
     val context = LocalContext.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
+    val readerSharedElementEnabled =
+        LocalAppUiConfiguration.current.appShell.readerSharedElementEnabled
 
     LaunchedEffect(effects, context) {
         effects.collectLatest { effect ->
             when (effect) {
+                is MainEffect.OpenBook -> onOpenBook(
+                    effect.book,
+                    navAccessoryCoverKey(effect.book.bookUrl).takeIf {
+                        readerSharedElementEnabled
+                    },
+                )
                 is MainEffect.OpenUrl -> {
                     context.startActivity(
                         Intent(Intent.ACTION_VIEW, effect.url.toUri())
@@ -378,6 +400,78 @@ fun MainScreen(
     val onMochiTabSelect: (Int) -> Unit = { index ->
         destinations.getOrNull(index)?.let { handleMainDestinationClick(index, it) }
     }
+    val recentBook = mainUiState.recentBook
+    // 附件条只属于书架/统计等主页面；首页已经有最近阅读组件，不再重复挂一条。
+    val isHomePage = destinations.getOrNull(pagerState.targetPage) == MainDestination.Home
+    val mochiAccessory: (@Composable (Boolean) -> Unit)? =
+        if (isMochi && mainUiState.mochiNavAccessory && recentBook != null && !isHomePage) {
+            val sharedCoverKey = navAccessoryCoverKey(recentBook.bookUrl).takeIf {
+                readerSharedElementEnabled
+            }
+            val recentDescription = stringResource(R.string.home_recent_reading) + " " + recentBook.name
+            { _ ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = recentDescription
+                        }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            role = Role.Button,
+                            onClickLabel = stringResource(R.string.home_recent_reading),
+                            onClick = { onIntent(MainUiIntent.OpenRecentBook) },
+                        )
+                        .padding(start = 8.dp, end = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BookCoverImage(
+                        name = recentBook.name,
+                        author = recentBook.author,
+                        path = recentBook.coverPath,
+                        sourceOrigin = recentBook.origin,
+                        bookUrl = recentBook.bookUrl,
+                        preferCache = true,
+                        showLoadingPlaceholder = false,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        sharedCoverKey = sharedCoverKey,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape),
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        MochiText(
+                            text = recentBook.name,
+                            style = MochiTheme.textStyles.navTitle.copy(
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp,
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        MochiText(
+                            text = recentBook.author,
+                            style = MochiTheme.textStyles.footnote.copy(
+                                fontSize = 9.sp,
+                                lineHeight = 12.sp,
+                            ),
+                            color = LocalMochiContentColor.current.copy(alpha = 0.72f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    AppIcon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = LocalMochiContentColor.current,
+                    )
+                }
+            }
+        } else null
 
     val navState = rememberWideNavigationRailState(
         initialValue = if (mainUiState.navExtended)
@@ -576,6 +670,7 @@ fun MainScreen(
                     if (isMochi) AppMochiNavigationBar(
                         mochiTabs, pagerState.targetPage, onMochiTabSelect,
                         showLabel = showLabel, alwaysShowLabel = alwaysShowLabel,
+                        accessory = mochiAccessory,
                     ) else {
                         AppNavigationBar(
                             showLabel = showLabel,
@@ -675,7 +770,12 @@ fun MainScreen(
                             when (destination) {
                             MainDestination.Home -> HomeRouteScreen(
                                 onOpenBook = { book ->
-                                    context.startActivityForBook(book)
+                                    onOpenBook(
+                                        book,
+                                        bookCoverSharedElementKey(book.bookUrl).takeIf {
+                                            readerSharedElementEnabled
+                                        },
+                                    )
                                 },
                                 onNavigateToBookInfo = { name, author, bookUrl, origin, coverPath, sharedCoverKey ->
                                     onNavigateToBookInfo(
@@ -842,6 +942,7 @@ fun MainScreen(
                                         .offset(x = navigationStartInset).width(navigationWidth),
                                     showLabel = showLabel, alwaysShowLabel = alwaysShowLabel,
                                     floating = true, glass = useLiquidGlass,
+                                    accessory = mochiAccessory,
                                 )
                             } else if (useMiuixGlassNavigation && !hasCustomIcons &&
                                 !playbackControlsExpanded && expansion <= 0f
@@ -1115,6 +1216,21 @@ private fun NavigationIcon(
             model = customIconPath,
             contentDescription = null,
             modifier = modifier.size(if (useCouiIcons) 24.dp else 40.dp)
+        )
+    } else if (LegadoTheme.composeEngine == ComposeEngine.Mochi) {
+        // 直接按选中态切 Mochi 图标画法：未选中必须描边，不能沿用 Filled。
+        val mochiName = when (destination) {
+            MainDestination.Home -> "home"
+            MainDestination.Bookshelf -> "library"
+            MainDestination.Explore -> "compass"
+            MainDestination.Rss -> "newspaper"
+            MainDestination.My -> "person"
+        }
+        MochiIonicon(
+            name = mochiName,
+            style = if (selected) MochiIconStyle.Filled else MochiIconStyle.Outline,
+            tint = tint,
+            size = 24.dp,
         )
     } else {
         AppIcon(

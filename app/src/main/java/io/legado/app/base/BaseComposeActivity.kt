@@ -41,7 +41,7 @@ import io.legado.app.utils.isNightMode
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.setStatusBarColorAuto
 import io.legado.app.utils.themeColor
-import io.legado.app.utils.toggleSystemBar
+import io.legado.app.utils.setSystemBarVisibility
 import io.legado.app.utils.windowSize
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -148,7 +148,8 @@ abstract class BaseComposeActivity(
             true
         )
 
-        toggleSystemBar(appUiConfigurationGateway.currentConfiguration.appShell.showStatusBar)
+        val shell = appUiConfigurationGateway.currentConfiguration.appShell
+        setSystemBarVisibility(shell.showStatusBar, shell.showNavigationBar)
     }
 
     open fun upBackgroundImage() {

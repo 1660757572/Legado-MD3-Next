@@ -1,6 +1,7 @@
 package io.legado.app.ui.main
 
 import androidx.compose.runtime.Stable
+import io.legado.app.data.entities.Book
 import io.legado.app.ui.main.my.PrefClickEvent
 import kotlinx.collections.immutable.ImmutableList
 
@@ -10,6 +11,8 @@ data class MainUiState(
     val defaultHomePage: String = "bookshelf",
     val showBottomView: Boolean = true,
     val useFloatingBottomBar: Boolean = false,
+    val mochiNavAccessory: Boolean = false,
+    val recentBook: MainRecentBookUi? = null,
     val useFloatingBottomBarLiquidGlass: Boolean = false,
     val pagerSwipeEnabled: Boolean = true,
     val labelVisibilityMode: String = "auto",
@@ -45,12 +48,23 @@ data class MainUiState(
     }
 }
 
+@Stable
+data class MainRecentBookUi(
+    val bookUrl: String,
+    val name: String,
+    val author: String,
+    val origin: String?,
+    val coverPath: String?,
+)
+
 sealed interface MainUiIntent {
+    data object OpenRecentBook : MainUiIntent
     data class SetNavigationRailExpanded(val expanded: Boolean) : MainUiIntent
     data class HandlePreferenceClick(val event: PrefClickEvent) : MainUiIntent
 }
 
 sealed interface MainEffect {
+    data class OpenBook(val book: Book) : MainEffect
     data class OpenUrl(val url: String) : MainEffect
     data class CopyUrl(val url: String) : MainEffect
     data class StartActivity(val destination: Class<*>, val configTag: String? = null) : MainEffect

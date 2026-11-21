@@ -68,6 +68,7 @@ object SettingsSearchCatalog {
         SettingsSearchItem("theme.background_image", SettingsSearchPage.Theme, R.string.background_image, groupIndex = 0),
         SettingsSearchItem("theme.main_navigation_settings", SettingsSearchPage.Theme, R.string.main_navigation_settings, groupIndex = 0, groupTitleRes = R.string.main_activity, descriptionRes = R.string.main_navigation_settings_summary),
         SettingsSearchItem("theme.show_status", SettingsSearchPage.Theme, R.string.show_status, groupIndex = 0, groupTitleRes = R.string.main_activity),
+        SettingsSearchItem("theme.show_navigation_bar", SettingsSearchPage.Theme, R.string.show_navigation_bar, groupIndex = 0, groupTitleRes = R.string.main_activity),
         SettingsSearchItem("theme.show_swipe_animation", SettingsSearchPage.Theme, R.string.show_swipe_animation, groupIndex = 0, groupTitleRes = R.string.main_activity),
         SettingsSearchItem("theme.top_bottom_bar_settings", SettingsSearchPage.Theme, R.string.top_bottom_bar_settings, groupIndex = 0, groupTitleRes = R.string.main_activity, descriptionRes = R.string.top_bottom_bar_settings_summary),
         SettingsSearchItem("theme.pager_swipe_enabled", SettingsSearchPage.Theme, R.string.pager_swipe_enabled, groupIndex = 0, groupTitleRes = R.string.main_activity, descriptionRes = R.string.pager_swipe_enabled_summary, parentId = "theme.top_bottom_bar_settings"),

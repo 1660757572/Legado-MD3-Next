@@ -3,8 +3,11 @@ package io.legado.app.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.constant.EventBus
+import io.legado.app.data.repository.BookRepository
 import io.legado.app.domain.gateway.AppShellSettingsGateway
+import io.legado.app.domain.gateway.HomeDashboardGateway
 import io.legado.app.domain.gateway.ThemeSettingsGateway
+import io.legado.app.domain.model.HomeReadingBook
 import io.legado.app.domain.model.settings.AppShellSettings
 import io.legado.app.domain.model.settings.ThemeSettings
 import io.legado.app.domain.usecase.AppStartupMaintenanceUseCase
@@ -24,12 +27,15 @@ class MainViewModel(
     private val webDavBackupUseCase: WebDavBackupUseCase,
     private val appShellSettingsGateway: AppShellSettingsGateway,
     private val themeSettingsGateway: ThemeSettingsGateway,
+    private val homeDashboardGateway: HomeDashboardGateway,
+    private val bookRepository: BookRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         buildMainUiState(
             appShellSettingsGateway.currentSettings,
             themeSettingsGateway.currentSettings,
+            null,
         )
     )
     val uiState = _uiState.asStateFlow()
@@ -42,6 +48,7 @@ class MainViewModel(
             combine(
                 appShellSettingsGateway.settings,
                 themeSettingsGateway.settings,
+                homeDashboardGateway.observeRecentBooks(1),
                 ::buildMainUiState,
             ).collect { _uiState.value = it }
         }
@@ -50,6 +57,7 @@ class MainViewModel(
 
     fun onIntent(intent: MainUiIntent) {
         when (intent) {
+            MainUiIntent.OpenRecentBook -> openRecentBook()
             is MainUiIntent.SetNavigationRailExpanded -> setNavExtended(intent.expanded)
             is MainUiIntent.HandlePreferenceClick -> handlePrefClick(intent.event)
         }
@@ -64,6 +72,15 @@ class MainViewModel(
     }
 
     suspend fun getLatestWebDavBackup() = webDavBackupUseCase.getLatestBackup()
+
+    private fun openRecentBook() {
+        val bookUrl = _uiState.value.recentBook?.bookUrl ?: return
+        viewModelScope.launch {
+            bookRepository.getBook(bookUrl)?.let { book ->
+                _effects.emit(MainEffect.OpenBook(book))
+            }
+        }
+    }
 
     private fun setNavExtended(expanded: Boolean) {
         if (_uiState.value.navExtended == expanded) return
@@ -97,6 +114,7 @@ class MainViewModel(
 private fun buildMainUiState(
     appShell: AppShellSettings,
     theme: ThemeSettings,
+    recentBooks: List<HomeReadingBook>?,
 ): MainUiState {
     val destinations = MainDestination.ordered(appShell.mainNavigationOrder).filter {
         when (it) {
@@ -111,6 +129,18 @@ private fun buildMainUiState(
         defaultHomePage = appShell.defaultHomePage,
         showBottomView = appShell.showBottomView,
         useFloatingBottomBar = appShell.useFloatingBottomBar,
+        mochiNavAccessory = appShell.mochiNavAccessory,
+        recentBook = recentBooks?.firstOrNull()?.let { recent ->
+            recent.bookUrl?.let { url ->
+                MainRecentBookUi(
+                    bookUrl = url,
+                    name = recent.name,
+                    author = recent.author,
+                    origin = recent.origin,
+                    coverPath = recent.coverPath,
+                )
+            }
+        },
         useFloatingBottomBarLiquidGlass = appShell.useFloatingBottomBarLiquidGlass,
         pagerSwipeEnabled = appShell.pagerSwipeEnabled,
         labelVisibilityMode = appShell.labelVisibilityMode,

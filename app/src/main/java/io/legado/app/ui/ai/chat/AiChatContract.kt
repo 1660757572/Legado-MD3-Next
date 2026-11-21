@@ -15,7 +15,17 @@ data class AiChatUiState(
     val isSending: Boolean = false,
     val streamingMessage: AiChatMessageUi? = null,
     val pendingToolConfirmation: AiToolConfirmationUi? = null,
-    val readingContext: AiReadingContext? = null
+    val readingContext: AiReadingContext? = null,
+    val availableModels: ImmutableList<AiChatModelUi> = persistentListOf(),
+    val selectedModelId: String = ""
+)
+
+@Stable
+data class AiChatModelUi(
+    val id: String,
+    val displayName: String,
+    val providerName: String = "",
+    val selected: Boolean = false
 )
 
 @Stable
@@ -79,6 +89,7 @@ sealed interface AiChatIntent {
     data object ConfirmPendingTool : AiChatIntent
     data object RejectPendingTool : AiChatIntent
     data class UpdateReasoningLevel(val level: AiReasoningLevel) : AiChatIntent
+    data class SelectModel(val modelId: String) : AiChatIntent
     data class RegenerateMessage(val messageId: String) : AiChatIntent
     data class SwitchBranch(val messageId: String) : AiChatIntent
     data class DeleteConversation(val id: String) : AiChatIntent

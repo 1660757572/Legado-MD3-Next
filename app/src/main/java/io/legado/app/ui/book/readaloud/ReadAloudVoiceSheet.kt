@@ -169,7 +169,7 @@ private fun EngineList(
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 420.dp),
+            .heightIn(max = 600.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(groups, key = { it.key.listKey }) { group ->
@@ -204,7 +204,7 @@ private fun VoiceList(
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 420.dp),
+            .heightIn(max = 600.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(voices, key = { it.id }) { voice ->

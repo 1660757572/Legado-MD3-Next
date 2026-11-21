@@ -23,6 +23,7 @@ interface AiProfileGateway {
     suspend fun saveModel(draft: AiModelDraft): AiModelProfile
     suspend fun importProviderModels(providerId: String, models: List<AiAvailableModel>): List<AiModelProfile>
     suspend fun setDefaultModel(modelProfileId: String): AiTaskPresetConfig
+    suspend fun setTaskModel(taskType: String, modelProfileId: String): AiTaskPresetConfig
     suspend fun saveDefaultChatProfile(draft: AiProfileDraft): AiTaskPresetConfig
     suspend fun saveTaskPreset(
         taskType: String,

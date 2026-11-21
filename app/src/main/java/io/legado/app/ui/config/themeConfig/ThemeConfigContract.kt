@@ -63,9 +63,11 @@ sealed interface ThemeConfigIntent {
     data class SetReaderSharedElementEnabled(val enabled: Boolean) : ThemeConfigIntent
     data class SetFontScale(val value: Int) : ThemeConfigIntent
     data class SetShowStatusBar(val visible: Boolean) : ThemeConfigIntent
+    data class SetShowNavigationBar(val visible: Boolean) : ThemeConfigIntent
     data class SetSwipeAnimation(val enabled: Boolean) : ThemeConfigIntent
     data class SetShowBottomView(val visible: Boolean) : ThemeConfigIntent
     data class SetUseFloatingBottomBar(val enabled: Boolean) : ThemeConfigIntent
+    data class SetMochiNavAccessory(val enabled: Boolean) : ThemeConfigIntent
     data class SetUseFloatingBottomBarLiquidGlass(val enabled: Boolean) : ThemeConfigIntent
     data class SetPagerSwipeEnabled(val enabled: Boolean) : ThemeConfigIntent
     data class SetTabletInterface(val value: String) : ThemeConfigIntent

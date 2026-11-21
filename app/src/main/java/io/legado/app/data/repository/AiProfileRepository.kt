@@ -187,6 +187,22 @@ class AiProfileRepository(
             ?: error("Failed to save default model")
     }
 
+    override suspend fun setTaskModel(taskType: String, modelProfileId: String): AiTaskPresetConfig = withContext(Dispatchers.IO) {
+        val model = aiProfileDao.getModel(modelProfileId) ?: error("Model is required")
+        val provider = aiProfileDao.getProvider(model.providerId) ?: error("Provider is required")
+        require(AiImageModels.isTextModel(provider.protocol, model.modelId, model.capabilities)) {
+            "Choose a text model for text tasks"
+        }
+        val existing = aiProfileDao.getDefaultPreset(taskType) ?: error("Task preset is required")
+        val updated = existing.copy(
+            modelProfileId = modelProfileId,
+            paramsJson = GSON.toJson(parseParams(model.defaultParamsJson)),
+            updatedAt = System.currentTimeMillis()
+        )
+        aiProfileDao.insertPreset(updated)
+        updated.toConfig() ?: error("Failed to save task model")
+    }
+
     override suspend fun deleteProvider(providerId: String) = withContext(Dispatchers.IO) {
         aiProfileDao.deleteModelsByProvider(providerId)
         aiProfileDao.deleteProvider(providerId)
